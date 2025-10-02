@@ -1,8 +1,111 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
-}
+﻿@{ ViewData["Title"] = "Trang Chính"; }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">Chào mừng đến với La Pizzaria!</h1>
+    <p>Hương vị đích thực từ lò nướng Ý</p>
+</div>
+
+<!-- Hero Section -->
+<div class="hero-section text-center py-5 mb-4">
+    <img src="/images/pizza-hero.jpg" alt="Delicious Pizza" class="img-fluid rounded-circle mb-3" style="max-width: 300px;">
+    <h2 class="display-3 text-white">Hương vị đích thực từ lò nướng Ý</h2>
+    <p class="lead text-white-50">Khám phá những chiếc pizza thơm ngon nhất, được làm từ nguyên liệu tươi ngon và tình yêu.</p>
+    <a asp-controller="Home" asp-action="Menu" class="btn btn-primary btn-lg">Khám phá Menu</a>
+</div>
+
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://via.placeholder.com/1500x500/da291c/f8f5ed?text=La+Pizzaria+Hero') center center no-repeat;
+        background-size: cover;
+        color: var(--light-text-color);
+        padding: 100px 0;
+    }
+    .hero-section h2 {
+        font-weight: 700;
+    }
+    .hero-section .btn-primary {
+        background-color: var(--wood-brown);
+        border-color: var(--dark-brown);
+        color: var(--light-text-color);
+    }
+    .hero-section .btn-primary:hover {
+        background-color: var(--dark-brown);
+        border-color: var(--wood-brown);
+    }
+</style>
+
+<!-- Product Showcase Section -->
+<div class="container my-5">
+    <h2 class="text-center mb-4">Các món đặc biệt của chúng tôi</h2>
+    <div class="row">
+        <!-- Combo & Món mới -->
+        <div class="col-md-6">
+            <h3>Combo & Món Mới</h3>
+            <div class="card mb-3">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=New+Pizza" class="img-fluid rounded-start" alt="New Pizza">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h5 class="card-title">Pizza Hải Sản Nhiệt Đới</h5>
+                            <p class="card-text">Sự kết hợp hoàn hảo giữa hải sản tươi ngon và vị chua ngọt của dứa.</p>
+                            <p class="card-text"><small class="text-muted">Giá: 250.000đ</small></p>
+                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=Combo" class="img-fluid rounded-start" alt="Combo">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h5 class="card-title">Combo Gia Đình</h5>
+                            <p class="card-text">1 Pizza cỡ lớn + 2 nước ngọt + 1 phần khoai tây chiên.</p>
+                            <p class="card-text"><small class="text-muted">Giá: 350.000đ</small></p>
+                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best-seller -->
+        <div class="col-md-6">
+            <h3>Best-seller</h3>
+            <div class="card mb-3">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=Bacon+Pizza" class="img-fluid rounded-start" alt="Bacon Pizza">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h5 class="card-title">Pizza Thịt Xông Khói</h5>
+                            <p class="card-text">Đậm đà hương vị thịt xông khói giòn rụm và phô mai kéo sợi.</p>
+                            <p class="card-text"><small class="text-muted">Giá: 220.000đ</small></p>
+                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=Chicken+Pizza" class="img-fluid rounded-start" alt="Chicken Pizza">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h5 class="card-title">Pizza Gà BBQ</h5>
+                            <p class="card-text">Thịt gà nướng BBQ mềm ngọt kết hợp với sốt BBQ đặc trưng.</p>
+                            <p class="card-text"><small class="text-muted">Giá: 230.000đ</small></p>
+                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

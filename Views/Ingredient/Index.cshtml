@@ -1,0 +1,36 @@
+@model IEnumerable<LaPizzaria.Models.Ingredient>
+
+<h2>Nguyên liệu</h2>
+
+<p>
+	<a asp-action="Upsert" class="btn btn-primary">Thêm nguyên liệu</a>
+</p>
+
+<table class="table table-striped">
+	<thead>
+		<tr>
+			<th>Tên</th>
+			<th>Đơn vị</th>
+			<th>Tồn kho</th>
+			<th>Mức đặt hàng</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var i in Model)
+		{
+			<tr>
+				<td>@i.Name</td>
+				<td>@i.Unit</td>
+				<td>@i.StockQuantity</td>
+				<td>@i.ReorderLevel</td>
+				<td>
+					<a asp-action="Upsert" asp-route-id="@i.Id" class="btn btn-sm btn-warning">Sửa</a>
+					<a asp-action="Delete" asp-route-id="@i.Id" class="btn btn-sm btn-danger">Xóa</a>
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>
+
+

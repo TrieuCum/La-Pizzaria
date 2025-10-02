@@ -1,0 +1,36 @@
+@model IEnumerable<LaPizzaria.Models.Table>
+
+<h2>Bàn ăn</h2>
+
+<p>
+	<a asp-action="Upsert" class="btn btn-primary">Thêm bàn</a>
+</p>
+
+<table class="table table-striped">
+	<thead>
+		<tr>
+			<th>Mã</th>
+			<th>Sức chứa</th>
+			<th>Đang hoạt động</th>
+			<th>Đang có khách</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var t in Model)
+		{
+			<tr>
+				<td>@t.Code</td>
+				<td>@t.Capacity</td>
+				<td>@t.IsActive</td>
+				<td>@t.IsOccupied</td>
+				<td>
+					<a asp-action="Upsert" asp-route-id="@t.Id" class="btn btn-sm btn-warning">Sửa</a>
+					<a asp-action="Delete" asp-route-id="@t.Id" class="btn btn-sm btn-danger">Xóa</a>
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>
+
+

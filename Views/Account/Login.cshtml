@@ -1,0 +1,82 @@
+@{ ViewData["Title"] = "Đăng nhập"; }
+
+<div class="login-page-bg">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-lg-5 col-md-8 col-sm-10">
+            <div class="card p-4 shadow-lg login-card-custom">
+                <h2 class="card-title text-center mb-4 display-5 text-primary-red">Đăng nhập</h2>
+                <p class="text-center text-muted mb-4">Chào mừng bạn trở lại La Pizzaria</p>
+                <form asp-controller="Account" asp-action="Login" method="post">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="InputEmail" placeholder="Email hoặc Tên người dùng">
+                        <label for="InputEmail">Email / Tên người dùng</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="InputPassword" placeholder="Mật khẩu">
+                        <label for="InputPassword">Mật khẩu</label>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="RememberMe">
+                            <label class="form-check-label" for="RememberMe">Ghi nhớ tôi</label>
+                        </div>
+                        <a href="#" class="text-decoration-none text-wood-brown small">Quên mật khẩu?</a>
+                    </div>
+                    <div class="d-grid gap-2 mb-4">
+                        <button type="submit" class="btn btn-primary-custom btn-lg">Đăng nhập</button>
+                    </div>
+                    <div class="text-center">
+                        <p class="mb-0">Chưa có tài khoản? <a asp-controller="Account" asp-action="Register" class="text-primary-red-hover">Đăng ký ngay</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-page-bg {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://via.placeholder.com/1920x1080/da291c/f8f5ed?text=Pizza+Background') center center no-repeat;
+        background-size: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .login-card-custom {
+        background-color: var(--light-cream);
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    .text-primary-red {
+        color: var(--primary-red);
+        font-weight: bold;
+    }
+    .text-wood-brown {
+        color: var(--wood-brown);
+    }
+    .text-primary-red-hover:hover {
+        color: var(--primary-red);
+    }
+    .btn-primary-custom {
+        background-color: var(--primary-red);
+        border-color: var(--primary-red);
+        color: var(--light-text-color);
+        font-weight: bold;
+        border-radius: 50px;
+        padding: 10px 30px;
+        transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+    }
+    .btn-primary-custom:hover {
+        background-color: var(--dark-brown);
+        border-color: var(--dark-brown);
+    }
+    .form-floating > .form-control:focus ~ label::after,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label::after {
+        background-color: var(--light-cream);
+    }
+</style>
