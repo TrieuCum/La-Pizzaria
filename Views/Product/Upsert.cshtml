@@ -1,0 +1,98 @@
+@model LaPizzaria.ViewModels.ProductViewModel
+@{ ViewData["Title"] = "Thêm/Sửa Món ăn"; }
+
+<div class="container mt-4">
+    <div class="card shadow-sm p-4">
+        <h2 class="text-center mb-4 text-wood-brown">@(Model.Id == 0 ? "Thêm Món ăn Mới" : "Sửa Món ăn")</h2>
+        <form asp-action="Upsert" method="post">
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-floating mb-3">
+                <input asp-for="Name" class="form-control" placeholder="Tên món ăn">
+                <label asp-for="Name">Tên món ăn</label>
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="form-floating mb-3">
+                <textarea asp-for="Description" class="form-control" placeholder="Mô tả món ăn" style="height: 100px"></textarea>
+                <label asp-for="Description">Mô tả</label>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input asp-for="Price" class="form-control" placeholder="Giá">
+                <label asp-for="Price">Giá</label>
+                <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input asp-for="ImageUrl" class="form-control" placeholder="URL Hình ảnh">
+                <label asp-for="ImageUrl">URL Hình ảnh</label>
+                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+            </div>
+
+            <div class="form-floating mb-3">
+                <select asp-for="Category" class="form-select">
+                    <option value="">-- Chọn danh mục --</option>
+                    <option value="Pizza">Pizza</option>
+                    <option value="Drink">Đồ uống</option>
+                    <option value="Side Dish">Món phụ</option>
+                </select>
+                <label asp-for="Category">Danh mục</label>
+                <span asp-validation-for="Category" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox">
+                <label asp-for="IsActive" class="form-check-label">Đang bán</label>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="IsCustomizable" class="form-check-input" type="checkbox">
+                <label asp-for="IsCustomizable" class="form-check-label">Cho phép tùy chỉnh Topping</label>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary-custom">Lưu</button>
+                <a asp-action="Index" class="btn btn-secondary-custom">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ <partial name="_ValidationScriptsPartial" /> }
+}
+
+<style>
+    .text-wood-brown {
+        color: var(--wood-brown);
+        font-weight: bold;
+    }
+    .btn-primary-custom {
+        background-color: var(--primary-red);
+        border-color: var(--primary-red);
+        color: var(--light-text-color);
+        font-weight: bold;
+        border-radius: 5px;
+        padding: 8px 15px;
+        transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+    }
+    .btn-primary-custom:hover {
+        background-color: var(--dark-brown);
+        border-color: var(--dark-brown);
+    }
+    .btn-secondary-custom {
+        background-color: var(--wood-brown);
+        border-color: var(--wood-brown);
+        color: var(--light-text-color);
+        font-weight: bold;
+        border-radius: 5px;
+        padding: 8px 15px;
+        transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+    }
+    .btn-secondary-custom:hover {
+        background-color: var(--primary-red);
+        border-color: var(--primary-red);
+    }
+</style>
