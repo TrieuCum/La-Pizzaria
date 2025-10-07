@@ -1,0 +1,44 @@
+@model IEnumerable<LaPizzaria.Models.Ingredient>
+@{
+    var product = ViewBag.Product as LaPizzaria.Models.Product;
+    var mapping = ViewBag.Mapping as List<LaPizzaria.Models.ProductIngredient> ?? new List<LaPizzaria.Models.ProductIngredient>();
+    ViewData["Title"] = $"Nguyên liệu cho: {product?.Name}";
+}
+
+<div class="container mt-4">
+    <h3>@ViewData["Title"]</h3>
+    <form asp-action="SaveIngredients" method="post">
+        <input type="hidden" name="productId" value="@product?.Id" />
+        <div class="table-responsive card mt-3">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Nguyên liệu</th>
+                        <th>Số lượng / 1 đơn vị món</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var ing in Model)
+                {
+                    var row = mapping.FirstOrDefault(m => m.IngredientId == ing.Id);
+                    <tr>
+                        <td>
+                            <input type="hidden" name="ingredientId" value="@ing.Id" />
+                            @ing.Name (@ing.Unit) - tồn: @ing.StockQuantity
+                        </td>
+                        <td>
+                            <input class="form-control" name="quantityPerUnit" value="@(row?.QuantityPerUnit ?? 0)" />
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-brand-primary">Lưu</button>
+            <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+        </div>
+    </form>
+</div>
+
+

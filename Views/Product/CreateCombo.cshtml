@@ -1,0 +1,41 @@
+@{
+    ViewData["Title"] = "Tạo Combo";
+    var products = ViewBag.Products as IEnumerable<LaPizzaria.Models.Product> ?? Enumerable.Empty<LaPizzaria.Models.Product>();
+}
+
+<div class="container mt-4">
+    <h3>@ViewData["Title"]</h3>
+    <form asp-action="CreateCombo" method="post">
+        <div class="mb-3">
+            <label class="form-label">Tên combo</label>
+            <input name="name" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Giảm giá (VNĐ)</label>
+            <input name="discountAmount" class="form-control" value="0" />
+        </div>
+        <div class="card p-3">
+            <h6>Chọn các món trong combo</h6>
+            @foreach (var p in products)
+            {
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="productId" value="@p.Id" id="p_@p.Id" />
+                            <label class="form-check-label" for="p_@p.Id">@p.Name (@p.Price.ToString("N0"))</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input class="form-control" name="minQuantity" value="1" />
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-brand-primary" type="submit">Tạo combo</button>
+            <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+        </div>
+    </form>
+</div>
+
+

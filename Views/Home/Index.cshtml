@@ -1,111 +1,88 @@
-﻿@{ ViewData["Title"] = "Trang Chính"; }
+﻿@model LaPizzaria.ViewModels.HomeIndexViewModel
+@{ ViewData["Title"] = "Trang Chính"; }
 
-<div class="text-center">
-    <h1 class="display-4">Chào mừng đến với La Pizzaria!</h1>
-    <p>Hương vị đích thực từ lò nướng Ý</p>
-</div>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <!-- Hero Section -->
-<div class="hero-section text-center py-5 mb-4">
-    <img src="/images/pizza-hero.jpg" alt="Delicious Pizza" class="img-fluid rounded-circle mb-3" style="max-width: 300px;">
-    <h2 class="display-3 text-white">Hương vị đích thực từ lò nướng Ý</h2>
-    <p class="lead text-white-50">Khám phá những chiếc pizza thơm ngon nhất, được làm từ nguyên liệu tươi ngon và tình yêu.</p>
-    <a asp-controller="Home" asp-action="Menu" class="btn btn-primary btn-lg">Khám phá Menu</a>
-</div>
+<section class="hero-banner text-center d-flex flex-column align-items-center justify-content-center">
+    <h1 class="brand-hero-title">La Pizzaria</h1>
+    <p class="brand-hero-sub">Hương vị đích thực từ lò nướng Ý</p>
+    <div class="mt-3">
+        <a asp-controller="Order" asp-action="ScanQr" class="btn btn-brand-primary btn-lg me-2">Đặt món ngay</a>
+        <a asp-controller="Product" asp-action="Index" class="btn btn-outline-light btn-lg">Xem menu</a>
+    </div>
+</section>
 
 <style>
-    .hero-section {
-        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://via.placeholder.com/1500x500/da291c/f8f5ed?text=La+Pizzaria+Hero') center center no-repeat;
-        background-size: cover;
+    .hero-banner {
+        min-height: 60vh;
+        background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.35)), url('https://images.unsplash.com/photo-1548365328-9f547fb09530?q=80&w=1500&auto=format&fit=crop') center/cover no-repeat;
         color: var(--light-text-color);
-        padding: 100px 0;
+        padding: 80px 16px;
     }
-    .hero-section h2 {
-        font-weight: 700;
+    .brand-hero-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(48px, 8vw, 96px);
+        letter-spacing: 1px;
+        margin: 0;
+        text-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-    .hero-section .btn-primary {
-        background-color: var(--wood-brown);
-        border-color: var(--dark-brown);
-        color: var(--light-text-color);
-    }
-    .hero-section .btn-primary:hover {
-        background-color: var(--dark-brown);
-        border-color: var(--wood-brown);
+    .brand-hero-sub {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(16px, 2vw, 24px);
+        opacity: .9;
+        margin-top: 8px;
     }
 </style>
 
 <!-- Product Showcase Section -->
 <div class="container my-5">
     <h2 class="text-center mb-4">Các món đặc biệt của chúng tôi</h2>
-    <div class="row">
-        <!-- Combo & Món mới -->
-        <div class="col-md-6">
-            <h3>Combo & Món Mới</h3>
-            <div class="card mb-3">
-                <div class="row g-0">
-                    <div class="col-md-4">
-                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=New+Pizza" class="img-fluid rounded-start" alt="New Pizza">
-                    </div>
-                    <div class="col-md-8">
-                        <div class="card-body">
-                            <h5 class="card-title">Pizza Hải Sản Nhiệt Đới</h5>
-                            <p class="card-text">Sự kết hợp hoàn hảo giữa hải sản tươi ngon và vị chua ngọt của dứa.</p>
-                            <p class="card-text"><small class="text-muted">Giá: 250.000đ</small></p>
-                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card mb-3">
-                <div class="row g-0">
-                    <div class="col-md-4">
-                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=Combo" class="img-fluid rounded-start" alt="Combo">
-                    </div>
-                    <div class="col-md-8">
-                        <div class="card-body">
-                            <h5 class="card-title">Combo Gia Đình</h5>
-                            <p class="card-text">1 Pizza cỡ lớn + 2 nước ngọt + 1 phần khoai tây chiên.</p>
-                            <p class="card-text"><small class="text-muted">Giá: 350.000đ</small></p>
-                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Best-seller -->
-        <div class="col-md-6">
-            <h3>Best-seller</h3>
-            <div class="card mb-3">
-                <div class="row g-0">
-                    <div class="col-md-4">
-                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=Bacon+Pizza" class="img-fluid rounded-start" alt="Bacon Pizza">
+    <h4 class="mb-3">Món bán chạy</h4>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        @foreach (var p in Model.TopProducts)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "https://via.placeholder.com/600x400?text=Pizza")" class="card-img-top" alt="@p.Name">
+                    <div class="card-body">
+                        <h5 class="card-title">@p.Name</h5>
+                        <p class="card-text mb-1"><span class="badge bg-success">Đặt @p.TotalOrdered lần</span></p>
+                        <p class="card-text text-primary fw-bold">@p.Price.ToString("N0") đ</p>
+                        <a asp-controller="Product" asp-action="Index" class="btn btn-sm btn-outline-primary">Xem trong menu</a>
                     </div>
-                    <div class="col-md-8">
-                        <div class="card-body">
-                            <h5 class="card-title">Pizza Thịt Xông Khói</h5>
-                            <p class="card-text">Đậm đà hương vị thịt xông khói giòn rụm và phô mai kéo sợi.</p>
-                            <p class="card-text"><small class="text-muted">Giá: 220.000đ</small></p>
-                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <hr class="my-5" />
+    <h4 class="mb-3">Combo đang có</h4>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        @foreach (var c in Model.ActiveCombos)
+        {
+            var firstImage = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl
+                ?? "https://via.placeholder.com/600x400?text=Combo";
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <img src="@firstImage" class="card-img-top" alt="@c.Name">
+                    <div class="card-body">
+                        <h5 class="card-title">@c.Name</h5>
+                        @if (!string.IsNullOrEmpty(c.Description))
+                        {
+                            <p class="card-text">@c.Description</p>
+                        }
+                        <p class="card-text text-danger fw-bold">Giảm @c.DiscountAmount.ToString("N0") đ @(c.DiscountPercent.HasValue ? $" / {c.DiscountPercent}%" : "")</p>
+                        <div class="small text-muted">
+                            gồm: @string.Join(", ", c.Items.Where(i=>i.Product!=null).Select(i => $"{i.Product!.Name} x{i.MinQuantity}"))
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="card mb-3">
-                <div class="row g-0">
-                    <div class="col-md-4">
-                        <img src="https://via.placeholder.com/150/da291c/f8f5ed?text=Chicken+Pizza" class="img-fluid rounded-start" alt="Chicken Pizza">
-                    </div>
-                    <div class="col-md-8">
-                        <div class="card-body">
-                            <h5 class="card-title">Pizza Gà BBQ</h5>
-                            <p class="card-text">Thịt gà nướng BBQ mềm ngọt kết hợp với sốt BBQ đặc trưng.</p>
-                            <p class="card-text"><small class="text-muted">Giá: 230.000đ</small></p>
-                            <a href="#" class="btn btn-sm btn-primary">Xem chi tiết</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        }
     </div>
 </div>

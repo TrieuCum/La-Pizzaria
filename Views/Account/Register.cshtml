@@ -1,47 +1,55 @@
+@model LaPizzaria.ViewModels.RegisterViewModel
 @{ ViewData["Title"] = "Đăng ký"; }
 
-<div class="register-page-bg">
-    <div class="row justify-content-center align-items-center min-vh-100">
-        <div class="col-lg-6 col-md-9 col-sm-11">
-            <div class="card p-4 shadow-lg register-card-custom">
-                <h2 class="card-title text-center mb-4 display-5 text-wood-brown">Đăng ký</h2>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8 col-sm-11">
+            <div class="card p-4 shadow-lg auth-card">
+                <h2 class="card-title text-center mb-3 brand-accent">Đăng ký</h2>
                 <p class="text-center text-muted mb-4">Tạo tài khoản mới của bạn để khám phá!</p>
                 <form asp-controller="Account" asp-action="Register" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="InputFirstName" placeholder="Họ của bạn">
-                                <label for="InputFirstName">Họ</label>
+                                <input asp-for="FirstName" class="form-control" placeholder="Họ của bạn" />
+                                <label asp-for="FirstName"></label>
+                                <span asp-validation-for="FirstName" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="InputLastName" placeholder="Tên của bạn">
-                                <label for="InputLastName">Tên</label>
+                                <input asp-for="LastName" class="form-control" placeholder="Tên của bạn" />
+                                <label asp-for="LastName"></label>
+                                <span asp-validation-for="LastName" class="text-danger"></span>
                             </div>
                         </div>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="email" class="form-control" id="InputEmail" placeholder="Email của bạn">
-                        <label for="InputEmail">Email</label>
+                        <input asp-for="Email" class="form-control" placeholder="Email của bạn" />
+                        <label asp-for="Email"></label>
+                        <span asp-validation-for="Email" class="text-danger"></span>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="tel" class="form-control" id="InputPhoneNumber" placeholder="Số điện thoại">
-                        <label for="InputPhoneNumber">Số điện thoại</label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="Số điện thoại" />
+                        <label asp-for="PhoneNumber"></label>
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="password" class="form-control" id="InputPassword" placeholder="Mật khẩu">
-                        <label for="InputPassword">Mật khẩu</label>
+                        <input asp-for="Password" class="form-control" placeholder="Mật khẩu" />
+                        <label asp-for="Password"></label>
+                        <span asp-validation-for="Password" class="text-danger"></span>
                     </div>
                     <div class="form-floating mb-4">
-                        <input type="password" class="form-control" id="InputConfirmPassword" placeholder="Xác nhận mật khẩu">
-                        <label for="InputConfirmPassword">Xác nhận mật khẩu</label>
+                        <input asp-for="ConfirmPassword" class="form-control" placeholder="Xác nhận mật khẩu" />
+                        <label asp-for="ConfirmPassword"></label>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
                     </div>
                     <div class="d-grid gap-2 mb-4">
-                        <button type="submit" class="btn btn-secondary-custom btn-lg">Đăng ký</button>
+                        <button type="submit" class="btn btn-brand-secondary btn-lg">Đăng ký</button>
                     </div>
                     <div class="text-center">
-                        <p class="mb-0">Đã có tài khoản? <a asp-controller="Account" asp-action="Login" class="text-wood-brown-hover">Đăng nhập</a></p>
+                        <p class="mb-0">Đã có tài khoản? <a asp-controller="Account" asp-action="Login" class="brand-accent-hover">Đăng nhập</a></p>
                     </div>
                 </form>
             </div>
@@ -50,44 +58,13 @@
 </div>
 
 <style>
-    .register-page-bg {
-        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://via.placeholder.com/1920x1080/8b4513/f8f5ed?text=Pizza+Dough+Background') center center no-repeat;
-        background-size: cover;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .auth-card { background-color: var(--light-cream); border-radius: 15px; overflow: hidden; }
+    .brand-accent { color: var(--wood-brown); font-weight: bold; }
+    .brand-accent-hover:hover { color: var(--wood-brown); }
+    .btn-brand-secondary {
+        background-color: var(--wood-brown); border-color: var(--wood-brown);
+        color: var(--light-text-color); font-weight: bold; border-radius: 50px; padding: 10px 30px;
+        transition: background-color .3s ease-in-out, border-color .3s ease-in-out;
     }
-    .register-card-custom {
-        background-color: var(--light-cream);
-        border-radius: 15px;
-        overflow: hidden;
-    }
-    .text-wood-brown {
-        color: var(--wood-brown);
-        font-weight: bold;
-    }
-    .text-primary-red-hover {
-        color: var(--primary-red);
-    }
-    .text-wood-brown-hover:hover {
-        color: var(--wood-brown);
-    }
-    .btn-secondary-custom {
-        background-color: var(--wood-brown);
-        border-color: var(--wood-brown);
-        color: var(--light-text-color);
-        font-weight: bold;
-        border-radius: 50px;
-        padding: 10px 30px;
-        transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
-    }
-    .btn-secondary-custom:hover {
-        background-color: var(--primary-red);
-        border-color: var(--primary-red);
-    }
+    .btn-brand-secondary:hover { background-color: var(--primary-red); border-color: var(--primary-red); }
 </style>

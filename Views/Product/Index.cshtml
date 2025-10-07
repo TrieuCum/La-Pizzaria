@@ -1,9 +1,13 @@
+@model LaPizzaria.ViewModels.ProductIndexViewModel
 @{ ViewData["Title"] = "Quản lý Món ăn"; }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-primary-red">Quản lý Món ăn</h2>
-        <a asp-action="Upsert" class="btn btn-primary-custom">Thêm Món ăn Mới</a>
+        <div class="btn-group">
+            <a asp-action="Upsert" class="btn btn-primary-custom">Thêm Món ăn Mới</a>
+            <a asp-action="CreateCombo" class="btn btn-outline-secondary">Tạo Combo</a>
+        </div>
     </div>
 
     <!-- Filter and Search Section -->
@@ -53,34 +57,91 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Sample Data - Replace with actual data from model -->
+                        @{
+                            var outIds = Model.OutOfStockIds ?? new List<int>();
+                        }
+                        @foreach (var p in Model.Products)
+                        {
+                            var isOutOfStock = outIds.Contains(p.Id);
+                            <tr>
+                                <td>@p.Id</td>
+                                <td>
+                                    <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "https://via.placeholder.com/50")" alt="@p.Name" class="img-thumbnail">
+                                </td>
+                                <td>@p.Name</td>
+                                <td>@p.Description</td>
+                                <td>@p.Price.ToString("N0")</td>
+                                <td>@p.Category</td>
+                                <td>
+                                    @if (isOutOfStock)
+                                    {
+                                        <span class="badge bg-warning text-dark">Hết hàng</span>
+                                    }
+                                    else if (p.IsActive)
+                                    {
+                                        <span class="badge bg-success">Đang bán</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Ngừng bán</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Upsert" asp-route-id="@p.Id" class="btn btn-sm btn-info">Sửa</a>
+                                    <a asp-action="Ingredients" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary">Nguyên liệu</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combo List -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="mb-0">Danh sách Combo</h5>
+            <a asp-action="CreateCombo" class="btn btn-sm btn-outline-primary">Tạo Combo</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
                         <tr>
-                            <td>1</td>
-                            <td><img src="https://via.placeholder.com/50" alt="Product Image" class="img-thumbnail"></td>
-                            <td>Pizza Hải Sản</td>
-                            <td>Pizza với hải sản tươi ngon.</td>
-                            <td>250.000đ</td>
-                            <td>Pizza</td>
-                            <td><span class="badge bg-success">Đang bán</span></td>
-                            <td>
-                                <a asp-action="Upsert" asp-route-id="1" class="btn btn-sm btn-info">Sửa</a>
-                                <button class="btn btn-sm btn-danger">Xóa</button>
-                            </td>
+                            <th>ID</th>
+                            <th>Hình ảnh</th>
+                            <th>Tên Combo</th>
+                            <th>Mô tả</th>
+                            <th>Giảm giá</th>
+                            <th>Thành phần</th>
                         </tr>
-                        <tr>
-                            <td>2</td>
-                            <td><img src="https://via.placeholder.com/50" alt="Product Image" class="img-thumbnail"></td>
-                            <td>Coca Cola</td>
-                            <td>Nước ngọt giải khát.</td>
-                            <td>25.000đ</td>
-                            <td>Đồ uống</td>
-                            <td><span class="badge bg-warning text-dark">Hết hàng</span></td>
-                            <td>
-                                <a asp-action="Upsert" asp-route-id="2" class="btn btn-sm btn-info">Sửa</a>
-                                <button class="btn btn-sm btn-danger">Xóa</button>
-                            </td>
-                        </tr>
-                        <!-- End Sample Data -->
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Combos)
+                        {
+                            var firstImage = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl
+                                ?? "https://via.placeholder.com/50?text=Combo";
+                            <tr>
+                                <td>@c.Id</td>
+                                <td><img src="@firstImage" class="img-thumbnail" alt="@c.Name"></td>
+                                <td>@c.Name</td>
+                                <td>@c.Description</td>
+                                <td>
+                                    @if (c.DiscountPercent.HasValue)
+                                    {
+                                        <span class="badge bg-danger">@c.DiscountPercent% + @c.DiscountAmount.ToString("N0")đ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">@c.DiscountAmount.ToString("N0")đ</span>
+                                    }
+                                </td>
+                                <td>
+                                    @string.Join(", ", c.Items.Where(i=>i.Product!=null).Select(i => $"{i.Product!.Name} x{i.MinQuantity}"))
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>

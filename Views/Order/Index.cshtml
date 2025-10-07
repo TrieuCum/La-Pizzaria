@@ -1,0 +1,59 @@
+@model IEnumerable<LaPizzaria.Models.Order>
+
+<div class="container mt-4">
+	<div class="d-flex justify-content-between align-items-center mb-3">
+		<h2>Đơn hàng</h2>
+		<div class="btn-group">
+			<a class="btn btn-brand-primary" asp-controller="Table" asp-action="Index">Quản lý bàn</a>
+			<a class="btn btn-outline-secondary" asp-controller="Order" asp-action="ScanQr">Đặt món bằng QR</a>
+		</div>
+	</div>
+	<div class="card shadow-sm">
+		<div class="card-body">
+			@if (Model.Any())
+			{
+				@* Combo suggestion message for the first order (illustration) *@
+				<div class="alert alert-info" role="alert">
+					Gợi ý: Nếu khách chọn đủ điều kiện combo, hệ thống sẽ tự áp dụng giảm giá khi tính tổng. Hãy vào trang QR để thêm món nhanh.
+				</div>
+			}
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th>Mã</th>
+						<th>Ngày</th>
+						<th>Trạng thái</th>
+						<th>Tổng tiền</th>
+						<th>Hành động</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var o in Model)
+					{
+						<tr>
+							<td>@o.Id</td>
+							<td>@o.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+							<td>@o.OrderStatus</td>
+							<td>@o.TotalPrice.ToString("N0")</td>
+							<td>
+								<div class="btn-group btn-group-sm">
+									<form asp-action="Recalculate" method="post" class="d-inline">
+										<input type="hidden" name="orderId" value="@o.Id" />
+										<button class="btn btn-outline-secondary" type="submit">Tính lại</button>
+									</form>
+									<a class="btn btn-outline-primary" asp-action="SplitForm" asp-route-orderId="@o.Id">Tách</a>
+									<form asp-action="Pay" method="post" class="d-inline">
+										<input type="hidden" name="orderId" value="@o.Id" />
+										<button class="btn btn-success" type="submit">Thanh toán</button>
+									</form>
+								</div>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+

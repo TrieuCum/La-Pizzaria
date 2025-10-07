@@ -1,0 +1,43 @@
+@{
+    var code = (string)(ViewBag.TableCode ?? "");
+    ViewData["Title"] = "QR cho bàn";
+}
+
+<div class="container mt-4">
+    <h3 class="text-center mb-4">Tạo mã QR cho bàn</h3>
+    <div class="d-flex flex-column align-items-center">
+        <div class="w-100" style="max-width:480px;">
+            <label class="form-label">Mã bàn</label>
+            <div class="input-group">
+                <input id="tableCode" class="form-control" value="@code" placeholder="VD: T01" />
+                <button id="gen" class="btn btn-brand-primary" type="button">Tạo QR</button>
+            </div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <div id="qrcode" class="border rounded d-inline-block p-3 bg-white shadow-sm"></div>
+            <p class="mt-2 text-muted small">
+                Người dùng quét để mở trang đặt món với mã bàn đã chọn.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const host = window.location.origin;
+let qrInstance;
+function make(code){
+  const url = `${host}/Order/ScanQr?tableCode=${encodeURIComponent(code||'')}`;
+  const container = document.getElementById('qrcode');
+  container.innerHTML = '';
+  qrInstance = new QRCode(container, { text: url, width: 220, height: 220 });
+}
+document.getElementById('gen').addEventListener('click',()=>{
+  const code = document.getElementById('tableCode').value;
+  make(code);
+});
+if(document.getElementById('tableCode').value){ make(document.getElementById('tableCode').value); }
+</script>
+
+

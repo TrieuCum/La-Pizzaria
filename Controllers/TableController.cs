@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace LaPizzaria.Controllers
 {
@@ -16,6 +17,29 @@ namespace LaPizzaria.Controllers
         public IActionResult Index()
         {
             var tables = _db.Tables.ToList();
+            ViewBag.OpenOrders = _db.Orders.Where(o => o.OrderStatus != "Completed").ToList();
+
+            var orderTables = _db.OrderTables.ToList();
+            var tableById = tables.ToDictionary(t => t.Id);
+            var orderToCodes = orderTables
+                .GroupBy(ot => ot.OrderId)
+                .ToDictionary(g => g.Key, g => g.Select(ot => tableById.ContainsKey(ot.TableId) ? tableById[ot.TableId].Code : $"T{ot.TableId}").ToList());
+
+            var tableAttachInfo = new System.Collections.Generic.Dictionary<int, string>();
+            foreach (var t in tables)
+            {
+                var relatedOrders = orderTables.Where(ot => ot.TableId == t.Id).Select(ot => ot.OrderId).Distinct().ToList();
+                var parts = new System.Collections.Generic.List<string>();
+                foreach (var oid in relatedOrders)
+                {
+                    if (orderToCodes.TryGetValue(oid, out var codes))
+                    {
+                        parts.Add($"#${oid}: {string.Join(", ", codes)}");
+                    }
+                }
+                tableAttachInfo[t.Id] = string.Join(" | ", parts);
+            }
+            ViewBag.TableAttachInfo = tableAttachInfo;
             return View(tables);
         }
 
@@ -50,6 +74,32 @@ namespace LaPizzaria.Controllers
             if (table == null) return NotFound();
             _db.Tables.Remove(table);
             _db.SaveChanges();
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Clear(int id)
+        {
+            var table = _db.Tables.Find(id);
+            if (table == null) return NotFound();
+
+            // Không cho dọn nếu vẫn còn order chưa hoàn tất
+            var hasOpenOrder = _db.OrderTables
+                .Include(ot => ot.Order)
+                .Any(ot => ot.TableId == id && ot.Order != null && ot.Order.OrderStatus != "Completed");
+            if (hasOpenOrder)
+            {
+                TempData["error"] = "Bàn vẫn đang có order chưa thanh toán.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Gỡ liên kết bàn khỏi các order đã xong và set trạng thái rảnh
+            var attach = _db.OrderTables.Where(ot => ot.TableId == id).ToList();
+            _db.OrderTables.RemoveRange(attach);
+            table.IsOccupied = false;
+            _db.SaveChanges();
+            TempData["success"] = $"Đã dọn bàn {table.Code}.";
             return RedirectToAction(nameof(Index));
         }
     }
