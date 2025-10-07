@@ -2,9 +2,26 @@
 
 <h2>Bàn ăn</h2>
 
-<p>
-	<a asp-action="Upsert" class="btn btn-primary">Thêm bàn</a>
-</p>
+<div class="card p-3 mb-3">
+    <form asp-controller="Order" asp-action="MergeTables" method="post" id="mergeForm" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Order đang mở</label>
+            <select name="orderId" class="form-select" required>
+                <option value="" selected disabled>Chọn Order</option>
+                @foreach (var o in (IEnumerable<LaPizzaria.Models.Order>)ViewBag.OpenOrders)
+                {
+                    <option value="@o.Id">#@o.Id - @o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-8 d-flex gap-2">
+            <button type="submit" class="btn btn-success">Gộp bàn đã chọn</button>
+            <a asp-action="Upsert" class="btn btn-primary">Thêm bàn</a>
+            <a asp-controller="Order" asp-action="Qr" class="btn btn-outline-secondary">Tạo QR</a>
+        </div>
+        <div class="col-12"><small class="text-muted">Chọn nhiều bàn bằng checkbox, sau đó bấm Gộp.</small></div>
+    </form>
+</div>
 
 <table class="table table-striped">
 	<thead>
@@ -13,7 +30,8 @@
 			<th>Sức chứa</th>
 			<th>Đang hoạt động</th>
 			<th>Đang có khách</th>
-			<th></th>
+            <th>Đang thuộc (Order → các bàn)</th>
+			<th>Chọn</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -24,10 +42,18 @@
 				<td>@t.Capacity</td>
 				<td>@t.IsActive</td>
 				<td>@t.IsOccupied</td>
-				<td>
-					<a asp-action="Upsert" asp-route-id="@t.Id" class="btn btn-sm btn-warning">Sửa</a>
-					<a asp-action="Delete" asp-route-id="@t.Id" class="btn btn-sm btn-danger">Xóa</a>
-				</td>
+                <td>@(((System.Collections.Generic.Dictionary<int, string>)ViewBag.TableAttachInfo).TryGetValue(t.Id, out var info) ? info : "")</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox" name="tableIds" value="@t.Id" form="mergeForm" />
+                        <form asp-action="Clear" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@t.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Dọn bàn</button>
+                        </form>
+                        <a asp-action="Upsert" asp-route-id="@t.Id" class="btn btn-sm btn-warning">Sửa</a>
+                        <a asp-action="Delete" asp-route-id="@t.Id" class="btn btn-sm btn-danger">Xóa</a>
+                    </div>
+                </td>
 			</tr>
 		}
 	</tbody>

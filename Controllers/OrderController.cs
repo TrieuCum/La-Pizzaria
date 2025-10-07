@@ -14,18 +14,102 @@ namespace LaPizzaria.Controllers
         private readonly ApplicationDbContext _db;
         private readonly IOrderService _orderService;
         private readonly IQrService _qrService;
+        private readonly IComboService _comboService;
 
-        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService)
+        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService)
         {
             _db = db;
             _orderService = orderService;
             _qrService = qrService;
+            _comboService = comboService;
         }
 
         public async Task<IActionResult> Index()
         {
             var orders = await _db.Orders.Include(o => o.OrderDetails).ToListAsync();
             return View(orders);
+        }
+
+        [HttpGet]
+        public IActionResult ScanQr()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult Qr(string? tableCode)
+        {
+            ViewBag.TableCode = tableCode ?? string.Empty;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Preview([FromBody] QrOrderRequest req)
+        {
+            var items = req.Items ?? new List<QrOrderItem>();
+            var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+            var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+
+            var details = new List<OrderDetail>();
+            foreach (var it in items)
+            {
+                if (!products.TryGetValue(it.ProductId, out var p)) continue;
+                details.Add(new OrderDetail { ProductId = p.Id, Quantity = it.Quantity, UnitPrice = p.Price, Subtotal = p.Price * it.Quantity });
+            }
+
+            var subtotal = details.Sum(d => d.Subtotal);
+            var combos = await _db.Combos.Include(c => c.Items).ToListAsync();
+            var suggestion = _comboService.SuggestBestCombos(details, combos);
+            var discount = suggestion.DiscountTotal;
+            var total = Math.Max(0, subtotal - discount);
+            return Ok(new { subtotal, discount, total, combos = suggestion.AppliedCombos });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SplitForm(int orderId)
+        {
+            var order = await _db.Orders.Include(o => o.OrderDetails).ThenInclude(od => od.Product).FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return NotFound();
+            return View(order);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SplitForm(int orderId, List<int> orderDetailId, List<int> moveQty)
+        {
+            var map = new Dictionary<int, int>();
+            for (int i = 0; i < orderDetailId.Count; i++)
+            {
+                var qty = i < moveQty.Count ? moveQty[i] : 0;
+                if (qty > 0) map[orderDetailId[i]] = qty;
+            }
+            await _orderService.SplitOrderAsync(orderId, map);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Pay(int orderId, string method = "Cash")
+        {
+            var order = await _db.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return NotFound();
+            order.TotalPrice = await _orderService.CalculateTotalAsync(order.Id);
+            order.PaymentMethod = method;
+            order.OrderStatus = "Completed";
+            await _db.SaveChangesAsync();
+            TempData["success"] = $"Đã thanh toán đơn #{order.Id}.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Recalculate(int orderId)
+        {
+            var order = await _db.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return NotFound();
+            order.TotalPrice = await _orderService.CalculateTotalAsync(order.Id);
+            await _db.SaveChangesAsync();
+            TempData["success"] = $"Đã tính lại tổng đơn #{order.Id}.";
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -44,11 +128,24 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> MergeTables(int orderId, [FromBody] List<int> tableIds)
+        public async Task<IActionResult> MergeTables(int orderId, [FromForm] List<int> tableIds)
         {
+            if (orderId <= 0 || tableIds == null || tableIds.Count == 0)
+            {
+                TempData["error"] = "Vui lòng chọn Order và ít nhất một bàn.";
+                return RedirectToAction("Index", "Table");
+            }
+
             var ok = await _orderService.MergeTablesAsync(orderId, tableIds);
-            if (!ok) return BadRequest("Cannot merge tables currently in use");
-            return Ok();
+            if (!ok)
+            {
+                TempData["error"] = "Không thể gộp: có bàn đang được sử dụng bởi order khác.";
+            }
+            else
+            {
+                TempData["success"] = "Gộp bàn thành công.";
+            }
+            return RedirectToAction("Index", "Table");
         }
 
         [HttpPost]
@@ -63,6 +160,38 @@ namespace LaPizzaria.Controllers
         {
             var payload = _qrService.GenerateTableQrPayload(tableCode);
             return Ok(payload);
+        }
+
+        // Simple QR entry: customer scans QR that encodes table code => front-end posts to /Order/FromQr
+        [HttpPost]
+        public async Task<IActionResult> FromQr([FromBody] QrOrderRequest req)
+        {
+            var details = new List<OrderDetail>();
+            if (req.Items != null)
+            {
+                var productIds = req.Items.Select(i => i.ProductId).Distinct().ToList();
+                var priceMap = await _db.Products.Where(p => productIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id, p => p.Price);
+                foreach (var it in req.Items)
+                {
+                    priceMap.TryGetValue(it.ProductId, out var price);
+                    details.Add(new OrderDetail
+                    {
+                        ProductId = it.ProductId,
+                        Quantity = it.Quantity,
+                        UnitPrice = price,
+                        Subtotal = price * it.Quantity
+                    });
+                }
+            }
+            var tableIds = new List<int>();
+            if (!string.IsNullOrWhiteSpace(req.TableCode))
+            {
+                var t = await _db.Tables.FirstOrDefaultAsync(x => x.Code == req.TableCode);
+                if (t != null) tableIds.Add(t.Id);
+            }
+            var order = await _orderService.CreateOrderAsync(null, details, tableIds);
+            return Ok(new { orderId = order.Id });
         }
     }
 
