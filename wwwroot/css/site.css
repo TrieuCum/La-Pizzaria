@@ -5,6 +5,7 @@
     --dark-brown: #5a2e0a; /* Darker brown for accents */
     --text-color: #333333;
     --light-text-color: #ffffff;
+    --accent-orange: #ff7a00; /* Accent orange for outline button */
 }
 
 html {
@@ -38,6 +39,14 @@ body {
     border-bottom: 1px solid var(--dark-brown);
 }
 
+/* Enhanced brand navbar */
+.brand-navbar {
+    background: linear-gradient(0deg, rgba(0,0,0,.1), rgba(0,0,0,.1)), var(--primary-red) !important;
+}
+.brand-logo {
+    width: 28px; height: 28px; background: rgba(255,255,255,.15); display: inline-flex; align-items: center; justify-content: center;
+}
+
 .navbar-brand {
     color: var(--light-text-color) !important;
     font-weight: bold;
@@ -54,17 +63,45 @@ body {
     color: var(--dark-brown) !important;
 }
 
-/* Custom styles for the footer */
+/* Custom styles for the footer (legacy) */
 .footer {
     background-color: var(--dark-brown);
     color: var(--light-text-color);
-    line-height: 60px; /* Vertically center the text there */
+    line-height: 60px;
+}
+.footer a { color: var(--light-cream); }
+.footer a:hover { color: var(--primary-red); }
+
+/* New footer */
+.brand-footer { background-color: var(--dark-brown); color: var(--light-text-color); }
+.brand-footer .footer-link { color: var(--light-cream); text-decoration: none; }
+.brand-footer .footer-link:hover { color: var(--primary-red); }
+.text-light-50 { color: rgba(255,255,255,.5); }
+
+/* Custom brand buttons (global) */
+.btn-brand-primary {
+    background-color: var(--primary-red);
+    border-color: var(--primary-red);
+    color: var(--light-text-color);
+    font-weight: bold;
+    padding: 10px 30px;
+    transition: background-color .3s ease-in-out, border-color .3s ease-in-out, color .3s ease-in-out;
+}
+.btn-brand-primary:hover,
+.btn-brand-primary:focus {
+    background-color: var(--dark-brown);
+    border-color: var(--dark-brown);
+    color: var(--light-text-color);
 }
 
-.footer a {
-    color: var(--light-cream);
+.btn-outline-orange {
+    color: var(--accent-orange);
+    border-color: var(--accent-orange);
+    font-weight: 600;
 }
-
-.footer a:hover {
-    color: var(--primary-red);
+.btn-outline-orange:hover,
+.btn-outline-orange:focus {
+    color: #fff;
+    background-color: var(--accent-orange);
+    border-color: var(--accent-orange);
 }
