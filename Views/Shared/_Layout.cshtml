@@ -17,30 +17,22 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">LaPizzaria</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg navbar-dark brand-navbar mb-3">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="brand-logo rounded-circle me-2">🍕</span>
+                    <span>LaPizzaria</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Product" asp-action="Index">Products</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Table" asp-action="Index">Tables</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Ingredient" asp-action="Index">Ingredients</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Order" asp-action="Index">Orders</a>
-                        </li>
+                <div class="collapse navbar-collapse" id="mainNavbar">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Product" asp-action="Index">Products</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Table" asp-action="Index">Tables</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Ingredient" asp-action="Index">Ingredients</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Order" asp-action="Index">Orders</a></li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Statistics</a>
                             <ul class="dropdown-menu">
@@ -49,7 +41,9 @@
                             </ul>
                         </li>
                     </ul>
-                    <partial name="_LoginPartial" />
+                    <div class="d-flex">
+                        <partial name="_LoginPartial" />
+                    </div>
                 </div>
             </div>
         </nav>
@@ -60,9 +54,20 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - LaPizzaria - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="brand-footer mt-auto">
+        <div class="container py-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6 small">
+                    <div class="mb-1 fw-bold">LaPizzaria</div>
+                    <div class="text-opacity-75">Hương vị đích thực từ lò nướng Ý</div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a class="footer-link me-3" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    <a class="footer-link me-3" asp-area="" asp-controller="Order" asp-action="Qr">QR</a>
+                    <a class="footer-link" asp-area="" asp-controller="Product" asp-action="Index">Menu</a>
+                </div>
+            </div>
+            <div class="pt-3 small text-center text-md-start text-light-50">&copy; 2025 LaPizzaria. All rights reserved.</div>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

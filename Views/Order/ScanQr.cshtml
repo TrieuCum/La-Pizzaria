@@ -4,10 +4,20 @@
 
 <div class="container mt-4">
     <h3 class="mb-3">@ViewData["Title"]</h3>
+    <div class="alert alert-light border d-flex align-items-center" role="alert">
+        <div>
+            <div class="fw-semibold">Cách hoạt động</div>
+            <div class="small text-muted">QR được nhà hàng dán trên bàn. Khách quét QR để mở trang này với mã bàn tự điền. Bạn cũng có thể nhập mã bàn thủ công dưới đây.</div>
+        </div>
+    </div>
     <div class="row g-3">
         <div class="col-md-4">
             <label class="form-label">Mã bàn (Table Code)</label>
             <input id="tableCode" class="form-control" placeholder="VD: T01" />
+            <div class="mt-3">
+                <div class="small text-muted mb-1">QR truy cập (chia sẻ đường dẫn này)</div>
+                <div id="qrShare" class="border bg-white rounded p-2 d-inline-block"></div>
+            </div>
         </div>
         <div class="col-md-8">
             <label class="form-label">Chọn món</label>
@@ -32,7 +42,13 @@
     <div class="mt-3" id="result"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
+function getQueryParam(name){
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name) || '';
+}
+
 document.getElementById('btnSend').addEventListener('click', async () => {
     const tableCode = document.getElementById('tableCode').value;
     let items = window.__cart || [];
@@ -84,7 +100,24 @@ document.getElementById('addItem').addEventListener('click', () => {
     document.getElementById('cart').appendChild(li);
 });
 
+// Prefill table code from URL and render a small QR to share the link
+const host = window.location.origin;
+const initialCode = getQueryParam('tableCode');
+if (initialCode) {
+    document.getElementById('tableCode').value = initialCode;
+}
+let shareQrInstance;
+function renderShareQr(){
+    const code = document.getElementById('tableCode').value || '';
+    const url = `${host}/Order/ScanQr?tableCode=${encodeURIComponent(code)}`;
+    const el = document.getElementById('qrShare');
+    el.innerHTML = '';
+    shareQrInstance = new QRCode(el, { text: url, width: 120, height: 120 });
+}
+document.getElementById('tableCode').addEventListener('input', renderShareQr);
+
 loadProducts();
+renderShareQr();
 </script>
 
 
