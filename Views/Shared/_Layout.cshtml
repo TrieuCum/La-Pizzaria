@@ -33,6 +33,10 @@
                         <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Table" asp-action="Index">Tables</a></li>
                         <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Ingredient" asp-action="Index">Ingredients</a></li>
                         <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Order" asp-action="Index">Orders</a></li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Voucher" asp-action="Index">Vouchers</a></li>
+                        }
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Statistics</a>
                             <ul class="dropdown-menu">

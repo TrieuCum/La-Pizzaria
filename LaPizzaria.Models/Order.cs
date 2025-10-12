@@ -20,5 +20,6 @@ namespace LaPizzaria.Models
         public ApplicationUser? User { get; set; }
         public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
         public ICollection<OrderTable> OrderTables { get; set; } = new List<OrderTable>();
+		public ICollection<OrderVoucher> OrderVouchers { get; set; } = new List<OrderVoucher>();
     }
 }

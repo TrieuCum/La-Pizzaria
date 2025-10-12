@@ -374,6 +374,21 @@ namespace LaPizzaria.Data.Migrations
                     b.ToTable("OrderTables");
                 });
 
+            modelBuilder.Entity("LaPizzaria.Models.OrderVoucher", b =>
+                {
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VoucherId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderId", "VoucherId");
+
+                    b.HasIndex("VoucherId");
+
+                    b.ToTable("OrderVouchers");
+                });
+
             modelBuilder.Entity("LaPizzaria.Models.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -505,6 +520,48 @@ namespace LaPizzaria.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Toppings");
+                });
+
+            modelBuilder.Entity("LaPizzaria.Models.Voucher", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DiscountPercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxUses")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsedCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Vouchers");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -755,6 +812,25 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("Table");
                 });
 
+            modelBuilder.Entity("LaPizzaria.Models.OrderVoucher", b =>
+                {
+                    b.HasOne("LaPizzaria.Models.Order", "Order")
+                        .WithMany("OrderVouchers")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LaPizzaria.Models.Voucher", "Voucher")
+                        .WithMany()
+                        .HasForeignKey("VoucherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Voucher");
+                });
+
             modelBuilder.Entity("LaPizzaria.Models.ProductIngredient", b =>
                 {
                     b.HasOne("LaPizzaria.Models.Ingredient", "Ingredient")
@@ -869,6 +945,8 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("OrderDetails");
 
                     b.Navigation("OrderTables");
+
+                    b.Navigation("OrderVouchers");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.OrderDetail", b =>

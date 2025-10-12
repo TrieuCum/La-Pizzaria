@@ -24,6 +24,8 @@ namespace LaPizzaria.Data
         public DbSet<ComboItem> ComboItems { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
+		public DbSet<Voucher> Vouchers { get; set; }
+		public DbSet<OrderVoucher> OrderVouchers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -97,6 +99,18 @@ namespace LaPizzaria.Data
                 .WithMany()
                 .HasForeignKey(ii => ii.OrderDetailId)
                 .OnDelete(DeleteBehavior.Restrict); // prevent multiple cascade paths via Order -> OrderDetails and Order -> Invoices
+
+			// Configure Order-Voucher mapping (each order can apply up to 2 vouchers)
+			modelBuilder.Entity<OrderVoucher>()
+				.HasKey(ov => new { ov.OrderId, ov.VoucherId });
+			modelBuilder.Entity<OrderVoucher>()
+				.HasOne(ov => ov.Order)
+				.WithMany(o => o.OrderVouchers)
+				.HasForeignKey(ov => ov.OrderId);
+			modelBuilder.Entity<OrderVoucher>()
+				.HasOne(ov => ov.Voucher)
+				.WithMany()
+				.HasForeignKey(ov => ov.VoucherId);
         }
     }
 }

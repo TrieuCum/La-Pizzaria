@@ -9,3 +9,14 @@ D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.dll
 D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\refint\LaPizzaria.Models.dll
 D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.pdb
 D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\ref\LaPizzaria.Models.dll
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.deps.json
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.dll
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.pdb
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.csproj.AssemblyReference.cache
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.sourcelink.json
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.dll
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\refint\LaPizzaria.Models.dll
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.pdb
+C:\Users\Admin\Desktop\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\ref\LaPizzaria.Models.dll

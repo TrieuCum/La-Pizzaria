@@ -15,13 +15,15 @@ namespace LaPizzaria.Controllers
         private readonly IOrderService _orderService;
         private readonly IQrService _qrService;
         private readonly IComboService _comboService;
+        private readonly IVoucherService _voucherService;
 
-        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService)
+        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService)
         {
             _db = db;
             _orderService = orderService;
             _qrService = qrService;
             _comboService = comboService;
+            _voucherService = voucherService;
         }
 
         public async Task<IActionResult> Index()
@@ -61,8 +63,25 @@ namespace LaPizzaria.Controllers
             var combos = await _db.Combos.Include(c => c.Items).ToListAsync();
             var suggestion = _comboService.SuggestBestCombos(details, combos);
             var discount = suggestion.DiscountTotal;
-            var total = Math.Max(0, subtotal - discount);
-            return Ok(new { subtotal, discount, total, combos = suggestion.AppliedCombos });
+            // Apply voucher discounts (up to 2)
+            var vouchers = new List<Voucher>();
+            if (req.VoucherIds != null)
+            {
+                foreach (var vid in req.VoucherIds.Take(2))
+                {
+                    var v = await _voucherService.GetByIdAsync(vid);
+                    if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow)) vouchers.Add(v);
+                }
+            }
+            decimal voucherDiscount = 0m;
+            foreach (var v in vouchers)
+            {
+                voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+            }
+
+            var total = Math.Max(0, subtotal - discount - voucherDiscount);
+            var vInfo = vouchers.Select(v => new { id = v.Id, code = v.Code, name = v.Name, percent = v.DiscountPercent });
+            return Ok(new { subtotal, discount, voucherDiscount, total, combos = suggestion.AppliedCombos, vouchers = vInfo });
         }
 
         [HttpGet]
@@ -124,6 +143,21 @@ namespace LaPizzaria.Controllers
             }).ToList();
 
             var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>());
+            // Attach up to 2 vouchers if provided and valid
+            if (req.VoucherIds != null && req.VoucherIds.Count > 0)
+            {
+                var ids = req.VoucherIds.Take(2).ToList();
+                foreach (var vid in ids)
+                {
+                    var v = await _voucherService.GetByIdAsync(vid);
+                    if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                    {
+                        _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
+                        v.UsedCount += 1;
+                    }
+                }
+                await _db.SaveChangesAsync();
+            }
             return Ok(order.Id);
         }
 
@@ -191,6 +225,19 @@ namespace LaPizzaria.Controllers
                 if (t != null) tableIds.Add(t.Id);
             }
             var order = await _orderService.CreateOrderAsync(null, details, tableIds);
+            if (req.VoucherIds != null && req.VoucherIds.Count > 0)
+            {
+                foreach (var vid in req.VoucherIds.Take(2))
+                {
+                    var v = await _voucherService.GetByIdAsync(vid);
+                    if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                    {
+                        _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
+                        v.UsedCount += 1;
+                    }
+                }
+                await _db.SaveChangesAsync();
+            }
             return Ok(new { orderId = order.Id });
         }
     }
@@ -200,6 +247,7 @@ namespace LaPizzaria.Controllers
         public string? UserId { get; set; }
         public List<ItemDto> Items { get; set; } = new();
         public List<int>? TableIds { get; set; }
+        public List<int> VoucherIds { get; set; } = new();
     }
 
     public class ItemDto
@@ -207,6 +255,19 @@ namespace LaPizzaria.Controllers
         public int ProductId { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
+    }
+
+    public class QrOrderRequest
+    {
+        public string? TableCode { get; set; }
+        public List<QrOrderItem>? Items { get; set; }
+        public List<int>? VoucherIds { get; set; }
+    }
+
+    public class QrOrderItem
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
     }
 }
 

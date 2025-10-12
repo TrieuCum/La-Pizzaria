@@ -109,7 +109,10 @@ namespace LaPizzaria.Services
 
         public async Task<decimal> CalculateTotalAsync(int orderId)
         {
-            var order = await _db.Orders.Include(o => o.OrderDetails).FirstAsync(o => o.Id == orderId);
+            var order = await _db.Orders
+                .Include(o => o.OrderDetails)
+                .Include(o => o.OrderVouchers).ThenInclude(ov => ov.Voucher)
+                .FirstAsync(o => o.Id == orderId);
             // Apply dynamic pricing before calculating subtotals
             var productIds = order.OrderDetails.Select(x => x.ProductId).Distinct().ToList();
             var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
@@ -129,7 +132,23 @@ namespace LaPizzaria.Services
             var discount = suggestion.DiscountTotal;
             if (discount < 0) discount = 0; // guard non-negative
 
-            var total = subtotal - discount;
+            // voucher discounts (up to 2 vouchers already attached to order)
+            decimal voucherDiscount = 0m;
+            var now = System.DateTime.UtcNow;
+            if (order.OrderVouchers != null)
+            {
+                foreach (var ov in order.OrderVouchers.Take(2))
+                {
+                    var v = ov.Voucher;
+                    if (v == null) continue;
+                    if (v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now) && (v.MaxUses == 0 || v.UsedCount <= v.MaxUses))
+                    {
+                        voucherDiscount += System.Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+                    }
+                }
+            }
+
+            var total = subtotal - discount - voucherDiscount;
             if (total < 0) total = 0;
             return total;
         }
