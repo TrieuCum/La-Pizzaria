@@ -1,0 +1,42 @@
+@model LaPizzaria.Models.Voucher
+
+<div class="container mt-4">
+	<h2>@(Model.Id == 0 ? "Thêm voucher" : "Sửa voucher")</h2>
+	<form method="post" class="card p-3 mt-3">
+		<input type="hidden" asp-for="Id" />
+		<div class="row g-3">
+			<div class="col-md-3">
+				<label class="form-label">Mã</label>
+				<input class="form-control" asp-for="Code" required />
+			</div>
+			<div class="col-md-5">
+				<label class="form-label">Tên</label>
+				<input class="form-control" asp-for="Name" />
+			</div>
+			<div class="col-md-2">
+				<label class="form-label">% giảm</label>
+				<input class="form-control" type="text" inputmode="numeric" pattern="[0-9]*" asp-for="DiscountPercent" />
+			</div>
+			<div class="col-md-2">
+				<label class="form-label">Số lượt tối đa</label>
+				<input class="form-control" type="text" inputmode="numeric" pattern="[0-9]*" asp-for="MaxUses" />
+			</div>
+			<div class="col-md-4">
+				<label class="form-label">Hết hạn (UTC)</label>
+				<input class="form-control" type="datetime-local" asp-for="ExpiresAtUtc" />
+			</div>
+			<div class="col-md-2 d-flex align-items-center">
+				<div class="form-check mt-4">
+					<input class="form-check-input" asp-for="IsActive" />
+					<label class="form-check-label">Active</label>
+				</div>
+			</div>
+		</div>
+		<div class="mt-3 d-flex gap-2">
+			<button class="btn btn-primary" type="submit">Lưu</button>
+			<a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+		</div>
+	</form>
+</div>
+
+

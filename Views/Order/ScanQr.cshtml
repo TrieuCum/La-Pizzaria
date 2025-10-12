@@ -35,11 +35,20 @@
             <ul id="cart" class="list-group mt-2"></ul>
         </div>
     </div>
-    <div class="mt-3 d-flex gap-2">
-        <button id="btnSend" class="btn btn-brand-primary">Gửi đơn</button>
-        <button id="btnPreview" class="btn btn-outline-secondary" type="button">Xem tạm tính</button>
+    <div class="row g-3 mt-3">
+        <div class="col-md-6">
+            <label class="form-label">Chọn tối đa 2 voucher</label>
+            <div id="voucherList" class="border rounded p-2" style="max-height:220px; overflow:auto;"></div>
+            <small class="text-muted">Hiển thị thời gian còn lại và số lượt đã dùng.</small>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex gap-2 mt-md-4">
+                <button id="btnSend" class="btn btn-brand-primary">Gửi đơn</button>
+                <button id="btnPreview" class="btn btn-outline-secondary" type="button">Xem tạm tính</button>
+            </div>
+            <div class="mt-3" id="result"></div>
+        </div>
     </div>
-    <div class="mt-3" id="result"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -52,9 +61,10 @@ function getQueryParam(name){
 document.getElementById('btnSend').addEventListener('click', async () => {
     const tableCode = document.getElementById('tableCode').value;
     let items = window.__cart || [];
+    const voucherIds = getSelectedVoucherIds();
     const res = await fetch('/Order/FromQr', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableCode, items })
+        body: JSON.stringify({ tableCode, items, voucherIds })
     });
     const data = await res.json();
     document.getElementById('result').innerText = 'Đã tạo đơn #' + (data.orderId ?? '');
@@ -63,13 +73,15 @@ document.getElementById('btnSend').addEventListener('click', async () => {
 document.getElementById('btnPreview').addEventListener('click', async () => {
     const tableCode = document.getElementById('tableCode').value;
     let items = window.__cart || [];
+    const voucherIds = getSelectedVoucherIds();
     const res = await fetch('/Order/Preview', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableCode, items })
+        body: JSON.stringify({ tableCode, items, voucherIds })
     });
     const data = await res.json();
     const combos = (data.combos || []).map(c => `${c.comboName}: -${(c.discountAmount||0).toLocaleString()}`).join('\n');
-    document.getElementById('result').innerText = `Tạm tính: ${data.subtotal.toLocaleString()}\nGiảm giá: ${data.discount.toLocaleString()}\nTổng: ${data.total.toLocaleString()}\n${combos}`;
+    const vline = `Voucher: -${(data.voucherDiscount||0).toLocaleString()}`;
+    document.getElementById('result').innerText = `Tạm tính: ${data.subtotal.toLocaleString()}\nGiảm combo: ${data.discount.toLocaleString()}\n${vline}\nTổng: ${data.total.toLocaleString()}\n${combos}`;
 });
 
 async function loadProducts() {
@@ -118,6 +130,45 @@ document.getElementById('tableCode').addEventListener('input', renderShareQr);
 
 loadProducts();
 renderShareQr();
+
+async function loadVouchers(){
+    const res = await fetch('/api/vouchers');
+    const list = await res.json();
+    const box = document.getElementById('voucherList');
+    box.innerHTML = '';
+    list.forEach(v => {
+        const id = `v-${v.id}`;
+        const cb = document.createElement('input'); cb.type='checkbox'; cb.id=id; cb.value=v.id; cb.className='form-check-input me-2';
+        cb.addEventListener('change', enforceMaxTwo);
+        const label = document.createElement('label'); label.className='form-check-label'; label.setAttribute('for', id);
+        const left = v.maxUses === 0 ? '∞' : `${v.maxUses - v.used}`;
+        const remain = v.remainingSeconds != null ? formatRemain(v.remainingSeconds) : '';
+        label.innerText = `${v.code} (${v.percent}%)- còn: ${left}, ${remain}`;
+        const row = document.createElement('div'); row.className='form-check';
+        row.appendChild(cb); row.appendChild(label);
+        box.appendChild(row);
+    });
+}
+
+function enforceMaxTwo(){
+    const cbs = Array.from(document.querySelectorAll('#voucherList input[type=checkbox]'));
+    const checked = cbs.filter(x=>x.checked);
+    if (checked.length > 2){
+        checked[2].checked = false;
+    }
+}
+
+function getSelectedVoucherIds(){
+    return Array.from(document.querySelectorAll('#voucherList input[type=checkbox]:checked')).map(x=>parseInt(x.value,10));
+}
+
+function formatRemain(seconds){
+    const s = Math.max(0, Math.floor(seconds));
+    const d = Math.floor(s / 86400), h = Math.floor((s%86400)/3600), m = Math.floor((s%3600)/60);
+    if (d>0) return `${d}d ${h}h`; if (h>0) return `${h}h ${m}m`; return `${m}m`;
+}
+
+loadVouchers();
 </script>
 
 
