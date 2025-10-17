@@ -55,14 +55,18 @@ namespace LaPizzaria.Controllers
             var details = new List<OrderDetail>();
             foreach (var it in items)
             {
-                if (!products.TryGetValue(it.ProductId, out var p)) continue;
-                details.Add(new OrderDetail { ProductId = p.Id, Quantity = it.Quantity, UnitPrice = p.Price, Subtotal = p.Price * it.Quantity });
+                if (!products.TryGetValue(it.ProductId, out var p) && it.UnitPrice == null)
+                {
+                    // Unknown product and no explicit price; skip
+                    continue;
+                }
+                var price = it.UnitPrice ?? (products.TryGetValue(it.ProductId, out var prod) ? prod.Price : 0m);
+                details.Add(new OrderDetail { ProductId = it.ProductId, Quantity = it.Quantity, UnitPrice = price, Subtotal = price * it.Quantity });
             }
 
             var subtotal = details.Sum(d => d.Subtotal);
-            var combos = await _db.Combos.Include(c => c.Items).ToListAsync();
-            var suggestion = _comboService.SuggestBestCombos(details, combos);
-            var discount = suggestion.DiscountTotal;
+            // Combo is now selected like normal products in QR; no automatic combo discount
+            var discount = 0m;
             // Apply voucher discounts (up to 2)
             var vouchers = new List<Voucher>();
             if (req.VoucherIds != null)
@@ -79,9 +83,9 @@ namespace LaPizzaria.Controllers
                 voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
             }
 
-            var total = Math.Max(0, subtotal - discount - voucherDiscount);
+            var total = Math.Max(0, subtotal - voucherDiscount);
             var vInfo = vouchers.Select(v => new { id = v.Id, code = v.Code, name = v.Name, percent = v.DiscountPercent });
-            return Ok(new { subtotal, discount, voucherDiscount, total, combos = suggestion.AppliedCombos, vouchers = vInfo });
+            return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = vInfo });
         }
 
         [HttpGet]
@@ -208,7 +212,7 @@ namespace LaPizzaria.Controllers
                     .ToDictionaryAsync(p => p.Id, p => p.Price);
                 foreach (var it in req.Items)
                 {
-                    priceMap.TryGetValue(it.ProductId, out var price);
+                    decimal price = it.UnitPrice ?? (priceMap.TryGetValue(it.ProductId, out var p) ? p : 0m);
                     details.Add(new OrderDetail
                     {
                         ProductId = it.ProductId,
@@ -268,6 +272,7 @@ namespace LaPizzaria.Controllers
     {
         public int ProductId { get; set; }
         public int Quantity { get; set; }
+        public decimal? UnitPrice { get; set; }
     }
 }
 

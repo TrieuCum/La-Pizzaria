@@ -4,6 +4,9 @@ using LaPizzaria.Models;
 using LaPizzaria.Hubs;
 using LaPizzaria.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +24,10 @@ builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddHostedService<VoucherCleanupService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options
+        .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
+);
 
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
@@ -40,6 +46,17 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// Map local banner images folder to /banners for serving hero images
+var bannerPath = @"C:\\Users\\ooish\\Pictures\\LaPizzaria";
+if (Directory.Exists(bannerPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(bannerPath),
+        RequestPath = "/banners"
+    });
+}
+
 app.UseRouting();
 
 app.UseAuthentication();
@@ -51,9 +68,12 @@ app.MapControllerRoute(
 app.MapRazorPages();
 app.MapHub<OrderingHub>("/hub/ordering");
 
-// Seed default admin user and role
+// Apply pending EF Core migrations and seed default admin user and role
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     const string adminRole = "Admin";

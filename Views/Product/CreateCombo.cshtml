@@ -14,6 +14,16 @@
             <label class="form-label">Giảm giá (VNĐ)</label>
             <input name="discountAmount" class="form-control" value="0" />
         </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Giảm %</label>
+                <input name="discountPercent" class="form-control" value="0" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Hình ảnh (URL)</label>
+                <input name="imageUrl" class="form-control" placeholder="https://..." />
+            </div>
+        </div>
         <div class="card p-3">
             <h6>Chọn các món trong combo</h6>
             @foreach (var p in products)
