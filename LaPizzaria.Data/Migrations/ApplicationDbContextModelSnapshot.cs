@@ -116,10 +116,15 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal?>("DiscountPercent")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -145,9 +150,11 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal?>("ItemDiscountAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal?>("ItemDiscountPercent")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("MinQuantity")
@@ -181,9 +188,11 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("ReorderLevel")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("StockQuantity")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Unit")
@@ -204,9 +213,11 @@ namespace LaPizzaria.Data.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("DiscountTotal")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("GrandTotal")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("IssuedAt")
@@ -216,9 +227,11 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TaxTotal")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -237,6 +250,7 @@ namespace LaPizzaria.Data.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Discount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("InvoiceId")
@@ -249,9 +263,11 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -291,20 +307,18 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("TotalPrice")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
+                    b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId1");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Orders");
                 });
@@ -327,9 +341,11 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -421,6 +437,7 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -515,6 +532,7 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -750,7 +768,7 @@ namespace LaPizzaria.Data.Migrations
                 {
                     b.HasOne("LaPizzaria.Models.ApplicationUser", "User")
                         .WithMany("Orders")
-                        .HasForeignKey("UserId1");
+                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });

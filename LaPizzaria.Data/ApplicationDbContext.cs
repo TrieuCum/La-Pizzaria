@@ -30,6 +30,31 @@ namespace LaPizzaria.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            // Decimal precisions
+            modelBuilder.Entity<Product>().Property(p => p.Price).HasPrecision(18, 2);
+            modelBuilder.Entity<Topping>().Property(t => t.Price).HasPrecision(18, 2);
+            modelBuilder.Entity<Order>().Property(o => o.TotalPrice).HasPrecision(18, 2);
+            modelBuilder.Entity<OrderDetail>().Property(od => od.UnitPrice).HasPrecision(18, 2);
+            modelBuilder.Entity<OrderDetail>().Property(od => od.Subtotal).HasPrecision(18, 2);
+            modelBuilder.Entity<Invoice>().Property(i => i.Subtotal).HasPrecision(18, 2);
+            modelBuilder.Entity<Invoice>().Property(i => i.DiscountTotal).HasPrecision(18, 2);
+            modelBuilder.Entity<Invoice>().Property(i => i.TaxTotal).HasPrecision(18, 2);
+            modelBuilder.Entity<Invoice>().Property(i => i.GrandTotal).HasPrecision(18, 2);
+            modelBuilder.Entity<InvoiceItem>().Property(ii => ii.UnitPrice).HasPrecision(18, 2);
+            modelBuilder.Entity<InvoiceItem>().Property(ii => ii.Discount).HasPrecision(18, 2);
+            modelBuilder.Entity<InvoiceItem>().Property(ii => ii.Total).HasPrecision(18, 2);
+            modelBuilder.Entity<Ingredient>().Property(i => i.StockQuantity).HasPrecision(18, 2);
+            modelBuilder.Entity<Ingredient>().Property(i => i.ReorderLevel).HasPrecision(18, 2);
+            modelBuilder.Entity<Combo>().Property(c => c.DiscountAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<Combo>().Property(c => c.DiscountPercent).HasPrecision(18, 2);
+            modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountPercent).HasPrecision(18, 2);
+
+            // Order-User relationship
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.User)
+                .WithMany(u => u.Orders)
+                .HasForeignKey(o => o.UserId);
 
             // Configure many-to-many for ProductTopping
             modelBuilder.Entity<ProductTopping>()

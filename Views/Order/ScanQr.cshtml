@@ -19,17 +19,26 @@
                 <div id="qrShare" class="border bg-white rounded p-2 d-inline-block"></div>
             </div>
         </div>
-        <div class="col-md-8">
-            <label class="form-label">Chọn món</label>
-            <div class="row g-2 align-items-center">
-                <div class="col-md-7">
-                    <select id="productSelect" class="form-select"></select>
-                </div>
-                <div class="col-md-3">
-                    <input id="qtyInput" type="number" class="form-control" min="1" value="1" />
-                </div>
-                <div class="col-md-2 d-grid">
-                    <button id="addItem" class="btn btn-outline-primary" type="button">Thêm</button>
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 border-end">
+                            <div class="list-group" id="catList">
+                                <a href="#" class="list-group-item list-group-item-action active" data-cat="All">All</a>
+                                <a href="#" class="list-group-item list-group-item-action" data-cat="Pizza">Pizza</a>
+                                <a href="#" class="list-group-item list-group-item-action" data-cat="Đồ uống">Drinks</a>
+                                <a href="#" class="list-group-item list-group-item-action" data-cat="Món phụ">Side Dish</a>
+                                <a href="#" class="list-group-item list-group-item-action" data-cat="Combo">Combo</a>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="d-flex justify-content-end mb-2">
+                                <input id="qtyInput" type="number" class="form-control" min="1" value="1" style="width:120px" />
+                            </div>
+                            <div id="menuGrid" class="row row-cols-2 row-cols-lg-3 g-3"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <ul id="cart" class="list-group mt-2"></ul>
@@ -53,6 +62,14 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
+// Styling helpers for menu card
+const style = document.createElement('style');
+style.innerHTML = `
+#catList .list-group-item{border:none;border-radius:8px;margin-bottom:6px;transition:background-color .2s ease}
+#catList .list-group-item.active,#catList .list-group-item:hover{background-color:#ffe5e0;color:#b71c1c;font-weight:600}
+.card .price{color:#da291c;font-weight:700}
+`;
+document.head.appendChild(style);
 function getQueryParam(name){
     const params = new URLSearchParams(window.location.search);
     return params.get(name) || '';
@@ -60,7 +77,7 @@ function getQueryParam(name){
 
 document.getElementById('btnSend').addEventListener('click', async () => {
     const tableCode = document.getElementById('tableCode').value;
-    let items = window.__cart || [];
+    let items = (window.__cart || []).map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice }));
     const voucherIds = getSelectedVoucherIds();
     const res = await fetch('/Order/FromQr', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -72,45 +89,116 @@ document.getElementById('btnSend').addEventListener('click', async () => {
 
 document.getElementById('btnPreview').addEventListener('click', async () => {
     const tableCode = document.getElementById('tableCode').value;
-    let items = window.__cart || [];
+    let items = (window.__cart || []).map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice }));
     const voucherIds = getSelectedVoucherIds();
     const res = await fetch('/Order/Preview', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableCode, items, voucherIds })
     });
     const data = await res.json();
-    const combos = (data.combos || []).map(c => `${c.comboName}: -${(c.discountAmount||0).toLocaleString()}`).join('\n');
     const vline = `Voucher: -${(data.voucherDiscount||0).toLocaleString()}`;
-    document.getElementById('result').innerText = `Tạm tính: ${data.subtotal.toLocaleString()}\nGiảm combo: ${data.discount.toLocaleString()}\n${vline}\nTổng: ${data.total.toLocaleString()}\n${combos}`;
+    document.getElementById('result').innerText = `Tạm tính: ${data.subtotal.toLocaleString()}\n${vline}\nTổng: ${data.total.toLocaleString()}`;
 });
 
 async function loadProducts() {
-    const res = await fetch('/api/products');
-    const data = await res.json();
-    const sel = document.getElementById('productSelect');
-    sel.innerHTML = '';
-    window.__productMap = {};
-    data.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.id; opt.innerHTML = `${p.name} — <span style='color:#da291c'>${p.price.toLocaleString()}đ</span>`;
-        sel.appendChild(opt);
-        window.__productMap[p.id] = p;
-    });
+    try {
+        const res = await fetch('/api/menu');
+        const groups = await res.json();
+        window.__menuGroups = groups;
+        window.__productMap = {};
+        window.__comboMap = {};
+        groups.forEach(g => {
+            g.items.forEach(it => {
+                if (g.type === 'combo') window.__comboMap[it.id] = it; else window.__productMap[it.id] = it;
+            });
+        });
+        renderMenu('All');
+    } catch (e) {
+        console.error('Failed to load menu, falling back to products', e);
+        const res = await fetch('/api/products');
+        const data = await res.json();
+        window.__menuGroups = [{ key:'All', type:'product', items:data }];
+        window.__productMap = {};
+        data.forEach(p => { window.__productMap[p.id] = p; });
+        renderMenu('All');
+    }
 }
 
 window.__cart = [];
-document.getElementById('addItem').addEventListener('click', () => {
-    const pid = parseInt(document.getElementById('productSelect').value, 10) || 0;
+function canonicalCategory(raw){
+    const s = (raw||'').toLowerCase();
+    if (s.includes('pizza')) return 'Pizza';
+    if (s.includes('uống') || s.includes('drink') || s.includes('beverage')) return 'Đồ uống';
+    if (s.includes('phụ') || s.includes('side')) return 'Món phụ';
+    if (s.includes('combo')) return 'Combo';
+    if (s === 'all') return 'All';
+    return raw || '';
+}
+
+function renderMenu(cat){
+    const grid = document.getElementById('menuGrid');
+    grid.innerHTML = '';
+    const groups = window.__menuGroups || [];
+    const target = canonicalCategory(cat);
+    const pick = [];
+    groups.forEach(g=>{
+        const keyRaw = (g.key || '').toString();
+        const gcat = g.type==='combo' ? 'Combo' : canonicalCategory(keyRaw);
+        // accept direct match, canonical match, or substring match for robustness
+        const isMatch = target==='All' || gcat===target || keyRaw.toLowerCase().includes(target.toLowerCase());
+        if (isMatch){
+            g.items.forEach(it=> pick.push({ ...it, type:g.type }));
+        }
+    });
+    pick.forEach(it => {
+        const col = document.createElement('div'); col.className='col';
+        const card = document.createElement('div'); card.className='card h-100 shadow-sm'; card.style.cursor='pointer';
+        if (it.imageUrl){ const img=document.createElement('img'); img.className='card-img-top'; img.src=it.imageUrl; card.appendChild(img); }
+        const body=document.createElement('div'); body.className='card-body';
+        const title=document.createElement('h6'); title.className='card-title'; title.textContent=it.name; body.appendChild(title);
+        const price=document.createElement('div'); price.className='price'; price.textContent=(it.price||0).toLocaleString()+"đ"; body.appendChild(price);
+        card.appendChild(body); col.appendChild(card); grid.appendChild(col);
+        card.addEventListener('click', ()=> addToCart(it));
+    });
+}
+
+function addToCart(it){
     const qty = parseInt(document.getElementById('qtyInput').value, 10) || 1;
-    if (!pid || qty <= 0) return;
-    const p = window.__productMap[pid] || { name: `Product ${pid}`, price: 0 };
-    window.__cart.push({ productId: pid, quantity: qty, name: p.name, price: p.price });
-    const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-    const total = (p.price * qty) || 0;
-    li.innerHTML = `<span>${p.name} x <strong>${qty}</strong></span><span class='fw-bold' style='color:#da291c'>${total.toLocaleString()}đ</span>`;
-    document.getElementById('cart').appendChild(li);
-});
+    if (qty <= 0) return;
+    if (it.type==='combo'){
+        const price = Math.max(0, it.price || 0);
+        const key = it.name + ' (Combo)';
+        const existing = window.__cart.find(x => x.name === key && (x.unitPrice ?? x.price) === price);
+        if (existing){
+            existing.quantity += qty;
+        } else {
+            window.__cart.push({ productId: 0, quantity: qty, name: key, price: price, unitPrice: price });
+        }
+    } else {
+        const existing = window.__cart.find(x => x.productId === it.id && (x.unitPrice ?? x.price) === it.price);
+        if (existing){
+            existing.quantity += qty;
+        } else {
+            window.__cart.push({ productId: it.id, quantity: qty, name: it.name, price: it.price, unitPrice: it.price });
+        }
+    }
+    renderCart();
+}
+
+function renderCart(){
+    const ul = document.getElementById('cart');
+    ul.innerHTML = '';
+    window.__cart.forEach((it, idx) => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const left = document.createElement('span'); left.innerHTML = `${it.name} x <strong>${it.quantity}</strong>`;
+        const right = document.createElement('span'); right.innerHTML = `${(it.price*it.quantity).toLocaleString()}đ`;
+        const btn = document.createElement('button'); btn.className='btn btn-sm btn-outline-danger ms-2'; btn.textContent='Bỏ';
+        btn.addEventListener('click', ()=>{ window.__cart.splice(idx,1); renderCart(); });
+        const wrap = document.createElement('span'); wrap.className='d-flex align-items-center gap-2'; wrap.appendChild(right); wrap.appendChild(btn);
+        li.appendChild(left); li.appendChild(wrap); ul.appendChild(li);
+    });
+}
 
 // Prefill table code from URL and render a small QR to share the link
 const host = window.location.origin;
@@ -127,6 +215,16 @@ function renderShareQr(){
     shareQrInstance = new QRCode(el, { text: url, width: 120, height: 120 });
 }
 document.getElementById('tableCode').addEventListener('input', renderShareQr);
+
+// handle category click
+document.addEventListener('click', (e)=>{
+    const a = e.target.closest('#catList a');
+    if (!a) return;
+    e.preventDefault();
+    document.querySelectorAll('#catList a').forEach(x=>x.classList.remove('active'));
+    a.classList.add('active');
+    renderMenu(a.getAttribute('data-cat'));
+});
 
 loadProducts();
 renderShareQr();
