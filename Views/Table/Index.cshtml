@@ -15,7 +15,8 @@
             </select>
         </div>
         <div class="col-md-8 d-flex gap-2">
-            <button type="submit" class="btn btn-success">Gộp bàn đã chọn</button>
+            <button type="submit" class="btn btn-success" id="btnMerge">Gộp 2 bàn</button>
+            <button type="button" class="btn btn-outline-primary" id="btnAssign">Gắn bàn vào Order</button>
             <a asp-action="Upsert" class="btn btn-primary">Thêm bàn</a>
             <a asp-controller="Order" asp-action="Qr" class="btn btn-outline-secondary">Tạo QR</a>
         </div>
@@ -55,5 +56,29 @@
         </div>
     }
 </div>
+
+<script>
+document.getElementById('btnMerge')?.addEventListener('click', function(e){
+    const checked = Array.from(document.querySelectorAll('input[name="tableIds"]:checked')).map(cb => cb.value);
+    if (checked.length !== 2) {
+        e.preventDefault();
+        alert('Vui lòng chọn đúng 2 bàn để gộp.');
+    }
+});
+
+document.getElementById('btnAssign')?.addEventListener('click', async function(){
+    const orderSelect = document.querySelector('select[name="orderId"]');
+    const orderId = parseInt(orderSelect?.value || '0');
+    const checked = Array.from(document.querySelectorAll('input[name="tableIds"]:checked')).map(cb => parseInt(cb.value));
+    if (!orderId) { alert('Vui lòng chọn Order.'); return; }
+    if (checked.length !== 1) { alert('Chọn đúng 1 bàn để gắn vào order.'); return; }
+    const formData = new FormData();
+    formData.append('orderId', String(orderId));
+    formData.append('tableId', String(checked[0]));
+    const res = await fetch('/Order/Assign', { method: 'POST', body: formData });
+    if (res.redirected) { window.location.href = res.url; return; }
+    window.location.reload();
+});
+</script>
 
 

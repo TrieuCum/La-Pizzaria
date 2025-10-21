@@ -90,7 +90,16 @@ namespace LaPizzaria.Controllers
                 .Any(ot => ot.TableId == id && ot.Order != null && ot.Order.OrderStatus != "Completed");
             if (hasOpenOrder)
             {
-                TempData["error"] = "Bàn vẫn đang có order chưa thanh toán.";
+                var openOrderId = _db.OrderTables
+                    .Include(ot => ot.Order)
+                    .Where(ot => ot.TableId == id && ot.Order != null && ot.Order.OrderStatus != "Completed")
+                    .Select(ot => ot.OrderId)
+                    .FirstOrDefault();
+                TempData["error"] = "Bàn chưa thanh toán. Vui lòng thanh toán trước khi dọn bàn.";
+                if (openOrderId > 0)
+                {
+                    return RedirectToAction("Index", "Order", new { id = openOrderId });
+                }
                 return RedirectToAction(nameof(Index));
             }
 

@@ -1,0 +1,94 @@
+@{
+    ViewData["Title"] = "Thống kê theo ngày";
+    var day = (DateTime)ViewBag.Day;
+}
+
+<h3>@ViewData["Title"]</h3>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <a class="btn btn-sm btn-dark" asp-action="Daily">Thống kê theo ngày</a>
+    <a class="btn btn-sm btn-outline-dark" asp-action="Weekly">Thống kê theo tuần</a>
+    <div class="ms-auto small text-muted">Dọc: bảng chi tiết | Ngang: biểu đồ</div>
+</div>
+
+<div class="row g-3 align-items-end mb-3">
+    <div class="col-auto">
+        <label class="form-label">Ngày</label>
+        <input id="dayInput" type="date" class="form-control" value="@day.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-auto">
+        <button id="btnLoad" class="btn btn-primary">Tải</button>
+    </div>
+    <div class="col-auto">
+        <a class="btn btn-outline-secondary" asp-action="Weekly">Xem theo tuần</a>
+    </div>
+    <div class="col-12">
+        <div class="d-flex flex-wrap gap-2 mb-2">
+            <span class="badge bg-primary" id="badgeDate">-</span>
+            <span class="badge bg-success" id="badgeRevenue">0đ</span>
+        </div>
+        <div id="result" class="alert alert-light border"></div>
+    </div>
+    <div class="col-12">
+        <canvas id="dayChart" height="120"></canvas>
+    </div>
+    <div class="col-12">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle" id="detailTable">
+                <thead>
+                    <tr>
+                        <th>Chỉ số</th>
+                        <th>Giá trị</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+async function loadDay() {
+    const day = document.getElementById('dayInput').value;
+    const url = `/Statistics/DailyData?day=${encodeURIComponent(day)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const d = new Date(data.date);
+    const text = `Doanh thu ngày ${d.toLocaleDateString()}: ${Number(data.revenue).toLocaleString()}đ`;
+    document.getElementById('result').innerText = text;
+    document.getElementById('badgeDate').innerText = d.toLocaleDateString();
+    document.getElementById('badgeRevenue').innerText = Number(data.revenue).toLocaleString() + 'đ';
+
+    // vertical details table
+    const tbody = document.querySelector('#detailTable tbody');
+    tbody.innerHTML = '';
+    const rows = [
+        { k: 'Ngày', v: d.toLocaleDateString() },
+        { k: 'Tổng doanh thu', v: Number(data.revenue).toLocaleString() + 'đ' }
+    ];
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = r.k;
+        const td2 = document.createElement('td'); td2.textContent = r.v;
+        tr.appendChild(td1); tr.appendChild(td2);
+        tbody.appendChild(tr);
+    });
+
+    // Simple single-bar chart
+    const ctx = document.getElementById('dayChart');
+    if (window.__dayChart) { window.__dayChart.destroy(); }
+    window.__dayChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [d.toLocaleDateString()],
+            datasets: [{ label: 'Revenue', data: [data.revenue], backgroundColor: '#4caf50' }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+}
+document.getElementById('btnLoad').addEventListener('click', loadDay);
+loadDay();
+</script>
+
+

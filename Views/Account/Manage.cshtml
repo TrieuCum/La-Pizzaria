@@ -1,0 +1,76 @@
+@model LaPizzaria.ViewModels.ManageAccountViewModel
+
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+}
+
+<h3>@ViewData["Title"]</h3>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <img id="avatarPreview" src="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "/images/default-avatar.png" : Model.AvatarUrl)" alt="avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover" />
+                <div class="mt-2 text-muted">Ảnh đại diện</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <form asp-action="Manage" method="post">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="UserName" class="form-label"></label>
+                            <input asp-for="UserName" class="form-control" />
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tên hiển thị</label>
+                            <div class="input-group">
+                                <input asp-for="FirstName" class="form-control" placeholder="Họ" />
+                                <input asp-for="LastName" class="form-control" placeholder="Tên" />
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="AvatarUrl" class="form-label"></label>
+                            <input asp-for="AvatarUrl" class="form-control" />
+                            <small class="text-muted">Dán URL ảnh (PNG/JPG). Ảnh sẽ hiển thị ở góc phải trên.</small>
+                        </div>
+                        <hr />
+                        <div class="col-md-6">
+                            <label asp-for="CurrentPassword" class="form-label"></label>
+                            <input asp-for="CurrentPassword" class="form-control" />
+                        </div>
+                        <div class="col-md-6"></div>
+                        <div class="col-md-6">
+                            <label asp-for="NewPassword" class="form-label"></label>
+                            <input asp-for="NewPassword" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ConfirmNewPassword" class="form-label"></label>
+                            <input asp-for="ConfirmNewPassword" class="form-control" />
+                        </div>
+                        <div class="col-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<partial name="_ValidationScriptsPartial" />
+
+<script>
+const urlInput = document.getElementById('AvatarUrl');
+const preview = document.getElementById('avatarPreview');
+urlInput?.addEventListener('input', () => {
+    const v = urlInput.value?.trim();
+    preview.src = v || '/images/default-avatar.png';
+});
+</script>
+
+

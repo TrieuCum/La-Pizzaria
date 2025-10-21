@@ -80,5 +80,63 @@ namespace LaPizzaria.Controllers
             }
             return View(model);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Manage()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login");
+            var vm = new ManageAccountViewModel
+            {
+                UserName = user.UserName ?? string.Empty,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                AvatarUrl = user.AvatarUrl ?? string.Empty
+            };
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Manage(ManageAccountViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login");
+
+            // Update profile fields
+            user.FirstName = model.FirstName ?? string.Empty;
+            user.LastName = model.LastName ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(model.UserName) && model.UserName != user.UserName)
+            {
+                var setName = await _userManager.SetUserNameAsync(user, model.UserName);
+                if (!setName.Succeeded)
+                {
+                    foreach (var e in setName.Errors) ModelState.AddModelError(string.Empty, e.Description);
+                    return View(model);
+                }
+            }
+            user.AvatarUrl = string.IsNullOrWhiteSpace(model.AvatarUrl) ? null : model.AvatarUrl;
+            var update = await _userManager.UpdateAsync(user);
+            if (!update.Succeeded)
+            {
+                foreach (var e in update.Errors) ModelState.AddModelError(string.Empty, e.Description);
+                return View(model);
+            }
+
+            // Change password if provided
+            if (!string.IsNullOrWhiteSpace(model.CurrentPassword) && !string.IsNullOrWhiteSpace(model.NewPassword))
+            {
+                var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+                if (!result.Succeeded)
+                {
+                    foreach (var e in result.Errors) ModelState.AddModelError(string.Empty, e.Description);
+                    return View(model);
+                }
+            }
+
+            TempData["success"] = "Cập nhật tài khoản thành công.";
+            return RedirectToAction(nameof(Manage));
+        }
     }
 }
