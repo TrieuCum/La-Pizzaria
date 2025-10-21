@@ -16,6 +16,14 @@ namespace LaPizzaria.Controllers
         [HttpGet]
         public IActionResult Daily(DateTime? day)
         {
+            ViewBag.Day = (day ?? DateTime.UtcNow).Date;
+            return View();
+        }
+
+        [HttpGet]
+        [Route("Statistics/DailyData")]
+        public IActionResult DailyData(DateTime? day)
+        {
             var date = (day ?? DateTime.UtcNow).Date;
             var revenue = _db.Orders
                 .Where(o => o.OrderDate.Date == date)
@@ -24,10 +32,24 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpGet]
-        public IActionResult Weekly(DateTime? from)
+        public IActionResult Weekly(DateTime? from, DateTime? to)
         {
-            var start = (from ?? DateTime.UtcNow).Date.AddDays(-6);
-            var end = start.AddDays(6);
+            var end = (to ?? DateTime.UtcNow).Date;
+            var start = (from ?? end.AddDays(-6)).Date;
+            if (start > end) { var tmp = start; start = end; end = tmp; }
+            ViewBag.From = start;
+            ViewBag.To = end;
+            return View();
+        }
+
+        [HttpGet]
+        [Route("Statistics/WeeklyData")]
+        public IActionResult WeeklyData(DateTime? from, DateTime? to)
+        {
+            var end = (to ?? DateTime.UtcNow).Date;
+            var start = (from ?? end.AddDays(-6)).Date;
+            if (start > end) { var tmp = start; start = end; end = tmp; }
+
             var daily = _db.Orders
                 .Where(o => o.OrderDate.Date >= start && o.OrderDate.Date <= end)
                 .AsEnumerable()
@@ -35,7 +57,8 @@ namespace LaPizzaria.Controllers
                 .Select(g => new { date = g.Key, revenue = g.Sum(x => x.TotalPrice) })
                 .OrderBy(x => x.date)
                 .ToList();
-            return Ok(daily);
+            var total = daily.Sum(x => x.revenue);
+            return Ok(new { from = start, to = end, total, daily });
         }
     }
 }

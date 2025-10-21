@@ -174,7 +174,15 @@ namespace LaPizzaria.Controllers
                 return RedirectToAction("Index", "Table");
             }
 
-            var ok = await _orderService.MergeTablesAsync(orderId, tableIds);
+            // enforce exactly 2 tables
+            var distinctIds = tableIds.Distinct().ToList();
+            if (distinctIds.Count != 2)
+            {
+                TempData["error"] = "Vui lòng chọn đúng 2 bàn để gộp.";
+                return RedirectToAction("Index", "Table");
+            }
+
+            var ok = await _orderService.MergeTablesAsync(orderId, distinctIds);
             if (!ok)
             {
                 TempData["error"] = "Không thể gộp: có bàn đang được sử dụng bởi order khác.";
@@ -182,6 +190,26 @@ namespace LaPizzaria.Controllers
             else
             {
                 TempData["success"] = "Gộp bàn thành công.";
+            }
+            return RedirectToAction("Index", "Table");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Assign(int orderId, int tableId)
+        {
+            if (orderId <= 0 || tableId <= 0)
+            {
+                TempData["error"] = "Thiếu Order hoặc Bàn.";
+                return RedirectToAction("Index", "Table");
+            }
+            var ok = await _orderService.AssignTablesAsync(orderId, new List<int> { tableId });
+            if (!ok)
+            {
+                TempData["error"] = "Bàn đang được sử dụng bởi order khác.";
+            }
+            else
+            {
+                TempData["success"] = "Đã gắn bàn vào order.";
             }
             return RedirectToAction("Index", "Table");
         }

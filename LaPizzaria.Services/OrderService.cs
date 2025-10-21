@@ -58,14 +58,25 @@ namespace LaPizzaria.Services
         {
             var order = await _db.Orders.Include(o => o.OrderTables).FirstOrDefaultAsync(o => o.Id == targetOrderId);
             if (order == null) return false;
-            var tables = await _db.Tables.Where(t => sourceTableIds.Contains(t.Id)).ToListAsync();
+
+            // Enforce maximum 2 tables to merge at once
+            var distinctTableIds = sourceTableIds?.Distinct().ToList() ?? new List<int>();
+            if (distinctTableIds.Count == 0 || distinctTableIds.Count > 2) return false;
+
+            var tables = await _db.Tables.Where(t => distinctTableIds.Contains(t.Id)).ToListAsync();
             foreach (var t in tables)
             {
                 // Prevent assigning if table already attached to different active order
                 var inUse = await _db.OrderTables.Include(ot => ot.Order)
                     .AnyAsync(ot => ot.TableId == t.Id && ot.OrderId != targetOrderId && ot.Order!.OrderStatus != "Completed");
                 if (inUse) return false;
-                _db.OrderTables.Add(new OrderTable { OrderId = targetOrderId, TableId = t.Id });
+
+                // Skip if already attached to the target order to avoid duplicate tracking
+                var alreadyAttached = order.OrderTables.Any(ot => ot.TableId == t.Id);
+                if (!alreadyAttached)
+                {
+                    _db.OrderTables.Add(new OrderTable { OrderId = targetOrderId, TableId = t.Id });
+                }
                 t.IsOccupied = true;
             }
             await _db.SaveChangesAsync();

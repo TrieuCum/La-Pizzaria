@@ -197,6 +197,7 @@ D:\LaPizzaria\bin\Debug\net8.0\appsettings.Development.json
 D:\LaPizzaria\bin\Debug\net8.0\appsettings.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Data\obj\LaPizzaria.Data.csproj.nuget.dgspec.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Data\obj\project.assets.json
+D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.sourcelink.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Models\obj\LaPizzaria.Models.csproj.nuget.dgspec.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Models\obj\project.assets.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Services\obj\LaPizzaria.Services.csproj.nuget.dgspec.json
@@ -382,7 +383,6 @@ D:\LaPizzaria\obj\Debug\net8.0\ref\LaPizzaria.dll
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Data\bin\Debug\net8.0\LaPizzaria.Data.deps.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.sourcelink.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.deps.json
-D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.sourcelink.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Services\bin\Debug\net8.0\LaPizzaria.Services.deps.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Services\obj\Debug\net8.0\LaPizzaria.Services.sourcelink.json
 D:\LaPizzaria\bin\Debug\net8.0\LaPizzaria.Tests\bin\Debug\net8.0\LaPizzaria.Tests.deps.json
