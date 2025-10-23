@@ -34,6 +34,7 @@ namespace LaPizzaria.Controllers
             var result = await _signInManager.PasswordSignInAsync(model.EmailOrUserName, model.Password, model.RememberMe, lockoutOnFailure: true);
             if (result.Succeeded)
             {
+                TempData["success"] = "Đăng nhập thành công. Bạn có thể bắt đầu đặt món.";
                 return RedirectToAction("Index", "Home");
             }
             if (result.IsLockedOut)
@@ -72,6 +73,7 @@ namespace LaPizzaria.Controllers
             if (result.Succeeded)
             {
                 await _signInManager.SignInAsync(user, isPersistent: false);
+                TempData["success"] = "Đăng ký thành công. Chào mừng đến LaPizzaria!";
                 return RedirectToAction("Index", "Home");
             }
             foreach (var error in result.Errors)

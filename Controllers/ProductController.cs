@@ -89,7 +89,7 @@ namespace LaPizzaria.Controllers
         public async Task<IActionResult> ApiList()
         {
             var list = await _db.Products.Where(p => p.IsActive)
-                .Select(p => new { id = p.Id, name = p.Name, price = p.Price })
+                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category, imageUrl = p.ImageUrl })
                 .ToListAsync();
             return Ok(list);
         }
@@ -103,18 +103,19 @@ namespace LaPizzaria.Controllers
                 .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category })
                 .ToListAsync();
 
-            var combos = await _db.Combos.Where(c => c.IsActive)
+            // Materialize combos and compute price on client to avoid EF translation issues
+            var combosRaw = await _db.Combos.Where(c => c.IsActive)
                 .Include(c => c.Items)
                 .ThenInclude(i => i.Product)
-                .Select(c => new {
-                    id = c.Id,
-                    name = c.Name,
-                    imageUrl = c.ImageUrl,
-                    // compute price from items minus amount and percent
-                    price = (c.Items.Select(i => (i.Product != null ? i.Product.Price : 0m) * Math.Max(1, i.MinQuantity)).Sum() - (c.DiscountAmount > 0 ? c.DiscountAmount : 0)) * (1 - (c.DiscountPercent ?? 0m)/100m),
-                    items = c.Items.Select(i => new { productId = i.ProductId, minQty = Math.Max(1, i.MinQuantity) })
-                })
                 .ToListAsync();
+
+            var combos = combosRaw.Select(c => new {
+                id = c.Id,
+                name = c.Name,
+                imageUrl = c.ImageUrl,
+                price = (c.Items.Select(i => ((i.Product?.Price) ?? 0m) * Math.Max(1, i.MinQuantity)).Sum() - (c.DiscountAmount > 0 ? c.DiscountAmount : 0m)) * (1 - (c.DiscountPercent ?? 0m) / 100m),
+                items = c.Items.Select(i => new { productId = i.ProductId, minQty = Math.Max(1, i.MinQuantity) })
+            }).ToList();
 
             var result = new List<object>();
             var productGroups = products
@@ -176,11 +177,13 @@ namespace LaPizzaria.Controllers
                 _db.RemoveRange(existing);
             }
             combo.Items.Clear();
-            var count = productId?.Count ?? 0;
+            var productIdList = productId ?? new List<int>();
+            var minQuantityList = minQuantity ?? new List<int>();
+            var count = productIdList.Count;
             for (int i = 0; i < count; i++)
             {
-                var pid = productId[i];
-                var qty = i < (minQuantity?.Count ?? 0) ? minQuantity[i] : 1;
+                var pid = productIdList[i];
+                var qty = i < minQuantityList.Count ? minQuantityList[i] : 1;
                 if (pid > 0 && qty > 0)
                 {
                     combo.Items.Add(new ComboItem { ProductId = pid, MinQuantity = qty });

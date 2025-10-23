@@ -58,6 +58,11 @@
         </main>
     </div>
 
+    <!-- Global toast container -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
     <footer class="brand-footer mt-auto">
         <div class="container py-4">
             <div class="row g-3 align-items-center">
@@ -77,6 +82,15 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        (function(){
+            // Render TempData as toasts if present
+            const success = '@(TempData["success"] ?? string.Empty)';
+            const error = '@(TempData["error"] ?? string.Empty)';
+            if (success) window.showToast && window.showToast(success, 'success');
+            if (error) window.showToast && window.showToast(error, 'error');
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
