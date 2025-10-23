@@ -59,10 +59,12 @@ namespace LaPizzaria.Controllers
             if (model.Id == 0)
             {
                 _db.Tables.Add(model);
+                TempData["success"] = $"Đã tạo bàn {model.Code}.";
             }
             else
             {
                 _db.Tables.Update(model);
+                TempData["success"] = $"Đã cập nhật bàn {model.Code}.";
             }
             _db.SaveChanges();
             return RedirectToAction(nameof(Index));
@@ -74,6 +76,7 @@ namespace LaPizzaria.Controllers
             if (table == null) return NotFound();
             _db.Tables.Remove(table);
             _db.SaveChanges();
+            TempData["success"] = $"Đã xoá bàn {table.Code}.";
             return RedirectToAction(nameof(Index));
         }
 

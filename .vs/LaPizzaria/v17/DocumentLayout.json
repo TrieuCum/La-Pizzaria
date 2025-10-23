@@ -1,13 +1,17 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\Admin\\Desktop\\La-Pizzaria\\",
+  "WorkspaceRootPath": "D:\\LaPizzaria\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|c:\\users\\admin\\desktop\\la-pizzaria\\lapizzaria.models\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|d:\\lapizzaria\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|d:\\lapizzaria\\lapizzaria.models\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|solutionrelative:lapizzaria.models\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|c:\\users\\admin\\desktop\\la-pizzaria\\lapizzaria.models\\applicationuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|d:\\lapizzaria\\lapizzaria.models\\applicationuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|solutionrelative:lapizzaria.models\\applicationuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -23,10 +27,23 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\LaPizzaria\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "D:\\LaPizzaria\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAAACMAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-22T00:31:46.883Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "Class1.cs",
-              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\La-Pizzaria\\LaPizzaria.Models\\Class1.cs",
+              "DocumentMoniker": "D:\\LaPizzaria\\LaPizzaria.Models\\Class1.cs",
               "RelativeDocumentMoniker": "LaPizzaria.Models\\Class1.cs",
-              "ToolTip": "C:\\Users\\Admin\\Desktop\\La-Pizzaria\\LaPizzaria.Models\\Class1.cs",
+              "ToolTip": "D:\\LaPizzaria\\LaPizzaria.Models\\Class1.cs",
               "RelativeToolTip": "LaPizzaria.Models\\Class1.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -35,16 +52,15 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "ApplicationUser.cs",
-              "DocumentMoniker": "C:\\Users\\Admin\\Desktop\\La-Pizzaria\\LaPizzaria.Models\\ApplicationUser.cs",
+              "DocumentMoniker": "D:\\LaPizzaria\\LaPizzaria.Models\\ApplicationUser.cs",
               "RelativeDocumentMoniker": "LaPizzaria.Models\\ApplicationUser.cs",
-              "ToolTip": "C:\\Users\\Admin\\Desktop\\La-Pizzaria\\LaPizzaria.Models\\ApplicationUser.cs",
+              "ToolTip": "D:\\LaPizzaria\\LaPizzaria.Models\\ApplicationUser.cs",
               "RelativeToolTip": "LaPizzaria.Models\\ApplicationUser.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-08T18:05:37.892Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T18:05:37.892Z"
             }
           ]
         }

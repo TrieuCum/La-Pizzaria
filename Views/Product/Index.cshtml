@@ -45,7 +45,13 @@
                             var isOut = outIds.Contains(p.Id);
                             <div class="col" data-cat="@p.Category" data-name="@p.Name">
                                 <div class="card h-100 shadow-sm">
-                                    <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "https://via.placeholder.com/600x400?text=Product")" class="card-img-top" alt="@p.Name">
+                                    <div class="img-wrap">
+                                        @if (!string.IsNullOrEmpty(p.ImageUrl)) {
+                                            <img src="@p.ImageUrl" alt="@p.Name" />
+                                        } else {
+                                            <div class="img-wrap img-placeholder">🍕</div>
+                                        }
+                                    </div>
                                     <div class="card-body">
                                         <h6 class="card-title">@p.Name</h6>
                                         <div class="small text-muted mb-2">@p.Category</div>
@@ -75,7 +81,13 @@
                             var comboPrice = afterPercent < 0 ? 0 : afterPercent;
                             <div class="col" data-cat="Combo" data-name="@c.Name">
                                 <div class="card h-100 shadow-sm">
-                                    <img src="@img" class="card-img-top" alt="@c.Name">
+                                    <div class="img-wrap">
+                                        @if (!string.IsNullOrEmpty(img)) {
+                                            <img src="@img" alt="@c.Name" />
+                                        } else {
+                                            <div class="img-wrap img-placeholder">🍕</div>
+                                        }
+                                    </div>
                                     <div class="card-body">
                                         <h6 class="card-title">@c.Name</h6>
                                         <div class="small text-muted mb-2">Combo</div>
@@ -186,3 +198,10 @@ async function initMenu(){
     render('All');
 }
 </script>
+
+<style>
+    /* Unified menu image sizing - same as QR page */
+    .card .img-wrap{position:relative;width:100%;padding-top:100%;background:#f8f9fa;border-bottom:1px solid #eee;border-top-left-radius:.375rem;border-top-right-radius:.375rem;overflow:hidden}
+    .card .img-wrap img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+    .card .img-wrap.img-placeholder{display:flex;align-items:center;justify-content:center;color:#adb5bd;font-weight:700;font-size:24px}
+</style>

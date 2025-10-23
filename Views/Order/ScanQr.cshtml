@@ -15,6 +15,11 @@
             <label class="form-label">Mã bàn (Table Code)</label>
             <input id="tableCode" class="form-control" placeholder="VD: T01" />
             <div class="mt-3">
+                <label class="form-label">Địa chỉ máy chủ (URL)</label>
+                <input id="serverBase" class="form-control" placeholder="http://192.168.100.52:5081" />
+                <small class="text-muted">Địa chỉ này sẽ dùng để tạo QR cho điện thoại. Nên dùng IP LAN, không dùng 26.x hoặc localhost.</small>
+            </div>
+            <div class="mt-3">
                 <div class="small text-muted mb-1">QR truy cập (chia sẻ đường dẫn này)</div>
                 <div id="qrShare" class="border bg-white rounded p-2 d-inline-block"></div>
             </div>
@@ -46,7 +51,7 @@
     </div>
     <div class="row g-3 mt-3">
         <div class="col-md-6">
-            <label class="form-label">Chọn tối đa 2 voucher</label>
+            <label class="form-label fw-semibold">Chọn tối đa 2 voucher</label>
             <div id="voucherList" class="border rounded p-2" style="max-height:220px; overflow:auto;"></div>
             <small class="text-muted">Hiển thị thời gian còn lại và số lượt đã dùng.</small>
         </div>
@@ -68,6 +73,10 @@ style.innerHTML = `
 #catList .list-group-item{border:none;border-radius:8px;margin-bottom:6px;transition:background-color .2s ease}
 #catList .list-group-item.active,#catList .list-group-item:hover{background-color:#ffe5e0;color:#b71c1c;font-weight:600}
 .card .price{color:#da291c;font-weight:700}
+/* Unified menu image sizing */
+.card .img-wrap{position:relative;width:100%;padding-top:100%;background:#f8f9fa;border-bottom:1px solid #eee;border-top-left-radius:.375rem;border-top-right-radius:.375rem;overflow:hidden}
+.card .img-wrap img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+.card .img-wrap.img-placeholder{display:flex;align-items:center;justify-content:center;color:#adb5bd;font-weight:700;font-size:24px}
 `;
 document.head.appendChild(style);
 function getQueryParam(name){
@@ -76,28 +85,71 @@ function getQueryParam(name){
 }
 
 document.getElementById('btnSend').addEventListener('click', async () => {
-    const tableCode = document.getElementById('tableCode').value;
-    let items = (window.__cart || []).map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice }));
-    const voucherIds = getSelectedVoucherIds();
-    const res = await fetch('/Order/FromQr', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableCode, items, voucherIds })
-    });
-    const data = await res.json();
-    document.getElementById('result').innerText = 'Đã tạo đơn #' + (data.orderId ?? '');
+    try {
+        const tableCode = document.getElementById('tableCode').value;
+        let items = (window.__cart || []).map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice }));
+        const voucherIds = getSelectedVoucherIds();
+        const res = await fetch('/Order/FromQr', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tableCode, items, voucherIds })
+        });
+        if (!res.ok) {
+            let msg;
+            try { const j = await res.json(); msg = j && j.error ? j.error : undefined; } catch { msg = await res.text(); }
+            if (window.showToast) window.showToast(msg || 'Gửi đơn thất bại', 'error');
+            return;
+        }
+        const data = await res.json();
+        const orderId = data.orderId ?? '';
+        document.getElementById('result').innerText = 'Đã tạo đơn #' + orderId;
+        if (window.showToast){ window.showToast('Tạo đơn thành công #' + orderId, 'success'); }
+    } catch (e) {
+        if (window.showToast) window.showToast('Lỗi mạng khi gửi đơn', 'error');
+    }
 });
 
 document.getElementById('btnPreview').addEventListener('click', async () => {
-    const tableCode = document.getElementById('tableCode').value;
-    let items = (window.__cart || []).map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice }));
-    const voucherIds = getSelectedVoucherIds();
-    const res = await fetch('/Order/Preview', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableCode, items, voucherIds })
-    });
-    const data = await res.json();
-    const vline = `Voucher: -${(data.voucherDiscount||0).toLocaleString()}`;
-    document.getElementById('result').innerText = `Tạm tính: ${data.subtotal.toLocaleString()}\n${vline}\nTổng: ${data.total.toLocaleString()}`;
+    try {
+        const tableCode = document.getElementById('tableCode').value;
+        let items = (window.__cart || []).map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice }));
+        const voucherIds = getSelectedVoucherIds();
+        const res = await fetch('/Order/Preview', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tableCode, items, voucherIds })
+        });
+        if (!res.ok) {
+            let msg;
+            try { const j = await res.json(); msg = j && j.error ? j.error : undefined; } catch { msg = await res.text(); }
+            if (window.showToast) window.showToast(msg || 'Tính tạm thời thất bại', 'error');
+            return;
+        }
+        const data = await res.json();
+        if (window.showToast){ window.showToast('Tính tạm thời thành công', 'success'); }
+        const subtotal = (data.subtotal||0).toLocaleString();
+        const vdiscount = (data.voucherDiscount||0).toLocaleString();
+        const total = (data.total||0).toLocaleString();
+        const html = `
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">Tạm tính</span>
+              <span class="fw-semibold">${subtotal}đ</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Voucher</span>
+              <span class="text-success">- ${vdiscount}đ</span>
+            </div>
+            <hr class="my-2" />
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Tổng</span>
+              <span class="fw-bold fs-5 text-danger">${total}đ</span>
+            </div>
+          </div>
+        </div>`;
+        document.getElementById('result').innerHTML = html;
+    } catch (e) {
+        if (window.showToast) window.showToast('Lỗi mạng khi tính tạm thời', 'error');
+    }
 });
 
 async function loadProducts() {
@@ -117,7 +169,14 @@ async function loadProducts() {
         console.error('Failed to load menu, falling back to products', e);
         const res = await fetch('/api/products');
         const data = await res.json();
-        window.__menuGroups = [{ key:'All', type:'product', items:data }];
+        // Group fallback products by category so category tabs still work
+        const byCat = {};
+        (data || []).forEach(p => {
+            const key = (p.category || 'Khác');
+            if (!byCat[key]) byCat[key] = [];
+            byCat[key].push({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl });
+        });
+        window.__menuGroups = Object.keys(byCat).map(k => ({ key: k, type: 'product', items: byCat[k] }));
         window.__productMap = {};
         data.forEach(p => { window.__productMap[p.id] = p; });
         renderMenu('All');
@@ -153,7 +212,11 @@ function renderMenu(cat){
     pick.forEach(it => {
         const col = document.createElement('div'); col.className='col';
         const card = document.createElement('div'); card.className='card h-100 shadow-sm'; card.style.cursor='pointer';
-        if (it.imageUrl){ const img=document.createElement('img'); img.className='card-img-top'; img.src=it.imageUrl; card.appendChild(img); }
+        // unified image area
+        const wrap = document.createElement('div'); wrap.className='img-wrap';
+        if (it.imageUrl){ const img=document.createElement('img'); img.src=it.imageUrl; wrap.appendChild(img); }
+        else { wrap.classList.add('img-placeholder'); wrap.textContent='🍕'; }
+        card.appendChild(wrap);
         const body=document.createElement('div'); body.className='card-body';
         const title=document.createElement('h6'); title.className='card-title'; title.textContent=it.name; body.appendChild(title);
         const price=document.createElement('div'); price.className='price'; price.textContent=(it.price||0).toLocaleString()+"đ"; body.appendChild(price);
@@ -209,12 +272,26 @@ if (initialCode) {
 let shareQrInstance;
 function renderShareQr(){
     const code = document.getElementById('tableCode').value || '';
-    const url = `${host}/Order/ScanQr?tableCode=${encodeURIComponent(code)}`;
+    const baseInput = document.getElementById('serverBase');
+    const baseRaw = (baseInput && baseInput.value) ? baseInput.value : host;
+    const base = (baseRaw || '').replace(/\/+$/, '');
+    const url = `${base}/Order/ScanQr?tableCode=${encodeURIComponent(code)}`;
     const el = document.getElementById('qrShare');
     el.innerHTML = '';
     shareQrInstance = new QRCode(el, { text: url, width: 120, height: 120 });
 }
 document.getElementById('tableCode').addEventListener('input', renderShareQr);
+// initialize and persist server base
+(function initServerBase(){
+    const el = document.getElementById('serverBase');
+    if (!el) return;
+    const saved = localStorage.getItem('qrServerBase');
+    el.value = saved && saved.trim().length > 0 ? saved : host;
+    el.addEventListener('input', ()=>{
+        localStorage.setItem('qrServerBase', el.value || '');
+        renderShareQr();
+    });
+})();
 
 // handle category click
 document.addEventListener('click', (e)=>{

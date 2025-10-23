@@ -6,6 +6,7 @@ using LaPizzaria.Models;
 using LaPizzaria.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LaPizzaria.Controllers
 {
@@ -33,12 +34,14 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ScanQr()
         {
             return View();
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Qr(string? tableCode)
         {
             ViewBag.TableCode = tableCode ?? string.Empty;
@@ -46,6 +49,7 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Preview([FromBody] QrOrderRequest req)
         {
             var items = req.Items ?? new List<QrOrderItem>();
@@ -107,6 +111,7 @@ namespace LaPizzaria.Controllers
                 if (qty > 0) map[orderDetailId[i]] = qty;
             }
             await _orderService.SplitOrderAsync(orderId, map);
+            TempData["success"] = "Tách đơn thành công.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -138,31 +143,38 @@ namespace LaPizzaria.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateOrderRequest req)
         {
-            var details = req.Items.Select(i => new OrderDetail
+            try
             {
-                ProductId = i.ProductId,
-                Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice,
-                Subtotal = i.UnitPrice * i.Quantity
-            }).ToList();
-
-            var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>());
-            // Attach up to 2 vouchers if provided and valid
-            if (req.VoucherIds != null && req.VoucherIds.Count > 0)
-            {
-                var ids = req.VoucherIds.Take(2).ToList();
-                foreach (var vid in ids)
+                var details = req.Items.Select(i => new OrderDetail
                 {
-                    var v = await _voucherService.GetByIdAsync(vid);
-                    if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                    ProductId = i.ProductId,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    Subtotal = i.UnitPrice * i.Quantity
+                }).ToList();
+
+                var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>());
+                // Attach up to 2 vouchers if provided and valid
+                if (req.VoucherIds != null && req.VoucherIds.Count > 0)
+                {
+                    var ids = req.VoucherIds.Take(2).ToList();
+                    foreach (var vid in ids)
                     {
-                        _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
-                        v.UsedCount += 1;
+                        var v = await _voucherService.GetByIdAsync(vid);
+                        if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                        {
+                            _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
+                            v.UsedCount += 1;
+                        }
                     }
+                    await _db.SaveChangesAsync();
                 }
-                await _db.SaveChangesAsync();
+                return Ok(order.Id);
             }
-            return Ok(order.Id);
+            catch (System.InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -230,47 +242,55 @@ namespace LaPizzaria.Controllers
 
         // Simple QR entry: customer scans QR that encodes table code => front-end posts to /Order/FromQr
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> FromQr([FromBody] QrOrderRequest req)
         {
-            var details = new List<OrderDetail>();
-            if (req.Items != null)
+            try
             {
-                var productIds = req.Items.Select(i => i.ProductId).Distinct().ToList();
-                var priceMap = await _db.Products.Where(p => productIds.Contains(p.Id))
-                    .ToDictionaryAsync(p => p.Id, p => p.Price);
-                foreach (var it in req.Items)
+                var details = new List<OrderDetail>();
+                if (req.Items != null)
                 {
-                    decimal price = it.UnitPrice ?? (priceMap.TryGetValue(it.ProductId, out var p) ? p : 0m);
-                    details.Add(new OrderDetail
+                    var productIds = req.Items.Select(i => i.ProductId).Distinct().ToList();
+                    var priceMap = await _db.Products.Where(p => productIds.Contains(p.Id))
+                        .ToDictionaryAsync(p => p.Id, p => p.Price);
+                    foreach (var it in req.Items)
                     {
-                        ProductId = it.ProductId,
-                        Quantity = it.Quantity,
-                        UnitPrice = price,
-                        Subtotal = price * it.Quantity
-                    });
-                }
-            }
-            var tableIds = new List<int>();
-            if (!string.IsNullOrWhiteSpace(req.TableCode))
-            {
-                var t = await _db.Tables.FirstOrDefaultAsync(x => x.Code == req.TableCode);
-                if (t != null) tableIds.Add(t.Id);
-            }
-            var order = await _orderService.CreateOrderAsync(null, details, tableIds);
-            if (req.VoucherIds != null && req.VoucherIds.Count > 0)
-            {
-                foreach (var vid in req.VoucherIds.Take(2))
-                {
-                    var v = await _voucherService.GetByIdAsync(vid);
-                    if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
-                    {
-                        _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
-                        v.UsedCount += 1;
+                        decimal price = it.UnitPrice ?? (priceMap.TryGetValue(it.ProductId, out var p) ? p : 0m);
+                        details.Add(new OrderDetail
+                        {
+                            ProductId = it.ProductId,
+                            Quantity = it.Quantity,
+                            UnitPrice = price,
+                            Subtotal = price * it.Quantity
+                        });
                     }
                 }
-                await _db.SaveChangesAsync();
+                var tableIds = new List<int>();
+                if (!string.IsNullOrWhiteSpace(req.TableCode))
+                {
+                    var t = await _db.Tables.FirstOrDefaultAsync(x => x.Code == req.TableCode);
+                    if (t != null) tableIds.Add(t.Id);
+                }
+                var order = await _orderService.CreateOrderAsync(null, details, tableIds);
+                if (req.VoucherIds != null && req.VoucherIds.Count > 0)
+                {
+                    foreach (var vid in req.VoucherIds.Take(2))
+                    {
+                        var v = await _voucherService.GetByIdAsync(vid);
+                        if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                        {
+                            _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
+                            v.UsedCount += 1;
+                        }
+                    }
+                    await _db.SaveChangesAsync();
+                }
+                return Ok(new { orderId = order.Id });
             }
-            return Ok(new { orderId = order.Id });
+            catch (System.InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 

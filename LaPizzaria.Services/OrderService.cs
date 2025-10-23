@@ -28,7 +28,7 @@ namespace LaPizzaria.Services
             var ok = await _inventory.CheckAndReserveAsync(itemList);
             if (!ok)
             {
-                throw new System.InvalidOperationException("Insufficient ingredients");
+                throw new System.InvalidOperationException("Đang hết nguyên liệu");
             }
 
             var order = new Order
