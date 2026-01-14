@@ -4416,25 +4416,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\ooish\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {},
-    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
+    "C:\\Users\\nphuo\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\LaPizzaria\\LaPizzaria.Tests\\LaPizzaria.Tests.csproj",
+      "projectUniqueName": "E:\\DuAnCS6\\LaPizzaria.Tests\\LaPizzaria.Tests.csproj",
       "projectName": "LaPizzaria.Tests",
-      "projectPath": "D:\\LaPizzaria\\LaPizzaria.Tests\\LaPizzaria.Tests.csproj",
-      "packagesPath": "C:\\Users\\ooish\\.nuget\\packages\\",
-      "outputPath": "D:\\LaPizzaria\\LaPizzaria.Tests\\obj\\",
+      "projectPath": "E:\\DuAnCS6\\LaPizzaria.Tests\\LaPizzaria.Tests.csproj",
+      "packagesPath": "C:\\Users\\nphuo\\.nuget\\packages\\",
+      "outputPath": "E:\\DuAnCS6\\LaPizzaria.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
-        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\ooish\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\nphuo\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -4450,11 +4448,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\LaPizzaria\\LaPizzaria.Models\\LaPizzaria.Models.csproj": {
-              "projectPath": "D:\\LaPizzaria\\LaPizzaria.Models\\LaPizzaria.Models.csproj"
+            "E:\\DuAnCS6\\LaPizzaria.Models\\LaPizzaria.Models.csproj": {
+              "projectPath": "E:\\DuAnCS6\\LaPizzaria.Models\\LaPizzaria.Models.csproj"
             },
-            "D:\\LaPizzaria\\LaPizzaria.Services\\LaPizzaria.Services.csproj": {
-              "projectPath": "D:\\LaPizzaria\\LaPizzaria.Services\\LaPizzaria.Services.csproj"
+            "E:\\DuAnCS6\\LaPizzaria.Services\\LaPizzaria.Services.csproj": {
+              "projectPath": "E:\\DuAnCS6\\LaPizzaria.Services\\LaPizzaria.Services.csproj"
             }
           }
         }
@@ -4508,7 +4506,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

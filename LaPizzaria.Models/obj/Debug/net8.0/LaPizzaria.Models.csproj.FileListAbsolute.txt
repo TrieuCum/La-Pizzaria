@@ -20,3 +20,14 @@ D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.dll
 D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\refint\LaPizzaria.Models.dll
 D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.pdb
 D:\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\ref\LaPizzaria.Models.dll
+E:\DuAnCS6\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.deps.json
+E:\DuAnCS6\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.dll
+E:\DuAnCS6\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.pdb
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.csproj.AssemblyReference.cache
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.GeneratedMSBuildEditorConfig.editorconfig
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.csproj.CoreCompileInputs.cache
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.sourcelink.json
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.dll
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\refint\LaPizzaria.Models.dll
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.pdb
+E:\DuAnCS6\LaPizzaria.Models\obj\Debug\net8.0\ref\LaPizzaria.Models.dll

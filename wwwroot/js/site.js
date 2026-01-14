@@ -24,4 +24,49 @@ window.showToast = function(message, type){
     console.error('Toast error', e);
     alert(message);
   }
-}
+};
+
+// Modern Navbar - Auto highlight active link
+(function() {
+  'use strict';
+  
+  function initActiveNavLinks() {
+    const currentPath = window.location.pathname.toLowerCase();
+    const navLinks = document.querySelectorAll('.modern-nav-link');
+    
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+      
+      // Remove query strings and trailing slashes for comparison
+      let linkPath = href.split('?')[0].toLowerCase().replace(/\/$/, '');
+      const currentPathClean = currentPath.replace(/\/$/, '');
+      
+      // Normalize root path
+      if (linkPath === '' || linkPath === '/') {
+        linkPath = '/';
+      }
+      
+      // Check if current path matches or starts with link path
+      // Special handling for root path - only match exact root
+      if (linkPath === '/') {
+        if (currentPathClean === '/' || currentPathClean === '') {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      } else if (currentPathClean === linkPath || currentPathClean.startsWith(linkPath + '/')) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  }
+  
+  // Initialize on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initActiveNavLinks);
+  } else {
+    initActiveNavLinks();
+  }
+})();

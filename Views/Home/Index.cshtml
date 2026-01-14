@@ -36,33 +36,231 @@
         opacity: .9;
         margin-top: 8px;
     }
+    .brand-section-title {
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 600 !important;
+        font-size: clamp(32px, 5vw, 48px) !important;
+        letter-spacing: 0.5px !important;
+        margin-bottom: 2rem;
+    }
+    .product-card {
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .product-card-description {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.7rem;
+        color: #666;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        min-height: 3rem;
+    }
+    .product-card-price {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #da291c;
+        margin-bottom: 1rem;
+    }
+    .product-card-btn {
+        border: 2px solid #da291c;
+        color: #da291c;
+        background: transparent;
+        font-weight: 500;
+        padding: 0.5rem 1.5rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .product-card-btn:hover {
+        background: #da291c;
+        color: white;
+        transform: translateY(-2px);
+    }
+    .bestseller-banner {
+        background: #ffffff;
+        background-image: 
+            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
+            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
+        position: relative;
+        padding: 60px 0;
+        margin: 3rem 0;
+        overflow: hidden;
+    }
+    .bestseller-banner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: repeating-linear-gradient(
+            90deg,
+            #ff7a00 0px,
+            #ff7a00 20px,
+            #ffffff 20px,
+            #ffffff 40px
+        );
+    }
+    .bestseller-banner-content {
+        position: relative;
+        z-index: 1;
+    }
+    .bestseller-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(36px, 6vw, 72px);
+        color: #da291c;
+        margin-bottom: 0.5rem;
+        line-height: 1.1;
+    }
+    .bestseller-subtitle {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: clamp(20px, 3vw, 32px);
+        color: #da291c;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .bestseller-image {
+        height: 250px;
+        width: 500px;
+        margin-right: 15px;
+    }
+    @@media (max-width: 768px) {
+        .bestseller-banner {
+            padding: 40px 0;
+        }
+        .bestseller-image {
+            margin-top: 2rem;
+        }
+    }
+    .combo-banner {
+        background: #ffffff;
+        background-image: 
+            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
+            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
+        position: relative;
+        padding: 60px 0;
+        margin: 3rem 0;
+        overflow: hidden;
+    }
+    .combo-banner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: repeating-linear-gradient(
+            90deg,
+            #ff7a00 0px,
+            #ff7a00 20px,
+            #ffffff 20px,
+            #ffffff 40px
+        );
+    }
+    .combo-banner-content {
+        position: relative;
+        z-index: 1;
+    }
+    .combo-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(36px, 6vw, 72px);
+        color: #da291c;
+        margin-bottom: 0.5rem;
+        line-height: 1.1;
+    }
+    .combo-subtitle {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: clamp(20px, 3vw, 32px);
+        color: #da291c;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .combo-image {
+        width: 450px;
+        height: 350px;
+        margin-right: 50px;
+    }
+    @@media (max-width: 768px) {
+        .combo-banner {
+            padding: 40px 0;
+        }
+        .combo-image {
+            margin-top: 2rem;
+        }
+    }
 </style>
 
 <!-- Product Showcase Section -->
-<div class="container my-5">
-    <h2 class="text-center mb-4">Các món đặc biệt của chúng tôi</h2>
-
-    <h4 class="mb-3">Món bán chạy</h4>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-        @foreach (var p in Model.TopProducts)
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "https://via.placeholder.com/600x400?text=Pizza")" class="card-img-top" alt="@p.Name">
-                    <div class="card-body">
-                        <h5 class="card-title">@p.Name</h5>
-                        <p class="card-text mb-1"><span class="badge bg-success">Đặt @p.TotalOrdered lần</span></p>
-                        <p class="card-text text-primary fw-bold">@p.Price.ToString("N0") đ</p>
-                        <a asp-controller="Product" asp-action="Index" class="btn btn-sm btn-outline-primary">Xem trong menu</a>
+    <!-- Bestseller Banner -->
+    <div class="bestseller-banner">
+        <div class="container bestseller-banner-content">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="bestseller-title">MÓN BÁN CHẠY</h1>
+                    <div class="bestseller-subtitle">
+                        <span>LA PIZZARIA</span>
                     </div>
                 </div>
+                <div class="col-lg-6 text-center text-lg-end">
+                    <img src="/images/banner2.png" alt="Best Seller Pizza" class="bestseller-image" onerror="this.style.display='none'">
+                </div>
             </div>
-        }
+        </div>
+    </div>
+    <div class="container">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+            @foreach (var p in Model.TopProducts.Take(3))
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "https://via.placeholder.com/600x400?text=Pizza")" class="card-img-top" alt="@p.Name">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="product-card-title">@p.Name</h5>
+                            @if (!string.IsNullOrEmpty(p.Description))
+                            {
+                                <p class="product-card-description">@p.Description</p>
+                            }
+                            <p class="card-text mb-1"><span class="badge bg-success">Đặt @p.TotalOrdered lần</span></p>               
+                            <p class="product-card-price mt-auto">@p.Price.ToString("N0")₫</p>
+                            <a asp-controller="Product" asp-action="Index" class="product-card-btn text-center">Xem trong menu</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 
     <hr class="my-5" />
-    <h4 class="mb-3">Combo đang có</h4>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    
+    <!-- Combo Banner -->
+    <div class="combo-banner">
+        <div class="container combo-banner-content">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="combo-title">COMBO</h1>
+                    <div class="combo-subtitle">
+                        <span>LA PIZZARIA</span>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center text-lg-end">
+                    <img src="/images/banner3.png" alt="Combo Pizza" class="combo-image" onerror="this.style.display='none'">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
         @foreach (var c in Model.ActiveCombos)
         {
             var firstImage = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl
@@ -84,5 +282,6 @@
                 </div>
             </div>
         }
+        </div>
     </div>
 </div>

@@ -1,59 +1,246 @@
 @model IEnumerable<LaPizzaria.Models.Order>
 
-<div class="container mt-4">
-	<div class="d-flex justify-content-between align-items-center mb-3">
-		<h2>Đơn hàng</h2>
-		<div class="btn-group">
-			<a class="btn btn-brand-primary" asp-controller="Table" asp-action="Index">Quản lý bàn</a>
-			<a class="btn btn-outline-secondary" asp-controller="Order" asp-action="ScanQr">Đặt món bằng QR</a>
-		</div>
-	</div>
-	<div class="card shadow-sm">
-		<div class="card-body">
-			@if (Model.Any())
-			{
-				@* Combo suggestion message for the first order (illustration) *@
-				<div class="alert alert-info" role="alert">
-					Gợi ý: Nếu khách chọn đủ điều kiện combo, hệ thống sẽ tự áp dụng giảm giá khi tính tổng. Hãy vào trang QR để thêm món nhanh.
-				</div>
-			}
-			<table class="table table-hover">
-				<thead>
-					<tr>
-						<th>Mã</th>
-						<th>Ngày</th>
-						<th>Trạng thái</th>
-						<th>Tổng tiền</th>
-						<th>Hành động</th>
-					</tr>
-				</thead>
-				<tbody>
-					@foreach (var o in Model)
-					{
-						<tr>
-							<td>@o.Id</td>
-							<td>@o.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-							<td>@o.OrderStatus</td>
-							<td>@o.TotalPrice.ToString("N0")</td>
-							<td>
-								<div class="btn-group btn-group-sm">
-									<form asp-action="Recalculate" method="post" class="d-inline">
-										<input type="hidden" name="orderId" value="@o.Id" />
-										<button class="btn btn-outline-secondary" type="submit">Tính lại</button>
-									</form>
-									<a class="btn btn-outline-primary" asp-action="SplitForm" asp-route-orderId="@o.Id">Tách</a>
-									<form asp-action="Pay" method="post" class="d-inline">
-										<input type="hidden" name="orderId" value="@o.Id" />
-										<button class="btn btn-success" type="submit">Thanh toán</button>
-									</form>
-								</div>
-							</td>
-						</tr>
-					}
-				</tbody>
-			</table>
-		</div>
-	</div>
+@{
+    ViewData["Title"] = "Quản lý Đơn hàng";
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary-red: #da291c;
+        --light-cream: #f8f5ed;
+        --wood-brown: #5a2e0a;
+    }
+    .order-banner {
+        background: #ffffff;
+        background-image: 
+            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
+            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
+        position: relative;
+        padding: 60px 0;
+        margin-bottom: 3rem;
+        overflow: hidden;
+    }
+    .order-banner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: repeating-linear-gradient(
+            90deg,
+            #ff7a00 0px,
+            #ff7a00 20px,
+            #ffffff 20px,
+            #ffffff 40px
+        );
+    }
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(36px, 6vw, 64px);
+        color: #da291c;
+        margin-bottom: 0.5rem;
+        line-height: 1.1;
+    }
+    .page-subtitle {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: clamp(20px, 3vw, 28px);
+        color: #5a2e0a;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .brand-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        background: white;
+        overflow: hidden;
+    }
+    
+    .table-brand thead th {
+        background-color: transparent;
+        color: #da291c;
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        border-bottom: 2px solid #f8f5ed;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-brand tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .table-brand tbody tr:hover {
+        background-color: #fff9f9;
+        transform: scale(1.005);
+        box-shadow: 0 4px 15px rgba(218, 41, 28, 0.05);
+    }
+    
+    .table-brand td {
+        vertical-align: middle;
+        font-weight: 500;
+        color: #5a2e0a;
+        border-bottom: 1px solid #f8f5ed;
+        padding: 1rem 0.75rem;
+    }
+    
+    .status-badge {
+        padding: 0.5em 1em;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border: 1px solid transparent;
+    }
+    
+    .status-completed {
+        background-color: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+        border-color: rgba(40, 167, 69, 0.2);
+    }
+    
+    .status-pending {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #d39e00;
+        border-color: rgba(255, 193, 7, 0.2);
+    }
+    
+    .status-cancelled {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        border-color: rgba(220, 53, 69, 0.2);
+    }
+
+    .price-tag {
+        font-family: monospace;
+        font-weight: 700;
+        color: #da291c;
+        font-size: 1.1em;
+    }
+
+    .info-alert {
+        background-color: #e7f1ff;
+        border: 1px solid #b6d4fe;
+        color: #084298;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+
+<div class="order-banner">
+    <div class="container position-relative" style="z-index: 1;">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="page-title">ĐƠN HÀNG</h1>
+                <div class="page-subtitle">
+                    <span>QUẢN LÝ ODER & THANH TOÁN</span>
+                </div>
+            </div>
+            <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
+                <div class="d-flex gap-2 justify-content-lg-end flex-wrap">
+                    <a class="btn btn-brand-primary btn-lg shadow-sm" asp-controller="Table" asp-action="Index">
+                        <i class="bi bi-grid-3x3-gap-fill me-2"></i>Quản lý Bàn
+                    </a>
+                    <a class="btn btn-outline-orange btn-lg shadow-sm" asp-controller="Order" asp-action="ScanQr">
+                        <i class="bi bi-qr-code-scan me-2"></i>Đặt món bằng QR
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<div class="container mb-5">
+    @if (Model.Any())
+    {
+        <div class="info-alert shadow-sm">
+            <i class="bi bi-info-circle-fill fs-5"></i>
+            <div>
+                <strong>Gợi ý:</strong> Nếu khách chọn đủ điều kiện combo, hệ thống sẽ tự áp dụng giảm giá khi tính tổng. Hãy vào trang QR để thêm món nhanh.
+            </div>
+        </div>
+    }
 
+    <div class="brand-card p-4">
+        <div class="table-responsive">
+            <table class="table table-brand table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-3">Mã Đơn</th>
+                        <th>Thời Gian</th>
+                        <th class="text-center">Trạng Thái</th>
+                        <th class="text-end">Tổng Tiền</th>
+                        <th class="text-end pe-3">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in Model)
+                    {
+                        var statusClass = o.OrderStatus switch {
+                            "Completed" => "status-completed",
+                            "Cancelled" => "status-cancelled",
+                            _ => "status-pending"
+                        };
+                        var statusText = o.OrderStatus switch {
+                            "Completed" => "Đã thanh toán",
+                            "Pending" => "Chờ thanh toán",
+                            "Cancelled" => "Đã hủy",
+                             _ => o.OrderStatus
+                        };
+
+                        <tr>
+                            <td class="ps-3"><span class="fw-bold text-muted">#@o.Id</span></td>
+                            <td>
+                                <div class="fw-bold text-dark">@o.OrderDate.ToLocalTime().ToString("HH:mm")</div>
+                                <div class="small text-muted">@o.OrderDate.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="status-badge @statusClass">
+                                    @statusText
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <span class="price-tag">@o.TotalPrice.ToString("N0")</span>
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <form asp-action="Recalculate" method="post" class="d-inline">
+                                        <input type="hidden" name="orderId" value="@o.Id" />
+                                        <button class="btn btn-outline-secondary btn-sm" type="submit" title="Tính lại tổng tiền">
+                                            <i class="bi bi-calculator"></i>
+                                        </button>
+                                    </form>
+                                    <a class="btn btn-outline-primary btn-sm" asp-action="SplitForm" asp-route-orderId="@o.Id" title="Tách đơn hàng">
+                                        <i class="bi bi-scissors"></i>
+                                    </a>
+                                    
+                                    @if(o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled") {
+                                        <form asp-action="Pay" method="post" class="d-inline">
+                                            <input type="hidden" name="orderId" value="@o.Id" />
+                                            <button class="btn btn-success btn-sm" type="submit">
+                                                <i class="bi bi-cash-coin me-1"></i>Thanh toán
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

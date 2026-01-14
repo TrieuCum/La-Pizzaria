@@ -29,6 +29,7 @@ namespace LaPizzaria.Controllers
                 {
                     ProductId = g.Key.Id,
                     Name = g.Key.Name,
+                    Description = g.Key.Description,
                     ImageUrl = g.Key.ImageUrl,
                     TotalOrdered = g.Sum(x => x.Quantity),
                     Price = g.Key.Price

@@ -1,60 +1,228 @@
 @model IEnumerable<LaPizzaria.Models.Table>
 
-<h2>Bàn ăn</h2>
+@{
+    ViewData["Title"] = "Quản lý Bàn ăn";
+}
 
-<div class="card p-3 mb-3">
-    <form asp-controller="Order" asp-action="MergeTables" method="post" id="mergeForm" class="row g-2 align-items-end">
-        <div class="col-md-4">
-            <label class="form-label">Order đang mở</label>
-            <select name="orderId" class="form-select" required>
-                <option value="" selected disabled>Chọn Order</option>
-                @foreach (var o in (IEnumerable<LaPizzaria.Models.Order>)ViewBag.OpenOrders)
-                {
-                    <option value="@o.Id">#@o.Id - @o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</option>
-                }
-            </select>
+<style>
+    :root {
+        --primary-red: #da291c;
+        --light-cream: #f8f5ed;
+        --wood-brown: #5a2e0a;
+    }
+
+    .table-banner {
+        background: #ffffff;
+        background-image: 
+            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
+            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
+        position: relative;
+        padding: 60px 0;
+        margin-bottom: 3rem;
+        overflow: hidden;
+    }
+    
+    .table-banner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: repeating-linear-gradient(
+            90deg,
+            #ff7a00 0px,
+            #ff7a00 20px,
+            #ffffff 20px,
+            #ffffff 40px
+        );
+    }
+    
+    .table-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(36px, 6vw, 64px);
+        color: #da291c;
+        margin-bottom: 0.5rem;
+        line-height: 1.1;
+    }
+    
+    .table-subtitle {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: clamp(20px, 3vw, 28px);
+        color: #5a2e0a;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .table-card {
+        border: none;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        background: white;
+        overflow: hidden;
+    }
+    
+    .table-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+
+    .table-code {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 2rem;
+        color: var(--primary-red);
+    }
+
+    .control-panel {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    }
+
+    .status-badge {
+        padding: 0.5em 1em;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-active { background-color: #e8f5e9; color: #2e7d32; }
+    .status-inactive { background-color: #f5f5f5; color: #616161; }
+    
+    .status-occupied { background-color: #ffebee; color: #c62828; }
+    .status-free { background-color: #e3f2fd; color: #1565c0; }
+
+    .action-btn-group .btn {
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-weight: 500;
+    }
+</style>
+
+<!-- Banner Section -->
+<div class="table-banner">
+    <div class="container position-relative" style="z-index: 1;">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1 class="table-title">QUẢN LÝ BÀN ĂN</h1>
+                <div class="table-subtitle">
+                    <span>SẮP XẾP & QUẢN LÝ KHÔNG GIAN</span>
+                </div>
+            </div>
+            <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
+                <!-- Optional: Add decorative image or keep clean like Product page's right side -->
+                <i class="bi bi-grid-3x3-gap-fill text-muted opacity-25" style="font-size: 8rem;"></i>
+            </div>
         </div>
-        <div class="col-md-8 d-flex gap-2">
-            <button type="submit" class="btn btn-success" id="btnMerge">Gộp 2 bàn</button>
-            <button type="button" class="btn btn-outline-primary" id="btnAssign">Gắn bàn vào Order</button>
-            <a asp-action="Upsert" class="btn btn-primary">Thêm bàn</a>
-            <a asp-controller="Order" asp-action="Qr" class="btn btn-outline-secondary">Tạo QR</a>
-        </div>
-        <div class="col-12"><small class="text-muted">Chọn nhiều bàn bằng checkbox, sau đó bấm Gộp.</small></div>
-    </form>
+    </div>
 </div>
 
-<div class="row g-3">
-    @foreach (var t in Model)
-    {
-        var attach = ((System.Collections.Generic.Dictionary<int, string>)ViewBag.TableAttachInfo).TryGetValue(t.Id, out var info) ? info : "";
-        <div class="col-sm-6 col-md-4 col-lg-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="fw-bold">@t.Code</div>
-                            <div class="text-muted small">Sức chứa: @t.Capacity</div>
+<!-- Main Content -->
+<div class="container" style="margin-top: 2rem; position: relative; z-index: 2;">
+    
+    <!-- Control Panel -->
+    <div class="card control-panel p-4 mb-5">
+        <form asp-controller="Order" asp-action="MergeTables" method="post" id="mergeForm" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-bold text-muted small text-uppercase">Gắn vào Order đang mở</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-receipt"></i></span>
+                    <select name="orderId" class="form-select border-start-0 ps-0" required style="border-left: none;">
+                        <option value="" selected disabled>Chọn Order cần gắn bàn...</option>
+                        @foreach (var o in (IEnumerable<LaPizzaria.Models.Order>)ViewBag.OpenOrders)
+                        {
+                            <option value="@o.Id">Order #@o.Id - @o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                    <button type="submit" class="btn btn-brand-primary" id="btnMerge">
+                        <span class="fs-5 me-1">🔗</span> Gộp bàn
+                    </button>
+                    <button type="button" class="btn btn-outline-orange" id="btnAssign">
+                        <span class="fs-5 me-1">📌</span> Gắn Order
+                    </button>
+                    <div class="vr mx-2 text-muted d-none d-md-block"></div>
+                    <a asp-action="Upsert" class="btn btn-dark">
+                        <span class="fs-5 me-1">+</span> Tạo bàn mới
+                    </a>
+                    <a asp-controller="Order" asp-action="Qr" class="btn btn-outline-secondary">
+                         Tạo QR
+                    </a>
+                </div>
+            </div>
+            <div class="col-12 mt-2">
+                 <div class="alert alert-light border-0 bg-light rounded-3 d-flex align-items-center py-2 px-3 mb-0 text-muted small">
+                     <span class="me-2">💡</span> Chọn các bàn bằng checkbox trên thẻ, sau đó bấm nút Gộp hoặc Gắn Order ở trên.
+                 </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Grid -->
+    <div class="row g-4">
+        @foreach (var t in Model)
+        {
+            var attach = ((System.Collections.Generic.Dictionary<int, string>)ViewBag.TableAttachInfo).TryGetValue(t.Id, out var info) ? info : "";
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <div class="card table-card shadow-sm h-100 position-relative">
+                    <!-- Selection Checkbox -->
+                    <div class="position-absolute top-0 end-0 p-3">
+                         <input class="form-check-input shadow-none" type="checkbox" name="tableIds" value="@t.Id" form="mergeForm" style="width: 1.5em; height: 1.5em; cursor: pointer; border-color: #ddd;" title="Chọn bàn này" />
+                    </div>
+
+                    <div class="card-body d-flex flex-column text-center p-4">
+                        <div class="mb-3">
+                            <div class="table-code">@t.Code</div>
+                            <div class="text-muted small text-uppercase fw-bold tracking-wide">Sức chứa: @t.Capacity</div>
                         </div>
-                        <input class="form-check-input mt-1" type="checkbox" name="tableIds" value="@t.Id" form="mergeForm" title="Chọn để gộp" />
-                    </div>
-                    <div class="mt-2">
-                        <span class="badge @(@t.IsActive?"bg-success":"bg-secondary")">@(@t.IsActive?"Hoạt động":"Khóa")</span>
-                        <span class="badge @(@t.IsOccupied?"bg-danger":"bg-info")">@(@t.IsOccupied?"Có khách":"Trống")</span>
-                    </div>
-                    <div class="mt-2 small text-muted flex-grow-1" style="min-height:2.5em">@attach</div>
-                    <div class="d-flex gap-2 mt-2">
-                        <form asp-action="Clear" method="post" class="d-inline">
-                            <input type="hidden" name="id" value="@t.Id" />
-                            <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Dọn bàn</button>
-                        </form>
-                        <a asp-action="Upsert" asp-route-id="@t.Id" class="btn btn-sm btn-warning w-100">Sửa</a>
-                        <a asp-action="Delete" asp-route-id="@t.Id" class="btn btn-sm btn-danger w-100">Xóa</a>
+
+                        <div class="d-flex justify-content-center gap-2 mb-3">
+                            <span class="status-badge @(t.IsActive ? "status-active" : "status-inactive")">
+                                @(t.IsActive ? "Hoạt động" : "Khóa")
+                            </span>
+                            <span class="status-badge @(t.IsOccupied ? "status-occupied" : "status-free")">
+                                @(t.IsOccupied ? "Có khách" : "Trống")
+                            </span>
+                        </div>
+
+                        <div class="text-secondary small flex-grow-1 mb-3 fst-italic">
+                            @if(!string.IsNullOrEmpty(attach)) {
+                                <div class="p-2 bg-light rounded-3">@attach</div>
+                            } else {
+                                <span class="opacity-50">Chưa có thông tin</span>
+                            }
+                        </div>
+
+                        <div class="action-btn-group d-flex gap-2 justify-content-center mt-auto">
+                            <form asp-action="Clear" method="post" class="d-inline flex-fill">
+                                <input type="hidden" name="id" value="@t.Id" />
+                                <button type="submit" class="btn btn-light text-muted w-100 border hover-shadow" title="Dọn bàn/Reset">
+                                    🧹 Dọn
+                                </button>
+                            </form>
+                            <a asp-action="Upsert" asp-route-id="@t.Id" class="btn btn-light text-warning w-100 border hover-shadow" title="Chỉnh sửa">
+                                ✏️
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@t.Id" class="btn btn-light text-danger w-100 border hover-shadow" title="Xóa">
+                                🗑️
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    }
+        }
+    </div>
 </div>
 
 <script>
@@ -75,10 +243,18 @@ document.getElementById('btnAssign')?.addEventListener('click', async function()
     const formData = new FormData();
     formData.append('orderId', String(orderId));
     formData.append('tableId', String(checked[0]));
-    const res = await fetch('/Order/Assign', { method: 'POST', body: formData });
-    if (res.redirected) { window.location.href = res.url; return; }
-    window.location.reload();
+    
+    try {
+        const res = await fetch('/Order/Assign', { method: 'POST', body: formData });
+        if (res.redirected) { window.location.href = res.url; return; }
+        if (res.ok) {
+            window.location.reload();
+        } else {
+             alert('Có lỗi xảy ra khi gắn bàn.');
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Lỗi kết nối.');
+    }
 });
 </script>
-
-
