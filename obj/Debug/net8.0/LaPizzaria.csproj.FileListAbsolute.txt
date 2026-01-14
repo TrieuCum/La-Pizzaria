@@ -778,4 +778,3 @@ C:\Users\admin\Downloads\DuAnCS6\La-Pizzaria\obj\Debug\net8.0\refint\LaPizzaria.
 C:\Users\admin\Downloads\DuAnCS6\La-Pizzaria\obj\Debug\net8.0\LaPizzaria.pdb
 C:\Users\admin\Downloads\DuAnCS6\La-Pizzaria\obj\Debug\net8.0\LaPizzaria.genruntimeconfig.cache
 C:\Users\admin\Downloads\DuAnCS6\La-Pizzaria\obj\Debug\net8.0\ref\LaPizzaria.dll
-C:\Users\admin\Downloads\DuAnCS6\La-Pizzaria\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
