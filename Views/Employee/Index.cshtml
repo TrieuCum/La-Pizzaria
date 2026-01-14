@@ -1,0 +1,319 @@
+@model List<LaPizzaria.Models.Employee>
+@{ ViewData["Title"] = "Quản lý Nhân viên"; }
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    :root {
+        --primary-red: #da291c;
+        --light-cream: #f8f5ed;
+        --wood-brown: #5a2e0a;
+    }
+    .employee-banner {
+        background: #ffffff;
+        background-image: 
+            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px);
+        position: relative;
+        padding: 60px 0;
+        margin-bottom: 3rem;
+        overflow: hidden;
+    }
+    .employee-banner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: repeating-linear-gradient(
+            90deg,
+            #ff7a00 0px,
+            #ff7a00 20px,
+            #ffffff 20px,
+            #ffffff 40px
+        );
+    }
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(36px, 6vw, 64px);
+        color: #da291c;
+        margin-bottom: 0.5rem;
+        line-height: 1.1;
+    }
+    .page-subtitle {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: clamp(20px, 3vw, 28px);
+        color: #5a2e0a;
+    }
+    .brand-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        background: white;
+        overflow: hidden;
+    }
+    .btn-brand-primary {
+        background-color: var(--primary-red);
+        border-color: var(--primary-red);
+        color: white;
+        font-weight: bold;
+        padding: 10px 24px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .btn-brand-primary:hover {
+        background-color: var(--wood-brown);
+        border-color: var(--wood-brown);
+        transform: translateY(-2px);
+        color: white;
+    }
+    .search-pill {
+        border: 2px solid #eee;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    .search-pill:focus {
+        border-color: var(--primary-red);
+        box-shadow: 0 0 0 4px rgba(218, 41, 28, 0.1);
+    }
+    .table-hover tbody tr:hover {
+        background-color: var(--light-cream);
+    }
+    .badge-status {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+    .btn-action {
+        padding: 6px 12px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+</style>
+
+<!-- Banner Section -->
+<div class="employee-banner">
+    <div class="container position-relative" style="z-index: 1;">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1 class="page-title">NHÂN VIÊN</h1>
+                <div class="page-subtitle">
+                    <span>QUẢN LÝ NHÂN SỰ</span>
+                </div>
+            </div>
+            <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
+                <button type="button" class="btn btn-brand-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#employeeModal" onclick="openCreateModal()">
+                    <i class="bi bi-plus-circle me-2"></i>Thêm nhân viên
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Toolbar -->
+    <div class="brand-card p-4 mb-4">
+        <form method="get" id="filterForm">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <div class="position-relative">
+                        <i class="bi bi-search position-absolute top-50 translate-middle-y text-muted" style="left: 15px;"></i>
+                        <input type="text" name="search" class="form-control search-pill ps-5" placeholder="Tìm theo tên, email, SĐT, mã NV..." value="@Context.Request.Query["search"]">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="position" class="form-select search-pill">
+                        <option value="">Tất cả chức vụ</option>
+                        @foreach (var pos in ViewBag.Positions as List<string> ?? new List<string>())
+                        {
+                            <option value="@pos" selected="@(Context.Request.Query["position"] == pos)">@pos</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select search-pill">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="Đang làm" selected="@(Context.Request.Query["status"] == "Đang làm")">Đang làm</option>
+                        <option value="Nghỉ việc" selected="@(Context.Request.Query["status"] == "Nghỉ việc")">Nghỉ việc</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-dark w-100" style="border-radius: 10px; font-weight: 600;">
+                        <i class="bi bi-funnel me-1"></i>Lọc
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="brand-card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead style="background-color: var(--light-cream);">
+                    <tr>
+                        <th class="py-3">Mã NV</th>
+                        <th>Họ và tên</th>
+                        <th>Email</th>
+                        <th>Số điện thoại</th>
+                        <th>Chức vụ</th>
+                        <th>Ngày vào làm</th>
+                        <th>Trạng thái</th>
+                        <th class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var emp in Model)
+                        {
+                            <tr>
+                                <td class="py-3 fw-bold">@emp.EmployeeCode</td>
+                                <td>@emp.FullName</td>
+                                <td><small class="text-muted">@emp.Email</small></td>
+                                <td>@emp.PhoneNumber</td>
+                                <td><span class="badge bg-secondary">@emp.Position</span></td>
+                                <td>@emp.HireDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (emp.Status == "Đang làm")
+                                    {
+                                        <span class="badge bg-success badge-status">Đang làm</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger badge-status">Nghỉ việc</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary btn-action" onclick="openEditModal(@emp.Id)" title="Sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteEmployee(@emp.Id)" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Không có nhân viên nào</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="employeeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 16px; border: none;">
+            <div class="modal-header" style="background-color: var(--light-cream); border: none;">
+                <h5 class="modal-title fw-bold" id="modalTitle">Thêm nhân viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="employeeForm" method="post">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="employeeId" name="Id">
+                    <input type="hidden" id="createdAt" name="CreatedAt">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Mã nhân viên <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="EmployeeCode" id="employeeCode" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Họ và tên <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="FullName" id="fullName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" name="Email" id="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control" name="PhoneNumber" id="phoneNumber" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Chức vụ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="Position" id="position" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Lương</label>
+                            <input type="number" class="form-control" name="Salary" id="salary" step="0.01">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Ngày vào làm <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="HireDate" id="hireDate" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Trạng thái <span class="text-danger">*</span></label>
+                            <select class="form-select" name="Status" id="status" required>
+                                <option value="Đang làm">Đang làm</option>
+                                <option value="Nghỉ việc">Nghỉ việc</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border: none;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-brand-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+<script>
+function openCreateModal() {
+    document.getElementById('modalTitle').textContent = 'Thêm nhân viên';
+    document.getElementById('employeeForm').action = '@Url.Action("Create")';
+    document.getElementById('employeeForm').reset();
+    document.getElementById('employeeId').value = '';
+    document.getElementById('hireDate').value = new Date().toISOString().split('T')[0];
+}
+
+async function openEditModal(id) {
+    const response = await fetch(`/Employee/Edit/${id}`);
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    document.getElementById('modalTitle').textContent = 'Sửa nhân viên';
+    document.getElementById('employeeForm').action = '@Url.Action("Edit")';
+    document.getElementById('employeeId').value = doc.querySelector('[name="Id"]')?.value || '';
+    document.getElementById('employeeCode').value = doc.querySelector('[name="EmployeeCode"]')?.value || '';
+    document.getElementById('fullName').value = doc.querySelector('[name="FullName"]')?.value || '';
+    document.getElementById('email').value = doc.querySelector('[name="Email"]')?.value || '';
+    document.getElementById('phoneNumber').value = doc.querySelector('[name="PhoneNumber"]')?.value || '';
+    document.getElementById('position').value = doc.querySelector('[name="Position"]')?.value || '';
+    document.getElementById('salary').value = doc.querySelector('[name="Salary"]')?.value || '';
+    document.getElementById('hireDate').value = doc.querySelector('[name="HireDate"]')?.value?.split('T')[0] || '';
+    document.getElementById('status').value = doc.querySelector('[name="Status"]')?.value || 'Đang làm';
+    document.getElementById('createdAt').value = doc.querySelector('[name="CreatedAt"]')?.value || '';
+    
+    new bootstrap.Modal(document.getElementById('employeeModal')).show();
+}
+
+function deleteEmployee(id) {
+    if (confirm('Bạn có chắc muốn xóa nhân viên này?')) {
+        const form = document.getElementById('deleteForm');
+        form.action = `/Employee/Delete/${id}`;
+        form.submit();
+    }
+}
+</script>
+}

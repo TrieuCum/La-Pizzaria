@@ -1,37 +1,37 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "E:\\DuAnCS6\\",
+  "WorkspaceRootPath": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|e:\\duancs6\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|e:\\duancs6\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
-      "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|e:\\duancs6\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|e:\\duancs6\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|e:\\duancs6\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A903BAF6-D163-4258-AA90-4F2A94C9CD18}|LaPizzaria.Data\\LaPizzaria.Data.csproj|e:\\duancs6\\lapizzaria.data\\applicationdbcontextfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A58B46D2-9857-4AD4-9028-02E8157474D4}|LaPizzaria.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A903BAF6-D163-4258-AA90-4F2A94C9CD18}|LaPizzaria.Data\\LaPizzaria.Data.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\lapizzaria.data\\applicationdbcontextfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A903BAF6-D163-4258-AA90-4F2A94C9CD18}|LaPizzaria.Data\\LaPizzaria.Data.csproj|solutionrelative:lapizzaria.data\\applicationdbcontextfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|e:\\duancs6\\lapizzaria.models\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\lapizzaria.models\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|solutionrelative:lapizzaria.models\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|e:\\duancs6\\lapizzaria.models\\applicationuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|c:\\users\\admin\\downloads\\duancs6\\la-pizzaria\\lapizzaria.models\\applicationuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6FD0C13D-C530-4343-A4EC-D3D30CBE63D3}|LaPizzaria.Models\\LaPizzaria.Models.csproj|solutionrelative:lapizzaria.models\\applicationuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -42,28 +42,31 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 3,
           "Children": [
             {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Index.cshtml",
-              "DocumentMoniker": "E:\\DuAnCS6\\Views\\Home\\Index.cshtml",
-              "RelativeDocumentMoniker": "Views\\Home\\Index.cshtml",
-              "ToolTip": "E:\\DuAnCS6\\Views\\Home\\Index.cshtml",
-              "RelativeToolTip": "Views\\Home\\Index.cshtml",
-              "ViewState": "AgIAAN4AAAAAAAAAAAAAAIMAAAAbAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-11-21T02:48:27.921Z",
-              "EditorCaption": ""
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\Views\\Home\\Index.cshtml",
+              "RelativeDocumentMoniker": "Views\\Home\\Index.cshtml",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\Views\\Home\\Index.cshtml",
+              "RelativeToolTip": "Views\\Home\\Index.cshtml",
+              "ViewState": "AgIAAN4AAAAAAAAAAAAAAIMAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-11-21T02:48:27.921Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "site.css",
-              "DocumentMoniker": "E:\\DuAnCS6\\wwwroot\\css\\site.css",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\wwwroot\\css\\site.css",
               "RelativeDocumentMoniker": "wwwroot\\css\\site.css",
-              "ToolTip": "E:\\DuAnCS6\\wwwroot\\css\\site.css",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\wwwroot\\css\\site.css",
               "RelativeToolTip": "wwwroot\\css\\site.css",
               "ViewState": "AgIAAAkAAAAAAAAAAAAAACsAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
@@ -71,25 +74,26 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 0,
               "Title": "appsettings.Development.json",
-              "DocumentMoniker": "E:\\DuAnCS6\\appsettings.Development.json",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\appsettings.Development.json",
               "RelativeDocumentMoniker": "appsettings.Development.json",
-              "ToolTip": "E:\\DuAnCS6\\appsettings.Development.json",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\appsettings.Development.json",
               "RelativeToolTip": "appsettings.Development.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAmAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2025-11-14T03:17:02.945Z"
+              "WhenOpened": "2025-11-14T03:17:02.945Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 1,
               "Title": "appsettings.json",
-              "DocumentMoniker": "E:\\DuAnCS6\\appsettings.json",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
-              "ToolTip": "E:\\DuAnCS6\\appsettings.json",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\appsettings.json",
               "RelativeToolTip": "appsettings.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAmAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
               "WhenOpened": "2025-11-14T02:49:03.569Z"
             },
@@ -97,9 +101,9 @@
               "$type": "Document",
               "DocumentIndex": 5,
               "Title": "ApplicationDbContextFactory.cs",
-              "DocumentMoniker": "E:\\DuAnCS6\\LaPizzaria.Data\\ApplicationDbContextFactory.cs",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Data\\ApplicationDbContextFactory.cs",
               "RelativeDocumentMoniker": "LaPizzaria.Data\\ApplicationDbContextFactory.cs",
-              "ToolTip": "E:\\DuAnCS6\\LaPizzaria.Data\\ApplicationDbContextFactory.cs",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Data\\ApplicationDbContextFactory.cs",
               "RelativeToolTip": "LaPizzaria.Data\\ApplicationDbContextFactory.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -107,11 +111,11 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Program.cs",
-              "DocumentMoniker": "E:\\DuAnCS6\\Program.cs",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "E:\\DuAnCS6\\Program.cs",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\Program.cs",
               "RelativeToolTip": "Program.cs",
               "ViewState": "AgIAAEEAAAAAAAAAAAAvwEkAAAAEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -121,9 +125,9 @@
               "$type": "Document",
               "DocumentIndex": 6,
               "Title": "Class1.cs",
-              "DocumentMoniker": "E:\\DuAnCS6\\LaPizzaria.Models\\Class1.cs",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Models\\Class1.cs",
               "RelativeDocumentMoniker": "LaPizzaria.Models\\Class1.cs",
-              "ToolTip": "E:\\DuAnCS6\\LaPizzaria.Models\\Class1.cs",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Models\\Class1.cs",
               "RelativeToolTip": "LaPizzaria.Models\\Class1.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -133,13 +137,23 @@
               "$type": "Document",
               "DocumentIndex": 7,
               "Title": "ApplicationUser.cs",
-              "DocumentMoniker": "E:\\DuAnCS6\\LaPizzaria.Models\\ApplicationUser.cs",
+              "DocumentMoniker": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Models\\ApplicationUser.cs",
               "RelativeDocumentMoniker": "LaPizzaria.Models\\ApplicationUser.cs",
-              "ToolTip": "E:\\DuAnCS6\\LaPizzaria.Models\\ApplicationUser.cs",
+              "ToolTip": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Models\\ApplicationUser.cs",
               "RelativeToolTip": "LaPizzaria.Models\\ApplicationUser.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-08T18:05:37.892Z"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 1524,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:3:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
             }
           ]
         }

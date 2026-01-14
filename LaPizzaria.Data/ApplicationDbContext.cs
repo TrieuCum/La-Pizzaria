@@ -26,6 +26,7 @@ namespace LaPizzaria.Data
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
 		public DbSet<Voucher> Vouchers { get; set; }
 		public DbSet<OrderVoucher> OrderVouchers { get; set; }
+		public DbSet<Employee> Employees { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +50,7 @@ namespace LaPizzaria.Data
             modelBuilder.Entity<Combo>().Property(c => c.DiscountPercent).HasPrecision(18, 2);
             modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountAmount).HasPrecision(18, 2);
             modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountPercent).HasPrecision(18, 2);
+            modelBuilder.Entity<Employee>().Property(e => e.Salary).HasPrecision(18, 2);
 
             // Order-User relationship
             modelBuilder.Entity<Order>()
