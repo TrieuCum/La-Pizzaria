@@ -3,44 +3,74 @@
     var from = (DateTime)ViewBag.From;
 }
 
-<h3>@ViewData["Title"]</h3>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="mb-0 fw-bold">📊 Thống kê theo tuần</h3>
+    <div class="d-flex align-items-center gap-2">
+        <a class="btn btn-sm btn-outline-dark" asp-action="Daily">Thống kê theo ngày</a>
+        <a class="btn btn-sm btn-dark" asp-action="Weekly">Thống kê theo tuần</a>
+    </div>
+</div>
 
-<div class="d-flex align-items-center gap-2 mb-3">
-    <a class="btn btn-sm btn-outline-dark" asp-action="Daily">Thống kê theo ngày</a>
-    <a class="btn btn-sm btn-dark" asp-action="Weekly">Thống kê theo tuần</a>
-    <div class="ms-auto small text-muted">Dọc: bảng chi tiết | Ngang: biểu đồ</div>
-    </div>
-
-<div class="row g-3 align-items-end mb-3">
-    <div class="col-auto">
-        <label class="form-label">Từ ngày</label>
-        <input id="fromInput" type="date" class="form-control" value="@from.ToString("yyyy-MM-dd")" />
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Đến ngày</label>
-        <input id="toInput" type="date" class="form-control" value="@(((DateTime)ViewBag.To).ToString("yyyy-MM-dd"))" />
-    </div>
-    <div class="col-auto">
-        <button id="btnLoad" class="btn btn-primary">Tải</button>
-    </div>
-    <div class="col-12">
-        <div class="d-flex flex-wrap gap-2 mb-2">
-            <span class="badge bg-primary" id="badgeRange">-</span>
-            <span class="badge bg-success" id="badgeTotal">0đ</span>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-auto">
+                <label class="form-label fw-semibold mb-1">📅 Từ ngày</label>
+                <input id="fromInput" type="date" class="form-control form-control-lg" value="@from.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-auto">
+                <label class="form-label fw-semibold mb-1">📅 Đến ngày</label>
+                <input id="toInput" type="date" class="form-control form-control-lg" value="@(((DateTime)ViewBag.To).ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-md-auto">
+                <button id="btnLoad" class="btn btn-primary btn-lg px-4">🔄 Tải dữ liệu</button>
+            </div>
         </div>
-        <canvas id="weekChart" height="140"></canvas>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-3 mb-3 align-items-center">
+                    <span class="badge bg-primary bg-gradient px-3 py-2 fs-6" id="badgeRange">-</span>
+                    <span class="badge bg-success bg-gradient px-3 py-2 fs-6" id="badgeTotal">0đ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-semibold">📈 Biểu đồ doanh thu theo tuần</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="weekChart" height="140"></canvas>
+            </div>
+        </div>
     </div>
     <div class="col-12">
-        <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle" id="detailTable">
-                <thead>
-                    <tr>
-                        <th>Ngày</th>
-                        <th>Doanh thu</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-semibold">📋 Chi tiết doanh thu theo ngày</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="detailTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="fw-semibold">Ngày</th>
+                                <th class="fw-semibold">Doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -94,8 +124,73 @@ async function loadWeek() {
     if (window.__weekChart) { window.__weekChart.destroy(); }
     window.__weekChart = new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets: [{ label: 'Revenue', data, borderColor: '#1976d2', backgroundColor: 'rgba(25,118,210,0.15)', tension: 0.2, fill: true }] },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        data: { 
+            labels, 
+            datasets: [{ 
+                label: 'Doanh thu', 
+                data, 
+                borderColor: 'rgba(25, 118, 210, 1)',
+                backgroundColor: 'rgba(25, 118, 210, 0.15)', 
+                tension: 0.4, 
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#1976d2',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverBackgroundColor: '#1565c0',
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 3
+            }] 
+        },
+        options: { 
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: { size: 14, weight: '600' },
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: '600' },
+                    bodyFont: { size: 13 },
+                    callbacks: {
+                        label: function(context) {
+                            return 'Doanh thu: ' + Number(context.parsed.y).toLocaleString() + 'đ';
+                        }
+                    }
+                }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + 'đ';
+                        },
+                        font: { size: 12 }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: { size: 12 }
+                    }
+                }
+            } 
+        }
     });
 
     // vertical table per day

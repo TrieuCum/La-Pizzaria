@@ -3,46 +3,74 @@
     var day = (DateTime)ViewBag.Day;
 }
 
-<h3>@ViewData["Title"]</h3>
-
-<div class="d-flex align-items-center gap-2 mb-3">
-    <a class="btn btn-sm btn-dark" asp-action="Daily">Thống kê theo ngày</a>
-    <a class="btn btn-sm btn-outline-dark" asp-action="Weekly">Thống kê theo tuần</a>
-    <div class="ms-auto small text-muted">Dọc: bảng chi tiết | Ngang: biểu đồ</div>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="mb-0 fw-bold">📊 Thống kê theo ngày</h3>
+    <div class="d-flex align-items-center gap-2">
+        <a class="btn btn-sm btn-dark" asp-action="Daily">Thống kê theo ngày</a>
+        <a class="btn btn-sm btn-outline-dark" asp-action="Weekly">Thống kê theo tuần</a>
+    </div>
 </div>
 
-<div class="row g-3 align-items-end mb-3">
-    <div class="col-auto">
-        <label class="form-label">Ngày</label>
-        <input id="dayInput" type="date" class="form-control" value="@day.ToString("yyyy-MM-dd")" />
-    </div>
-    <div class="col-auto">
-        <button id="btnLoad" class="btn btn-primary">Tải</button>
-    </div>
-    <div class="col-auto">
-        <a class="btn btn-outline-secondary" asp-action="Weekly">Xem theo tuần</a>
-    </div>
-    <div class="col-12">
-        <div class="d-flex flex-wrap gap-2 mb-2">
-            <span class="badge bg-primary" id="badgeDate">-</span>
-            <span class="badge bg-success" id="badgeRevenue">0đ</span>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-auto">
+                <label class="form-label fw-semibold mb-1">📅 Chọn ngày</label>
+                <input id="dayInput" type="date" class="form-control form-control-lg" value="@day.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-auto">
+                <button id="btnLoad" class="btn btn-primary btn-lg px-4">🔄 Tải dữ liệu</button>
+            </div>
+            <div class="col-md-auto">
+                <a class="btn btn-outline-secondary btn-lg" asp-action="Weekly">📈 Xem theo tuần</a>
+            </div>
         </div>
-        <div id="result" class="alert alert-light border"></div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-3 mb-3 align-items-center">
+                    <span class="badge bg-primary bg-gradient px-3 py-2 fs-6" id="badgeDate">-</span>
+                    <span class="badge bg-success bg-gradient px-3 py-2 fs-6" id="badgeRevenue">0đ</span>
+                </div>
+                <div id="result" class="alert alert-info border-0 shadow-sm mb-0"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-semibold">📊 Biểu đồ doanh thu</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dayChart" height="120"></canvas>
+            </div>
+        </div>
     </div>
     <div class="col-12">
-        <canvas id="dayChart" height="120"></canvas>
-    </div>
-    <div class="col-12">
-        <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle" id="detailTable">
-                <thead>
-                    <tr>
-                        <th>Chỉ số</th>
-                        <th>Giá trị</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-semibold">📋 Chi tiết thống kê</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="detailTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="fw-semibold">Chỉ số</th>
+                                <th class="fw-semibold">Giá trị</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -82,9 +110,63 @@ async function loadDay() {
         type: 'bar',
         data: {
             labels: [d.toLocaleDateString()],
-            datasets: [{ label: 'Revenue', data: [data.revenue], backgroundColor: '#4caf50' }]
+            datasets: [{ 
+                label: 'Doanh thu', 
+                data: [data.revenue], 
+                backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                borderColor: 'rgba(76, 175, 80, 1)',
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
         },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: { size: 14, weight: '600' },
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: '600' },
+                    bodyFont: { size: 13 },
+                    callbacks: {
+                        label: function(context) {
+                            return 'Doanh thu: ' + Number(context.parsed.y).toLocaleString() + 'đ';
+                        }
+                    }
+                }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + 'đ';
+                        },
+                        font: { size: 12 }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: { size: 12 }
+                    }
+                }
+            } 
+        }
     });
 }
 document.getElementById('btnLoad').addEventListener('click', loadDay);
