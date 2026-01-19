@@ -24,9 +24,14 @@ namespace LaPizzaria.Data
         public DbSet<ComboItem> ComboItems { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
-		public DbSet<Voucher> Vouchers { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
 		public DbSet<OrderVoucher> OrderVouchers { get; set; }
 		public DbSet<Employee> Employees { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+        public DbSet<Reward> Rewards { get; set; }
+        public DbSet<RewardRedemption> RewardRedemptions { get; set; }
+        public DbSet<FavoriteProduct> FavoriteProducts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +56,13 @@ namespace LaPizzaria.Data
             modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountAmount).HasPrecision(18, 2);
             modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountPercent).HasPrecision(18, 2);
             modelBuilder.Entity<Employee>().Property(e => e.Salary).HasPrecision(18, 2);
+            modelBuilder.Entity<ProductIngredient>().Property(pi => pi.QuantityPerUnit).HasPrecision(18, 2);
+            modelBuilder.Entity<Voucher>().Property(v => v.DiscountPercent).HasPrecision(18, 2);
+            modelBuilder.Entity<Order>().Property(o => o.Subtotal).HasPrecision(18, 2);
+            modelBuilder.Entity<Order>().Property(o => o.ShippingFee).HasPrecision(18, 2);
+            modelBuilder.Entity<Order>().Property(o => o.DiscountAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<Reward>().Property(r => r.DiscountAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<Reward>().Property(r => r.DiscountPercent).HasPrecision(18, 2);
 
             // Order-User relationship
             modelBuilder.Entity<Order>()
@@ -138,6 +150,60 @@ namespace LaPizzaria.Data
 				.HasOne(ov => ov.Voucher)
 				.WithMany()
 				.HasForeignKey(ov => ov.VoucherId);
+
+            // Configure Review
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.User)
+                .WithMany(u => u.Reviews)
+                .HasForeignKey(r => r.UserId);
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Order)
+                .WithMany(o => o.Reviews)
+                .HasForeignKey(r => r.OrderId);
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Product)
+                .WithMany()
+                .HasForeignKey(r => r.ProductId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure FavoriteProduct
+            modelBuilder.Entity<FavoriteProduct>()
+                .HasKey(fp => new { fp.UserId, fp.ProductId });
+            modelBuilder.Entity<FavoriteProduct>()
+                .HasOne(fp => fp.User)
+                .WithMany(u => u.FavoriteProducts)
+                .HasForeignKey(fp => fp.UserId);
+            modelBuilder.Entity<FavoriteProduct>()
+                .HasOne(fp => fp.Product)
+                .WithMany()
+                .HasForeignKey(fp => fp.ProductId);
+
+            // Configure RewardRedemption
+            modelBuilder.Entity<RewardRedemption>()
+                .HasOne(rr => rr.User)
+                .WithMany()
+                .HasForeignKey(rr => rr.UserId);
+            modelBuilder.Entity<RewardRedemption>()
+                .HasOne(rr => rr.Reward)
+                .WithMany()
+                .HasForeignKey(rr => rr.RewardId);
+
+            // Configure CartItem (map to existing table structure)
+            modelBuilder.Entity<CartItem>()
+                .ToTable("CartItems");
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.User)
+                .WithMany()
+                .HasForeignKey(ci => ci.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Product)
+                .WithMany()
+                .HasForeignKey(ci => ci.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Ignore UnitPrice as it's computed from Product
+            modelBuilder.Entity<CartItem>()
+                .Ignore(ci => ci.UnitPrice);
         }
     }
 }

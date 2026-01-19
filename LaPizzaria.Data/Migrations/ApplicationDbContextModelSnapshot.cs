@@ -40,6 +40,12 @@ namespace LaPizzaria.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DefaultAddress")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -51,7 +57,13 @@ namespace LaPizzaria.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Gender")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsMember")
                         .HasColumnType("bit");
 
                     b.Property<string>("LastName")
@@ -63,6 +75,12 @@ namespace LaPizzaria.Data.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("LoyaltyPoints")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("MemberSince")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -231,6 +249,32 @@ namespace LaPizzaria.Data.Migrations
                     b.ToTable("Employees");
                 });
 
+            modelBuilder.Entity("LaPizzaria.Models.FavoriteProduct", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ProductId1")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "ProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductId1");
+
+                    b.ToTable("FavoriteProducts");
+                });
+
             modelBuilder.Entity("LaPizzaria.Models.Ingredient", b =>
                 {
                     b.Property<int>("Id")
@@ -352,7 +396,22 @@ namespace LaPizzaria.Data.Migrations
                     b.Property<string>("DeliveryAddress")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("DeliveryType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("EstimatedDeliveryTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OrderCode")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("OrderDate")
@@ -364,6 +423,14 @@ namespace LaPizzaria.Data.Migrations
 
                     b.Property<string>("PaymentMethod")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("ShippingFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(18, 2)
@@ -516,6 +583,7 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("QuantityPerUnit")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ProductId", "IngredientId");
@@ -538,6 +606,155 @@ namespace LaPizzaria.Data.Migrations
                     b.HasIndex("ToppingId");
 
                     b.ToTable("ProductTopping");
+                });
+
+            modelBuilder.Entity("LaPizzaria.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminReply")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("AdminReplyDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PointsAwarded")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ProductId1")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductId1");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reviews");
+                });
+
+            modelBuilder.Entity("LaPizzaria.Models.Reward", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("DiscountPercent")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PointsRequired")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RewardType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StockQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Rewards");
+                });
+
+            modelBuilder.Entity("LaPizzaria.Models.RewardRedemption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PointsUsed")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RedeemedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RewardId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RewardId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RewardRedemptions");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Table", b =>
@@ -615,6 +832,7 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("DiscountPercent")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("ExpiresAtUtc")
@@ -793,6 +1011,29 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("LaPizzaria.Models.FavoriteProduct", b =>
+                {
+                    b.HasOne("LaPizzaria.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LaPizzaria.Models.Product", null)
+                        .WithMany("FavoriteProducts")
+                        .HasForeignKey("ProductId1");
+
+                    b.HasOne("LaPizzaria.Models.ApplicationUser", "User")
+                        .WithMany("FavoriteProducts")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LaPizzaria.Models.Invoice", b =>
                 {
                     b.HasOne("LaPizzaria.Models.Order", "Order")
@@ -946,6 +1187,55 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("Topping");
                 });
 
+            modelBuilder.Entity("LaPizzaria.Models.Review", b =>
+                {
+                    b.HasOne("LaPizzaria.Models.Order", "Order")
+                        .WithMany("Reviews")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LaPizzaria.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("LaPizzaria.Models.Product", null)
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId1");
+
+                    b.HasOne("LaPizzaria.Models.ApplicationUser", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LaPizzaria.Models.RewardRedemption", b =>
+                {
+                    b.HasOne("LaPizzaria.Models.Reward", "Reward")
+                        .WithMany()
+                        .HasForeignKey("RewardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LaPizzaria.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reward");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -999,7 +1289,11 @@ namespace LaPizzaria.Data.Migrations
 
             modelBuilder.Entity("LaPizzaria.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("FavoriteProducts");
+
                     b.Navigation("Orders");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Combo", b =>
@@ -1024,6 +1318,8 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("OrderTables");
 
                     b.Navigation("OrderVouchers");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.OrderDetail", b =>
@@ -1033,11 +1329,15 @@ namespace LaPizzaria.Data.Migrations
 
             modelBuilder.Entity("LaPizzaria.Models.Product", b =>
                 {
+                    b.Navigation("FavoriteProducts");
+
                     b.Navigation("OrderDetails");
 
                     b.Navigation("ProductIngredients");
 
                     b.Navigation("ProductToppings");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Table", b =>

@@ -160,26 +160,54 @@ namespace LaPizzaria.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(string id, string newPassword)
         {
-            if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["error"] = "Mật khẩu phải có ít nhất 6 ký tự!";
+                TempData["error"] = "Không tìm thấy tài khoản!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                TempData["error"] = "Mật khẩu không được để trống!";
                 return RedirectToAction(nameof(Index));
             }
 
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
+            if (user == null)
+            {
+                TempData["error"] = "Không tìm thấy tài khoản!";
+                return RedirectToAction(nameof(Index));
+            }
 
+            // Remove password validation temporarily for admin reset
+            var passwordValidator = _userManager.PasswordValidators.FirstOrDefault();
+            if (passwordValidator != null)
+            {
+                var validationResult = await passwordValidator.ValidateAsync(_userManager, user, newPassword);
+                if (!validationResult.Succeeded)
+                {
+                    var errors = validationResult.Errors.Select(e => e.Description);
+                    TempData["error"] = "Mật khẩu không hợp lệ: " + string.Join(", ", errors);
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            // Generate password reset token
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            
+            // Reset password using the token
             var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
             
             if (result.Succeeded)
             {
-                TempData["success"] = "Đặt lại mật khẩu thành công!";
+                TempData["success"] = $"Đặt lại mật khẩu thành công cho tài khoản {user.Email}!";
             }
             else
             {
-                TempData["error"] = string.Join(", ", result.Errors.Select(e => e.Description));
+                var errorMessages = result.Errors.Select(e => e.Description);
+                TempData["error"] = "Không thể đặt lại mật khẩu: " + string.Join(", ", errorMessages);
             }
+            
             return RedirectToAction(nameof(Index));
         }
     }

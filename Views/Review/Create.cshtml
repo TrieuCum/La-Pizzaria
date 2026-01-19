@@ -1,0 +1,114 @@
+@model LaPizzaria.Models.Review
+@{
+    ViewData["Title"] = "Đánh giá đơn hàng";
+    var order = ViewBag.Order as LaPizzaria.Models.Order;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    .rating-option {
+        cursor: pointer;
+        padding: 10px 20px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        margin: 5px;
+        transition: all 0.3s;
+        text-align: center;
+    }
+    .rating-option:hover {
+        border-color: #ffc107;
+        background: #fff9e6;
+    }
+    .rating-option.selected {
+        border-color: #ffc107;
+        background: #fff9e6;
+    }
+    .star-preview {
+        font-size: 2rem;
+        color: #ffc107;
+    }
+</style>
+
+<div class="container mb-5">
+    <h2 class="mb-4"><i class="bi bi-star me-2"></i>Đánh giá đơn hàng</h2>
+
+    @if (order != null)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Đơn hàng #@order.OrderCode</h5>
+                <p class="text-muted mb-0">Ngày đặt: @order.OrderDate.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+        </div>
+    }
+
+    <form asp-action="Create" method="post" enctype="multipart/form-data" class="card">
+        <div class="card-body p-4">
+            <input type="hidden" asp-for="OrderId" />
+
+            <div class="mb-4">
+                <label class="form-label fw-bold">Đánh giá của bạn <span class="text-danger">*</span></label>
+                <div class="d-flex flex-wrap" id="ratingOptions">
+                    <div class="rating-option" data-rating="1">
+                        <div class="star-preview">⭐</div>
+                        <div>Tệ</div>
+                    </div>
+                    <div class="rating-option" data-rating="2">
+                        <div class="star-preview">⭐⭐</div>
+                        <div>Không hài lòng</div>
+                    </div>
+                    <div class="rating-option" data-rating="3">
+                        <div class="star-preview">⭐⭐⭐</div>
+                        <div>Bình thường</div>
+                    </div>
+                    <div class="rating-option" data-rating="4">
+                        <div class="star-preview">⭐⭐⭐⭐</div>
+                        <div>Hài lòng</div>
+                    </div>
+                    <div class="rating-option" data-rating="5">
+                        <div class="star-preview">⭐⭐⭐⭐⭐</div>
+                        <div>Rất hài lòng</div>
+                    </div>
+                </div>
+                <input type="hidden" asp-for="Rating" id="ratingInput" required />
+                <span asp-validation-for="Rating" class="text-danger"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Comment" class="form-label fw-bold">Đánh giá chi tiết</label>
+                <textarea asp-for="Comment" class="form-control" rows="5" placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold">Đính kèm hình ảnh</label>
+                <input type="file" name="reviewImage" class="form-control" accept="image/*" />
+                <small class="text-muted">Tối đa 5MB (JPG, PNG, GIF)</small>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Sau khi đánh giá, bạn sẽ nhận được <strong>50 điểm thưởng</strong>!
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>Gửi đánh giá
+                </button>
+                <a href="@Url.Action("Index", "Order")" class="btn btn-outline-secondary">Hủy</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<partial name="_ValidationScriptsPartial" />
+
+<script>
+document.querySelectorAll('.rating-option').forEach(option => {
+    option.addEventListener('click', function() {
+        document.querySelectorAll('.rating-option').forEach(opt => opt.classList.remove('selected'));
+        this.classList.add('selected');
+        document.getElementById('ratingInput').value = this.dataset.rating;
+    });
+});
+</script>

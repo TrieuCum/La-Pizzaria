@@ -3416,19 +3416,19 @@
   },
   "packageFolders": {
     "C:\\Users\\admin\\.nuget\\packages\\": {},
-    "D:\\shared components,tool,sdk\\NuGetPackages": {}
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Services\\LaPizzaria.Services.csproj",
+      "projectUniqueName": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Services\\LaPizzaria.Services.csproj",
       "projectName": "LaPizzaria.Services",
-      "projectPath": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Services\\LaPizzaria.Services.csproj",
+      "projectPath": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Services\\LaPizzaria.Services.csproj",
       "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Services\\obj\\",
+      "outputPath": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Services\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "D:\\shared components,tool,sdk\\NuGetPackages"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
         "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -3447,8 +3447,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Data\\LaPizzaria.Data.csproj": {
-              "projectPath": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Data\\LaPizzaria.Data.csproj"
+            "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Data\\LaPizzaria.Data.csproj": {
+              "projectPath": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Data\\LaPizzaria.Data.csproj"
             }
           }
         }
@@ -3463,7 +3463,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -3490,7 +3490,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

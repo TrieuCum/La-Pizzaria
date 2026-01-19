@@ -13,13 +13,15 @@ namespace LaPizzaria.Services
         private readonly IInventoryService _inventory;
         private readonly IComboService _comboService;
         private readonly IPricingService _pricingService;
+        private readonly ILoyaltyService? _loyaltyService;
 
-        public OrderService(ApplicationDbContext db, IInventoryService inventory, IComboService comboService, IPricingService pricingService)
+        public OrderService(ApplicationDbContext db, IInventoryService inventory, IComboService comboService, IPricingService pricingService, ILoyaltyService? loyaltyService = null)
         {
             _db = db;
             _inventory = inventory;
             _comboService = comboService;
             _pricingService = pricingService;
+            _loyaltyService = loyaltyService;
         }
 
         public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds)
@@ -31,10 +33,15 @@ namespace LaPizzaria.Services
                 throw new System.InvalidOperationException("Đang hết nguyên liệu");
             }
 
+            // Generate order code
+            var orderCode = GenerateOrderCode();
+
             var order = new Order
             {
-                OrderStatus = "Pending",
-                OrderDetails = itemList
+                OrderCode = orderCode,
+                OrderStatus = OrderStatus.Pending,
+                OrderDetails = itemList,
+                OrderDate = DateTime.UtcNow
             };
             if (!string.IsNullOrEmpty(userId))
             {
@@ -50,7 +57,19 @@ namespace LaPizzaria.Services
             }
 
             order.TotalPrice = await CalculateTotalAsync(order.Id);
+            order.Subtotal = order.OrderDetails.Sum(od => od.Subtotal);
             await _db.SaveChangesAsync();
+
+            // Award loyalty points if user is a member
+            if (!string.IsNullOrEmpty(userId) && _loyaltyService != null && order.User?.IsMember == true)
+            {
+                var points = await _loyaltyService.CalculatePointsAsync(order.TotalPrice);
+                if (points > 0)
+                {
+                    await _loyaltyService.AwardPointsAsync(userId, points, $"Đơn hàng #{orderCode}");
+                }
+            }
+
             return order;
         }
 
@@ -183,6 +202,15 @@ namespace LaPizzaria.Services
             }
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        private string GenerateOrderCode()
+        {
+            // Format: LP + YYMMDD + 4 digits
+            var date = DateTime.UtcNow;
+            var datePart = date.ToString("yyMMdd");
+            var randomPart = new System.Random().Next(1000, 9999).ToString();
+            return $"LP{datePart}{randomPart}";
         }
     }
 }

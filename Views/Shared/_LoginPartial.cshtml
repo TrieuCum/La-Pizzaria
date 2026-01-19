@@ -6,16 +6,35 @@
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item d-flex align-items-center">
+    <li class="nav-item dropdown">
         @{
             var user = await UserManager.GetUserAsync(User);
             var displayName = string.IsNullOrWhiteSpace(user?.FirstName + user?.LastName) ? UserManager.GetUserName(User) : ($"{user!.FirstName} {user!.LastName}").Trim();
             var avatar = string.IsNullOrWhiteSpace(user?.AvatarUrl) ? "/images/default-avatar.png" : user!.AvatarUrl;
         }
-        <a id="manage" class="nav-link d-flex align-items-center gap-2" asp-controller="Account" asp-action="Manage" title="Manage">
+        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <img src="@avatar" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover" />
             <span>@displayName</span>
         </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" asp-controller="Account" asp-action="Manage"><i class="bi bi-person-circle me-2"></i>Hồ sơ</a></li>
+            @if (user != null && !user.IsMember)
+            {
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form method="post" asp-controller="Account" asp-action="RegisterMember" class="d-inline">
+                        <button type="submit" class="dropdown-item text-primary">
+                            <i class="bi bi-star me-2"></i>Đăng ký hội viên
+                        </button>
+                    </form>
+                </li>
+            }
+            @if (user != null && user.IsMember)
+            {
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item disabled"><i class="bi bi-star-fill me-2 text-warning"></i>Hội viên (@user.LoyaltyPoints điểm)</a></li>
+            }
+        </ul>
     </li>
     <li class="nav-item">
         <form id="logoutForm" class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">

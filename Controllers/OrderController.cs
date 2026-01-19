@@ -7,6 +7,7 @@ using LaPizzaria.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace LaPizzaria.Controllers
 {
@@ -17,20 +18,116 @@ namespace LaPizzaria.Controllers
         private readonly IQrService _qrService;
         private readonly IComboService _comboService;
         private readonly IVoucherService _voucherService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService)
+        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService, UserManager<ApplicationUser> userManager)
         {
             _db = db;
             _orderService = orderService;
             _qrService = qrService;
             _comboService = comboService;
             _voucherService = voucherService;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index()
         {
-            var orders = await _db.Orders.Include(o => o.OrderDetails).ToListAsync();
+            var user = await _userManager.GetUserAsync(User);
+            IQueryable<Order> query = _db.Orders
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product);
+
+            // If not admin, only show user's orders
+            if (user != null && !User.IsInRole("Admin"))
+            {
+                query = query.Where(o => o.UserId == user.Id);
+            }
+
+            var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
             return View(orders);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Track(int? id, string? orderCode)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            Order? order = null;
+            if (id.HasValue)
+            {
+                order = await _db.Orders
+                    .Include(o => o.OrderDetails)
+                        .ThenInclude(od => od.Product)
+                    .Include(o => o.OrderVouchers)
+                        .ThenInclude(ov => ov.Voucher)
+                    .FirstOrDefaultAsync(o => o.Id == id && o.UserId == user.Id);
+            }
+            else if (!string.IsNullOrEmpty(orderCode))
+            {
+                order = await _db.Orders
+                    .Include(o => o.OrderDetails)
+                        .ThenInclude(od => od.Product)
+                    .Include(o => o.OrderVouchers)
+                        .ThenInclude(ov => ov.Voucher)
+                    .FirstOrDefaultAsync(o => o.OrderCode == orderCode && o.UserId == user.Id);
+            }
+
+            if (order == null) return NotFound();
+
+            return View(order);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int id, string status)
+        {
+            var order = await _db.Orders.FindAsync(id);
+            if (order == null) return NotFound();
+
+            order.OrderStatus = status;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            // Set estimated delivery time when status changes to "Đang giao"
+            if (status == OrderStatus.Delivering && !order.EstimatedDeliveryTime.HasValue)
+            {
+                order.EstimatedDeliveryTime = DateTime.UtcNow.AddMinutes(30); // 30 minutes default
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["success"] = "Đã cập nhật trạng thái đơn hàng.";
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var order = await _db.Orders
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == id && o.UserId == user.Id);
+
+            if (order == null) return NotFound();
+
+            // Only allow cancellation during "Đang chế biến" status
+            if (order.OrderStatus != OrderStatus.Preparing)
+            {
+                TempData["error"] = "Chỉ có thể hủy đơn hàng khi đang trong giai đoạn chế biến.";
+                return RedirectToAction("Track", new { id });
+            }
+
+            order.OrderStatus = OrderStatus.Cancelled;
+            order.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            TempData["success"] = "Đã hủy đơn hàng.";
+            return RedirectToAction("Track", new { id });
         }
 
         [HttpGet]

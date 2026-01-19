@@ -1,7 +1,8 @@
 @model IEnumerable<LaPizzaria.Models.Order>
+@using LaPizzaria.Models
 
 @{
-    ViewData["Title"] = "Quản lý Đơn hàng";
+    ViewData["Title"] = User.IsInRole("Admin") ? "Quản lý Đơn hàng" : "Đơn hàng của tôi";
 }
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -217,23 +218,38 @@
                             </td>
                             <td class="text-end pe-3">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <form asp-action="Recalculate" method="post" class="d-inline">
-                                        <input type="hidden" name="orderId" value="@o.Id" />
-                                        <button class="btn btn-outline-secondary btn-sm" type="submit" title="Tính lại tổng tiền">
-                                            <i class="bi bi-calculator"></i>
-                                        </button>
-                                    </form>
-                                    <a class="btn btn-outline-primary btn-sm" asp-action="SplitForm" asp-route-orderId="@o.Id" title="Tách đơn hàng">
-                                        <i class="bi bi-scissors"></i>
-                                    </a>
-                                    
-                                    @if(o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled") {
-                                        <form asp-action="Pay" method="post" class="d-inline">
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <form asp-action="Recalculate" method="post" class="d-inline">
                                             <input type="hidden" name="orderId" value="@o.Id" />
-                                            <button class="btn btn-success btn-sm" type="submit">
-                                                <i class="bi bi-cash-coin me-1"></i>Thanh toán
+                                            <button class="btn btn-outline-secondary btn-sm" type="submit" title="Tính lại tổng tiền">
+                                                <i class="bi bi-calculator"></i>
                                             </button>
                                         </form>
+                                        <a class="btn btn-outline-primary btn-sm" asp-action="SplitForm" asp-route-orderId="@o.Id" title="Tách đơn hàng">
+                                            <i class="bi bi-scissors"></i>
+                                        </a>
+                                        
+                                        @if(o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled") {
+                                            <form asp-action="Pay" method="post" class="d-inline">
+                                                <input type="hidden" name="orderId" value="@o.Id" />
+                                                <button class="btn btn-success btn-sm" type="submit">
+                                                    <i class="bi bi-cash-coin me-1"></i>Thanh toán
+                                                </button>
+                                            </form>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <a class="btn btn-outline-primary btn-sm" asp-action="Track" asp-route-id="@o.Id" title="Theo dõi đơn hàng">
+                                            <i class="bi bi-truck me-1"></i>Theo dõi
+                                        </a>
+                                        @if (o.OrderStatus == OrderStatus.Completed)
+                                        {
+                                            <a class="btn btn-outline-warning btn-sm" asp-controller="Review" asp-action="Create" asp-route-orderId="@o.Id" title="Đánh giá">
+                                                <i class="bi bi-star me-1"></i>Đánh giá
+                                            </a>
+                                        }
                                     }
                                 </div>
                             </td>

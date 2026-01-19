@@ -1,76 +1,393 @@
 @model LaPizzaria.ViewModels.ManageAccountViewModel
-
 @{
-    ViewData["Title"] = "Quản lý tài khoản";
+    ViewData["Title"] = "Hồ sơ của tôi";
 }
 
-<h3>@ViewData["Title"]</h3>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-<div class="row g-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <img id="avatarPreview" src="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "/images/default-avatar.png" : Model.AvatarUrl)" alt="avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover" />
-                <div class="mt-2 text-muted">Ảnh đại diện</div>
+<style>
+    :root {
+        --primary-red: #da291c;
+        --light-cream: #f8f5ed;
+    }
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+    }
+    .avatar-upload {
+        position: relative;
+        display: inline-block;
+    }
+    .avatar-upload img {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .avatar-upload label {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: var(--primary-red);
+        color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .avatar-upload input[type="file"] {
+        display: none;
+    }
+    .nav-pills .nav-link {
+        color: #666;
+        border-radius: 10px;
+        margin-right: 10px;
+    }
+    .nav-pills .nav-link.active {
+        background: var(--primary-red);
+        color: white;
+    }
+    .card-section {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+</style>
+
+<div class="profile-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="avatar-upload">
+                    <img id="avatarPreview" src="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "/images/default-avatar.png" : Model.AvatarUrl)" alt="Avatar">
+                    <label for="avatarFile">
+                        <i class="bi bi-camera-fill"></i>
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <h2 class="mb-2">@Model.FirstName @Model.LastName</h2>
+                <p class="mb-1"><i class="bi bi-envelope me-2"></i>@Model.UserName</p>
+                @if (Model.IsMember)
+                {
+                    <p class="mb-0">
+                        <span class="badge bg-warning text-dark me-2">
+                            <i class="bi bi-star-fill me-1"></i>Hội viên
+                        </span>
+                        <span class="badge bg-light text-dark">
+                            <i class="bi bi-gift-fill me-1"></i>@Model.LoyaltyPoints điểm
+                        </span>
+                    </p>
+                }
+                else
+                {
+                    <form method="post" action="@Url.Action("RegisterMember")" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-light btn-sm">
+                            <i class="bi bi-star me-1"></i>Đăng ký hội viên ngay
+                        </button>
+                    </form>
+                }
             </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <form asp-action="Manage" method="post">
-            <div class="card">
-                <div class="card-body">
+</div>
+
+<div class="container mb-5">
+    <ul class="nav nav-pills mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="pill" href="#profile">Thông tin tài khoản</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="pill" href="#orders">Lịch sử đơn hàng</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="pill" href="#reviews">Đánh giá của tôi</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="pill" href="#favorites">Món yêu thích</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Profile Tab -->
+        <div class="tab-pane fade show active" id="profile">
+            <form asp-action="Manage" method="post" enctype="multipart/form-data" class="card card-section">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4"><i class="bi bi-person-circle me-2"></i>Thông tin tài khoản</h5>
+                    
+                    <input type="file" id="avatarFile" name="avatarFile" accept="image/*" onchange="previewAvatar(this)" style="display: none;">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Lưu ý:</strong> File ảnh phải nhỏ hơn 2MB. Chỉ chấp nhận định dạng JPG, PNG, GIF.
+                    </div>
+                    
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="UserName" class="form-label"></label>
-                            <input asp-for="UserName" class="form-control" />
-                            <span asp-validation-for="UserName" class="text-danger"></span>
+                            <label asp-for="FirstName" class="form-label">Họ</label>
+                            <input asp-for="FirstName" class="form-control" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Tên hiển thị</label>
-                            <div class="input-group">
-                                <input asp-for="FirstName" class="form-control" placeholder="Họ" />
-                                <input asp-for="LastName" class="form-control" placeholder="Tên" />
-                            </div>
+                            <label asp-for="LastName" class="form-label">Tên</label>
+                            <input asp-for="LastName" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DateOfBirth" class="form-label">Ngày sinh (dd/MM/yyyy)</label>
+                            <input asp-for="DateOfBirth" type="date" class="form-control" value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Gender" class="form-label">Giới tính</label>
+                            <select asp-for="Gender" class="form-select">
+                                <option value="">Chọn giới tính</option>
+                                <option value="Male">Nam</option>
+                                <option value="Female">Nữ</option>
+                                <option value="Other">Khác</option>
+                            </select>
                         </div>
                         <div class="col-12">
-                            <label asp-for="AvatarUrl" class="form-label"></label>
-                            <input asp-for="AvatarUrl" class="form-control" />
-                            <small class="text-muted">Dán URL ảnh (PNG/JPG). Ảnh sẽ hiển thị ở góc phải trên.</small>
+                            <label asp-for="DefaultAddress" class="form-label">Địa chỉ nhận hàng mặc định</label>
+                            <textarea asp-for="DefaultAddress" class="form-control" rows="2"></textarea>
                         </div>
-                        <hr />
+                        <div class="col-12">
+                            <label asp-for="AvatarUrl" class="form-label">Hoặc nhập URL ảnh</label>
+                            <input asp-for="AvatarUrl" class="form-control" placeholder="https://..." />
+                            <small class="text-muted">Nếu upload file thì URL sẽ bị bỏ qua</small>
+                        </div>
+                        <hr class="my-3">
                         <div class="col-md-6">
-                            <label asp-for="CurrentPassword" class="form-label"></label>
-                            <input asp-for="CurrentPassword" class="form-control" />
+                            <label asp-for="CurrentPassword" class="form-label">Mật khẩu hiện tại</label>
+                            <input asp-for="CurrentPassword" type="password" class="form-control" />
                         </div>
                         <div class="col-md-6"></div>
                         <div class="col-md-6">
-                            <label asp-for="NewPassword" class="form-label"></label>
-                            <input asp-for="NewPassword" class="form-control" />
+                            <label asp-for="NewPassword" class="form-label">Mật khẩu mới</label>
+                            <input asp-for="NewPassword" type="password" class="form-control" />
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="ConfirmNewPassword" class="form-label"></label>
-                            <input asp-for="ConfirmNewPassword" class="form-control" />
+                            <label asp-for="ConfirmNewPassword" class="form-label">Xác nhận mật khẩu mới</label>
+                            <input asp-for="ConfirmNewPassword" type="password" class="form-control" />
                         </div>
-                        <div class="col-12 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Lưu thay đổi
+                            </button>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary ms-2">Hủy</a>
                         </div>
                     </div>
                 </div>
+            </form>
+        </div>
+
+        <!-- Orders Tab -->
+        <div class="tab-pane fade" id="orders">
+            <div class="card card-section">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4"><i class="bi bi-receipt me-2"></i>Lịch sử đơn hàng</h5>
+                    <div id="ordersContent">
+                        <p class="text-muted text-center py-3">Đang tải...</p>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Reviews Tab -->
+        <div class="tab-pane fade" id="reviews">
+            <div class="card card-section">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4"><i class="bi bi-star me-2"></i>Đánh giá của tôi</h5>
+                    <div id="reviewsContent">
+                        <p class="text-muted text-center py-3">Đang tải...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Favorites Tab -->
+        <div class="tab-pane fade" id="favorites">
+            <div class="card card-section">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4"><i class="bi bi-heart me-2"></i>Món yêu thích</h5>
+                    <div id="favoritesContent">
+                        <p class="text-muted text-center py-3">Đang tải...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <form method="post" asp-controller="Account" asp-action="Logout" asp-area="Identity">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+            </button>
         </form>
     </div>
 </div>
 
-<partial name="_ValidationScriptsPartial" />
-
 <script>
-const urlInput = document.getElementById('AvatarUrl');
-const preview = document.getElementById('avatarPreview');
-urlInput?.addEventListener('input', () => {
-    const v = urlInput.value?.trim();
-    preview.src = v || '/images/default-avatar.png';
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        // Validate file size (2MB)
+        if (input.files[0].size > 2 * 1024 * 1024) {
+            alert('File ảnh không được vượt quá 2MB.');
+            input.value = '';
+            return;
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(input.files[0].type)) {
+            alert('Chỉ chấp nhận file ảnh (JPG, PNG, GIF).');
+            input.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('avatarPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Load data for tabs
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('shown.bs.tab', function(e) {
+        const target = e.target.getAttribute('href');
+        if (target === '#orders') {
+            loadOrders();
+        } else if (target === '#reviews') {
+            loadReviews();
+        } else if (target === '#favorites') {
+            loadFavorites();
+        }
+    });
 });
+
+async function loadOrders() {
+    const container = document.getElementById('ordersContent');
+    try {
+        const response = await fetch('/Account/GetMyOrders');
+        const orders = await response.json();
+        
+        if (orders.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center py-5">Bạn chưa có đơn hàng nào.</p>';
+            return;
+        }
+        
+        let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>';
+        orders.forEach(order => {
+            const date = new Date(order.orderDate).toLocaleDateString('vi-VN');
+            html += `
+                <tr>
+                    <td><strong>${order.orderCode}</strong></td>
+                    <td>${date}</td>
+                    <td>${order.totalPrice.toLocaleString()}đ</td>
+                    <td><span class="badge bg-${getStatusColor(order.orderStatus)}">${order.orderStatus}</span></td>
+                    <td><a href="/Order/Track/${order.id}" class="btn btn-sm btn-outline-primary">Xem chi tiết</a></td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Failed to load orders', e);
+        container.innerHTML = '<p class="text-danger text-center py-3">Lỗi tải dữ liệu đơn hàng.</p>';
+    }
+}
+
+async function loadReviews() {
+    const container = document.getElementById('reviewsContent');
+    try {
+        const response = await fetch('/Account/GetMyReviews');
+        const reviews = await response.json();
+        
+        if (reviews.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center py-5">Bạn chưa có đánh giá nào.</p>';
+            return;
+        }
+        
+        let html = '';
+        reviews.forEach(review => {
+            const date = new Date(review.createdAt).toLocaleDateString('vi-VN');
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += i <= review.rating ? '<i class="bi bi-star-fill text-warning"></i>' : '<i class="bi bi-star text-muted"></i>';
+            }
+            html += `
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div class="mb-1">${stars}</div>
+                            <small class="text-muted">${date}</small>
+                        </div>
+                        <span class="badge bg-secondary">Đơn #${review.orderCode}</span>
+                    </div>
+                    ${review.comment ? `<p class="mb-2">${review.comment}</p>` : ''}
+                    ${review.imageUrl ? `<img src="${review.imageUrl}" style="max-width: 200px; border-radius: 8px;" class="mb-2">` : ''}
+                    ${review.adminResponse ? `<div class="alert alert-info mt-2"><strong>Phản hồi từ quản trị:</strong> ${review.adminResponse}</div>` : ''}
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Failed to load reviews', e);
+        container.innerHTML = '<p class="text-danger text-center py-3">Lỗi tải dữ liệu đánh giá.</p>';
+    }
+}
+
+async function loadFavorites() {
+    const container = document.getElementById('favoritesContent');
+    try {
+        const response = await fetch('/Account/GetMyFavorites');
+        const favorites = await response.json();
+        
+        if (favorites.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center py-5">Bạn chưa có món yêu thích nào.</p>';
+            return;
+        }
+        
+        let html = '<div class="row g-3">';
+        favorites.forEach(fav => {
+            html += `
+                <div class="col-md-4">
+                    <div class="card">
+                        ${fav.imageUrl ? `<img src="${fav.imageUrl}" class="card-img-top" style="height: 200px; object-fit: cover;">` : ''}
+                        <div class="card-body">
+                            <h6 class="card-title">${fav.name}</h6>
+                            <p class="text-danger mb-2"><strong>${fav.price.toLocaleString()}đ</strong></p>
+                            <a href="/Menu" class="btn btn-sm btn-primary">Xem menu</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Failed to load favorites', e);
+        container.innerHTML = '<p class="text-danger text-center py-3">Lỗi tải dữ liệu món yêu thích.</p>';
+    }
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'Đã nhận đơn': 'info',
+        'Đang chế biến': 'warning',
+        'Đang giao': 'primary',
+        'Hoàn thành': 'success',
+        'Đã hủy': 'danger'
+    };
+    return colors[status] || 'secondary';
+}
 </script>
-
-

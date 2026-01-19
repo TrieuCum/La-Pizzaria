@@ -61,6 +61,22 @@ namespace LaPizzaria.ViewModels
         [Display(Name = "Ảnh đại diện (URL)")]
         public string? AvatarUrl { get; set; }
 
+        [DataType(DataType.Date)]
+        [Display(Name = "Ngày sinh (dd/MM/yyyy)")]
+        public DateTime? DateOfBirth { get; set; }
+
+        [Display(Name = "Giới tính")]
+        public string? Gender { get; set; }
+
+        [Display(Name = "Địa chỉ nhận hàng mặc định")]
+        public string? DefaultAddress { get; set; }
+
+        [Display(Name = "Điểm tích lũy")]
+        public int LoyaltyPoints { get; set; }
+
+        [Display(Name = "Hội viên")]
+        public bool IsMember { get; set; }
+
         [DataType(DataType.Password)]
         [Display(Name = "Mật khẩu hiện tại")]
         public string? CurrentPassword { get; set; }

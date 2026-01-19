@@ -20,5 +20,7 @@ namespace LaPizzaria.Models
         public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
         public ICollection<ProductTopping> ProductToppings { get; set; } = new List<ProductTopping>();
         public ICollection<ProductIngredient> ProductIngredients { get; set; } = new List<ProductIngredient>();
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<FavoriteProduct> FavoriteProducts { get; set; } = new List<FavoriteProduct>();
     }
 }

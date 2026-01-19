@@ -294,9 +294,16 @@
                 <div class="modal-body p-4">
                     <input type="hidden" id="resetUserId" name="id">
                     <p>Đặt lại mật khẩu cho: <strong id="resetUserEmail"></strong></p>
-                    <label class="form-label fw-bold">Mật khẩu mới <span class="text-danger">*</span></label>
-                    <input type="password" class="form-control" name="newPassword" required>
-                    <small class="text-muted">Tối thiểu 6 ký tự</small>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mật khẩu mới <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <input type="password" class="form-control" name="newPassword" id="resetPasswordInput" required minlength="6">
+                            <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y pe-3" id="toggleResetPassword" style="z-index: 10; border: none; background: none; padding: 0; color: #6c757d;">
+                                <i class="bi bi-eye" id="resetEyeIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Tối thiểu 6 ký tự (khuyến nghị: có chữ hoa, số và ký tự đặc biệt)</small>
+                    </div>
                 </div>
                 <div class="modal-footer" style="border: none;">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
@@ -351,8 +358,36 @@ async function openEditModal(id) {
 function openResetPasswordModal(id, email) {
     document.getElementById('resetUserId').value = id;
     document.getElementById('resetUserEmail').textContent = email;
+    // Reset password input and icon
+    const passwordInput = document.getElementById('resetPasswordInput');
+    const eyeIcon = document.getElementById('resetEyeIcon');
+    passwordInput.value = '';
+    passwordInput.type = 'password';
+    eyeIcon.classList.remove('bi-eye-slash');
+    eyeIcon.classList.add('bi-eye');
     new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
 }
+
+// Toggle password visibility in reset password modal
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleResetPassword = document.getElementById('toggleResetPassword');
+    if (toggleResetPassword) {
+        toggleResetPassword.addEventListener('click', function() {
+            const passwordInput = document.getElementById('resetPasswordInput');
+            const eyeIcon = document.getElementById('resetEyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('bi-eye');
+                eyeIcon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('bi-eye-slash');
+                eyeIcon.classList.add('bi-eye');
+            }
+        });
+    }
+});
 
 function deleteUser(id) {
     if (confirm('Bạn có chắc muốn xóa tài khoản này?')) {

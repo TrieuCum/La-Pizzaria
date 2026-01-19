@@ -21,6 +21,7 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IQrService, QrService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
+builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 builder.Services.AddHostedService<VoucherCleanupService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -29,7 +30,17 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
 );
 
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddDefaultIdentity<ApplicationUser>(options => 
+    {
+        options.SignIn.RequireConfirmedAccount = true;
+        // Password settings
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
+        options.Password.RequiredUniqueChars = 0;
+    })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 

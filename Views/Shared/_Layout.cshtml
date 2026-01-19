@@ -34,11 +34,22 @@
                                 <span class="nav-text">Home</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link modern-nav-link" asp-area="" asp-controller="Product" asp-action="Index">
-                                <span class="nav-text">Products</span>
-                            </a>
-                        </li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link modern-nav-link" asp-area="" asp-controller="Product" asp-action="Index">
+                                    <span class="nav-text">Products</span>
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link modern-nav-link" asp-area="" asp-controller="Menu" asp-action="Index">
+                                    <span class="nav-text">Menu</span>
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item">
                             <a class="nav-link modern-nav-link" asp-area="" asp-controller="Table" asp-action="Index">
                                 <span class="nav-text">Tables</span>
@@ -67,6 +78,7 @@
                                 </a>
                                 <ul class="dropdown-menu modern-dropdown">
                                     <li><a class="dropdown-item modern-dropdown-item" asp-area="" asp-controller="UserManagement" asp-action="Index">👤 Tài khoản</a></li>
+                                    <li><a class="dropdown-item modern-dropdown-item" asp-area="" asp-controller="Customer" asp-action="Index">👥 Khách hàng</a></li>
                                     <li><a class="dropdown-item modern-dropdown-item" asp-area="" asp-controller="Employee" asp-action="Index">👥 Nhân viên</a></li>
                                 </ul>
                             </li>
@@ -81,7 +93,34 @@
                             </ul>
                         </li>
                     </ul>
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <div class="position-relative">
+                                <button type="button" class="btn btn-outline-primary position-relative" id="cartIcon" onmouseenter="loadCartPopup()">
+                                    <i class="bi bi-cart3"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="display: none;">0</span>
+                                </button>
+                                <!-- Cart Popup -->
+                                <div class="position-absolute end-0 mt-2" id="cartPopup" style="display: none; width: 350px; z-index: 1050; background: white; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);" onmouseleave="hideCartPopup()">
+                                    <div class="p-3 border-bottom">
+                                        <h6 class="mb-0"><i class="bi bi-cart3 me-2"></i>Giỏ hàng</h6>
+                                    </div>
+                                    <div id="cartItems" style="max-height: 400px; overflow-y: auto;" class="p-3">
+                                        <p class="text-muted text-center py-3">Đang tải...</p>
+                                    </div>
+                                    <div class="p-3 border-top">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <strong>Tổng:</strong>
+                                            <strong class="text-danger" id="cartTotal">0đ</strong>
+                                        </div>
+                                        <a href="@Url.Action("Index", "Checkout")" class="btn btn-primary w-100">
+                                            <i class="bi bi-check-circle me-2"></i>Thanh toán
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                         <partial name="_LoginPartial" />
                     </div>
                 </div>
@@ -125,7 +164,105 @@
             const error = '@(TempData["error"] ?? string.Empty)';
             if (success) window.showToast && window.showToast(success, 'success');
             if (error) window.showToast && window.showToast(error, 'error');
+            
+            // Load cart count on page load
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <text>
+                loadCartCount();
+                </text>
+            }
         })();
+
+        let cartPopupTimeout;
+        
+        async function loadCartCount() {
+            try {
+                const response = await fetch('/Cart/GetCart');
+                const data = await response.json();
+                const badge = document.getElementById('cartBadge');
+                if (data.itemCount > 0) {
+                    badge.textContent = data.itemCount;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Failed to load cart count', e);
+            }
+        }
+
+        async function loadCartPopup() {
+            clearTimeout(cartPopupTimeout);
+            const popup = document.getElementById('cartPopup');
+            popup.style.display = 'block';
+            
+            try {
+                const response = await fetch('/Cart/GetCart');
+                const data = await response.json();
+                
+                const itemsContainer = document.getElementById('cartItems');
+                const totalElement = document.getElementById('cartTotal');
+                
+                if (data.items.length === 0) {
+                    itemsContainer.innerHTML = '<p class="text-muted text-center py-3">Giỏ hàng trống</p>';
+                    totalElement.textContent = '0đ';
+                    return;
+                }
+                
+                let html = '';
+                data.items.forEach(item => {
+                    html += `
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom" data-item-id="${item.id}">
+                            ${item.imageUrl ? `<img src="${item.imageUrl}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; margin-right: 10px;">` : ''}
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small">${item.name}</div>
+                                <div class="text-muted small">${item.price.toLocaleString()}đ x ${item.quantity}</div>
+                            </div>
+                            <div class="text-end me-2">
+                                <strong class="text-danger">${item.subtotal.toLocaleString()}đ</strong>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                itemsContainer.innerHTML = html;
+                totalElement.textContent = data.total.toLocaleString() + 'đ';
+            } catch (e) {
+                console.error('Failed to load cart', e);
+                document.getElementById('cartItems').innerHTML = '<p class="text-danger text-center py-3">Lỗi tải giỏ hàng</p>';
+            }
+        }
+
+        function hideCartPopup() {
+            cartPopupTimeout = setTimeout(() => {
+                document.getElementById('cartPopup').style.display = 'none';
+            }, 300);
+        }
+
+        async function removeFromCart(itemId) {
+            try {
+                const response = await fetch(`/Cart/Remove?itemId=${itemId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                });
+                if (response.ok) {
+                    loadCartPopup();
+                    loadCartCount();
+                }
+            } catch (e) {
+                console.error('Failed to remove item', e);
+            }
+        }
+
+        // Keep popup open when hovering over it
+        document.getElementById('cartPopup')?.addEventListener('mouseenter', () => {
+            clearTimeout(cartPopupTimeout);
+        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "iGf/ToVeZLw=",
+  "dgSpecHash": "DR5LxckNu0k=",
   "success": true,
-  "projectFilePath": "C:\\Users\\admin\\Downloads\\DuAnCS6\\La-Pizzaria\\LaPizzaria.Tests\\LaPizzaria.Tests.csproj",
+  "projectFilePath": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Tests\\LaPizzaria.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\admin\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\admin\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
