@@ -1,0 +1,37 @@
+## Visual Studio / Visual Studio Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+
+## Test results
+[Tt]est[Rr]esult*/
+
+## Coverage
+*.coverage
+*.coveragexml
+*.opencover.xml
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+**/packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Rider
+.idea/
+
+## OS
+Thumbs.db
+Desktop.ini
