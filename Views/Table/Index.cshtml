@@ -1,6 +1,30 @@
 @model IEnumerable<LaPizzaria.Models.Table>
 
-<h2>Bàn ăn</h2>
+@{
+    ViewData["Title"] = "Đặt bàn / Quản lý bàn";
+    var tables = Model?.ToList() ?? new List<LaPizzaria.Models.Table>();
+    var totalTables = tables.Count;
+    var occupiedTables = tables.Count(t => t.IsOccupied);
+    var activeTables = tables.Count(t => t.IsActive);
+    var totalSeats = tables.Sum(t => t.Capacity);
+    var freeSeats = tables.Where(t => !t.IsOccupied).Sum(t => t.Capacity);
+}
+
+<style>
+    /* UI inspired by `giao dien/đặt bàn` (orange accent, dashboard cards) – keep it lightweight & responsive */
+    .lp-page-title { font-weight: 800; letter-spacing: .2px; }
+    .lp-accent { color: #f48c25; }
+    .lp-soft { background: rgba(244,140,37,.08); }
+    .lp-card { border: 1px solid rgba(17,24,39,.08); border-radius: 14px; }
+    .lp-card .card-header { background: #fff; border-bottom: 1px solid rgba(17,24,39,.06); }
+    .lp-stat { border-radius: 14px; border: 1px solid rgba(17,24,39,.08); background: #fff; }
+    .lp-stat .k { color: #6b7280; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .lp-stat .v { font-size: 1.6rem; font-weight: 900; }
+    .lp-pill { border-radius: 999px; font-weight: 700; }
+    .lp-table-grid .card { border-radius: 14px; border: 1px solid rgba(17,24,39,.08); }
+    .lp-table-grid .card:hover { box-shadow: 0 10px 26px rgba(17,24,39,.10); transform: translateY(-1px); transition: .15s ease; }
+    .lp-muted { color: #6b7280; }
+</style>
 
 <div class="card p-3 mb-3">
     <form asp-controller="Order" asp-action="MergeTables" method="post" id="mergeForm" class="row g-2 align-items-end">
@@ -24,7 +48,72 @@
     </form>
 </div>
 
-<div class="row g-3">
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+    <div>
+        <div class="lp-muted small">Admin / Quản lý</div>
+        <div class="h3 mb-0 lp-page-title">QUẢN LÝ BÀN</div>
+        <div class="lp-muted">Tối giản, dễ dùng — dựa trên thiết kế trong `giao dien/đặt bàn`</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Upsert" class="btn btn-primary">Thêm bàn</a>
+        <a asp-controller="Order" asp-action="Qr" class="btn btn-outline-secondary">Tạo QR</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+        <div class="lp-stat p-3 h-100">
+            <div class="k">TỔNG SỐ BÀN</div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+                <div class="v">@totalTables</div>
+                <span class="badge lp-pill lp-soft text-dark">Hoạt động: @activeTables</span>
+            </div>
+            <div class="lp-muted small mt-2">Tổng chỗ ngồi: <b>@totalSeats</b></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="lp-stat p-3 h-100">
+            <div class="k">BÀN ĐANG CÓ KHÁCH</div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+                <div class="v">@occupiedTables</div>
+                <span class="badge lp-pill bg-danger-subtle text-danger">Đang sử dụng</span>
+            </div>
+            <div class="lp-muted small mt-2">Tỉ lệ sử dụng: <b>@(totalTables == 0 ? "0%" : $"{(int)Math.Round(occupiedTables * 100.0 / totalTables)}%")</b></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="lp-stat p-3 h-100">
+            <div class="k">CHỖ NGỒI CÒN TRỐNG</div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+                <div class="v">@freeSeats</div>
+                <span class="badge lp-pill bg-success-subtle text-success">Sẵn sàng</span>
+            </div>
+            <div class="lp-muted small mt-2">Bàn trống: <b>@(totalTables - occupiedTables)</b></div>
+        </div>
+    </div>
+</div>
+
+<div class="card lp-card p-3 mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold mb-1">Order đang mở</label>
+            <select name="orderId" class="form-select" form="mergeForm" required>
+                <option value="" selected disabled>Chọn Order</option>
+                @foreach (var o in (IEnumerable<LaPizzaria.Models.Order>)ViewBag.OpenOrders)
+                {
+                    <option value="@o.Id">#@o.Id - @o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-lg-8 d-flex gap-2 flex-wrap justify-content-lg-end">
+            <button type="submit" class="btn btn-success" id="btnMerge" form="mergeForm">Gộp 2 bàn</button>
+            <button type="button" class="btn btn-outline-primary" id="btnAssign">Gắn bàn vào Order</button>
+            <span class="lp-muted small align-self-center">Chọn bàn bằng checkbox bên dưới.</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 lp-table-grid">
     @foreach (var t in Model)
     {
         var attach = ((System.Collections.Generic.Dictionary<int, string>)ViewBag.TableAttachInfo).TryGetValue(t.Id, out var info) ? info : "";

@@ -3,50 +3,77 @@
     var day = (DateTime)ViewBag.Day;
 }
 
-<div class="d-flex align-items-center justify-content-between mb-4">
-    <h3 class="mb-0 fw-bold">📊 Thống kê theo ngày</h3>
-    <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-sm btn-dark" asp-action="Daily">Thống kê theo ngày</a>
-        <a class="btn btn-sm btn-outline-dark" asp-action="Weekly">Thống kê theo tuần</a>
+<style>
+    /* UI inspired by `giao dien/thống kê` (clean dashboard + orange accent) */
+    .lp-page-title { font-weight: 900; letter-spacing: .2px; }
+    .lp-muted { color: #6b7280; }
+    .lp-accent { color: #f48c25; }
+    .lp-card { border: 1px solid rgba(17,24,39,.08); border-radius: 14px; }
+    .lp-tab { border-radius: 10px; font-weight: 800; }
+    .lp-badge { border-radius: 999px; font-weight: 800; }
+    .lp-soft { background: rgba(244,140,37,.10); }
+    .lp-kpi { border: 1px solid rgba(17,24,39,.08); border-radius: 14px; background: #fff; }
+    .lp-kpi .k { color: #6b7280; font-size: .85rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .lp-kpi .v { font-size: 1.6rem; font-weight: 900; }
+</style>
+
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+    <div>
+        <div class="lp-muted small">Admin / Thống kê</div>
+        <div class="h3 mb-0 lp-page-title">THỐNG KÊ</div>
+        <div class="lp-muted">Theo ngày</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-dark lp-tab" asp-action="Daily">Theo ngày</a>
+        <a class="btn btn-outline-dark lp-tab" asp-action="Weekly">Theo tuần</a>
     </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4">
+<div class="card lp-card shadow-sm border-0 mb-3">
     <div class="card-body">
         <div class="row g-3 align-items-end">
             <div class="col-md-auto">
-                <label class="form-label fw-semibold mb-1">📅 Chọn ngày</label>
+                <label class="form-label fw-semibold mb-1">Chọn ngày</label>
                 <input id="dayInput" type="date" class="form-control form-control-lg" value="@day.ToString("yyyy-MM-dd")" />
             </div>
             <div class="col-md-auto">
-                <button id="btnLoad" class="btn btn-primary btn-lg px-4">🔄 Tải dữ liệu</button>
+                <button id="btnLoad" class="btn btn-primary btn-lg px-4">Tải dữ liệu</button>
             </div>
             <div class="col-md-auto">
-                <a class="btn btn-outline-secondary btn-lg" asp-action="Weekly">📈 Xem theo tuần</a>
+                <a class="btn btn-outline-secondary btn-lg" asp-action="Weekly">Xem theo tuần</a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <div class="d-flex flex-wrap gap-3 mb-3 align-items-center">
-                    <span class="badge bg-primary bg-gradient px-3 py-2 fs-6" id="badgeDate">-</span>
-                    <span class="badge bg-success bg-gradient px-3 py-2 fs-6" id="badgeRevenue">0đ</span>
-                </div>
-                <div id="result" class="alert alert-info border-0 shadow-sm mb-0"></div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6">
+        <div class="lp-kpi p-3 h-100">
+            <div class="k">Ngày</div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+                <div class="v" id="badgeDate">-</div>
+                <span class="badge lp-badge lp-soft text-dark">Daily</span>
             </div>
+            <div class="lp-muted small mt-2">Chọn ngày để xem doanh thu.</div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="lp-kpi p-3 h-100">
+            <div class="k">Doanh thu</div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+                <div class="v lp-accent" id="badgeRevenue">0đ</div>
+                <span class="badge lp-badge bg-success-subtle text-success">Tổng</span>
+            </div>
+            <div id="result" class="lp-muted small mt-2"></div>
         </div>
     </div>
 </div>
 
 <div class="row g-4">
     <div class="col-12">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0 fw-semibold">📊 Biểu đồ doanh thu</h5>
+        <div class="card lp-card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-semibold">Biểu đồ doanh thu</h5>
             </div>
             <div class="card-body">
                 <canvas id="dayChart" height="120"></canvas>
@@ -54,9 +81,9 @@
         </div>
     </div>
     <div class="col-12">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0 fw-semibold">📋 Chi tiết thống kê</h5>
+        <div class="card lp-card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-semibold">Chi tiết</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
