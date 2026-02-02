@@ -15,6 +15,24 @@ namespace LaPizzaria.Controllers
         {
             _db = db;
         }
+
+        /// <summary>
+        /// Sanitizes image URLs: converts file:// URLs to /images/ paths
+        /// </summary>
+        private string? SanitizeImageUrl(string? imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl))
+                return imageUrl;
+
+            // If it's a file:// URL, extract the filename and convert to web path
+            if (imageUrl.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+            {
+                var filename = System.IO.Path.GetFileName(imageUrl);
+                return $"/images/{filename}";
+            }
+
+            return imageUrl;
+        }
         public async Task<IActionResult> Index(string? q, string? category, string? status)
         {
             var query = _db.Products.Include(p => p.ProductIngredients).AsQueryable();
@@ -91,7 +109,18 @@ namespace LaPizzaria.Controllers
             var list = await _db.Products.Where(p => p.IsActive)
                 .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category, imageUrl = p.ImageUrl })
                 .ToListAsync();
-            return Ok(list);
+            
+            // Sanitize image URLs to convert file:// to web paths
+            var sanitized = list.Select(p => new 
+            { 
+                p.id, 
+                p.name, 
+                p.price, 
+                p.category, 
+                imageUrl = SanitizeImageUrl(p.imageUrl) 
+            }).ToList();
+            
+            return Ok(sanitized);
         }
 
         // Grouped menu for QR: products by category + combos as separate category
@@ -112,7 +141,7 @@ namespace LaPizzaria.Controllers
             var combos = combosRaw.Select(c => new {
                 id = c.Id,
                 name = c.Name,
-                imageUrl = c.ImageUrl,
+                imageUrl = SanitizeImageUrl(c.ImageUrl),
                 price = (c.Items.Select(i => ((i.Product?.Price) ?? 0m) * Math.Max(1, i.MinQuantity)).Sum() - (c.DiscountAmount > 0 ? c.DiscountAmount : 0m)) * (1 - (c.DiscountPercent ?? 0m) / 100m),
                 items = c.Items.Select(i => new { productId = i.ProductId, minQty = Math.Max(1, i.MinQuantity) })
             }).ToList();

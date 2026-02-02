@@ -5,283 +5,228 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
-<!-- Hero Section -->
-<section class="hero-banner text-center d-flex flex-column align-items-center justify-content-center">
-    <h1 class="brand-hero-title">La Pizzaria</h1>
-    <p class="brand-hero-sub">Hương vị đích thực từ lò nướng Ý</p>
-    <div class="mt-3">
-        <a asp-controller="Order" asp-action="ScanQr" class="btn btn-brand-primary btn-outline-orange btn-lg me-2">Đặt món ngay</a>
-        <a asp-controller="Product" asp-action="Index" class="btn btn-outline-light btn-lg">Xem menu</a>
+
+<!-- Content Container -->
+<div class="main-content py-5">
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero-section mb-5 bg-white">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <div class="badge bg-brand-orange-light text-brand-orange rounded-full px-3 py-2 mb-4 d-inline-flex align-items-center fw-bold">
+                        <i class="bi bi-fire me-2"></i> BÁNH NƯỚNG TƯƠI MỖI NGÀY
+                    </div>
+                    <h1 class="display-3 fw-black mb-3 font-work-sans lh-1 text-brand-dark">
+                        Pizza <br> <span class="text-brand-orange">Nóng hổi.</span>
+                    </h1>
+                    <h1 class="display-3 fw-black mb-4 font-work-sans text-brand-orange lh-1">
+                        Giao hàng siêu tốc.
+                    </h1>
+                    <p class="text-brand-gray fs-5 mb-5 pb-3 border-bottom">
+                        Trải nghiệm những chiếc pizza thủ công ngon nhất thành phố, được làm từ những nguyên liệu cao cấp và giao tận nhà. Đặt hàng ngay và nhận ngay ưu đãi tốt nhất cho bữa tiệc của bạn!
+                    </p>
+                    <div class="d-flex flex-wrap gap-3 mb-5">
+                        <a asp-controller="Order" asp-action="ScanQr" class="btn btn-brand-primary btn-lg px-4 fs-6">Đặt hàng ngay</a>
+                        <a asp-controller="Product" asp-action="Index" class="btn btn-brand-outline btn-lg px-4 fs-6">Xem thực đơn</a>
+                    </div>
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="avatar-group d-flex align-items-center">
+                            <img src="/images/v17_870.png" class="rounded-circle border border-white border-2 shadow-sm" width="44" height="44" alt="User">
+                            <img src="/images/v17_872.png" class="rounded-circle border border-white border-2 shadow-sm" width="44" height="44" alt="User" style="margin-left: -15px;">
+                            <img src="/images/v17_874.png" class="rounded-circle border border-white border-2 shadow-sm" width="44" height="44" alt="User" style="margin-left: -15px;">
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-6">Đánh giá 4.9/5</div>
+                            <div class="text-brand-gray extra-small">Từ hơn 2,000 thực khách hài lòng</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 position-relative">
+                    <div class="hero-image-container rounded-15px ps-lg-5">
+                        <div class="pizza-glow position-absolute"></div>
+                        <img src="/images/v17_883.png" class="img-fluid hero-pizza rounded-15px drop-shadow" alt="Delicious Pizza">
+                    </div>
+                    <div class="delivery-badge brand-card p-3 position-absolute shadow-lg bg-white">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-pill bg-brand-green-light p-2 text-brand-green">
+                                <i class="bi bi-clock-history fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="text-brand-gray extra-small fw-bold">ƯỚC TÍNH VẬN CHUYỂN</div>
+                                <div class="fw-black fs-5">25-30 Phút</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Promotion Section -->
+        <section class="promotions-section py-5 bg-brand-bg rounded-4 px-4 my-5">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <h2 class="fw-black font-work-sans m-0">Phiếu quà tặng đang hoạt động</h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-white rounded-circle shadow-sm p-3 border-0"><i class="bi bi-chevron-left"></i></button>
+                    <button class="btn btn-white rounded-circle shadow-sm p-3 border-0"><i class="bi bi-chevron-right"></i></button>
+                </div>
+            </div>
+            <div class="row g-4 highlight-vouchers">
+                @if (Model.Vouchers != null && Model.Vouchers.Any())
+                {
+                    @foreach (var v in Model.Vouchers)
+                    {
+                        <div class="col-md-4">
+                            <div class="brand-card p-4 h-100 border-0 shadow-sm bg-white">
+                                <div class="d-flex justify-content-between mb-4">
+                                    <div class="bg-brand-orange-light text-brand-orange rounded-pill p-3">
+                                        <i class="bi bi-ticket-perforated fs-4"></i>
+                                    </div>
+                                    @if(v.DiscountPercent >= 20) {
+                                        <span class="badge bg-brand-green-light text-brand-green py-2 px-3 rounded-pill h-50 small fw-bold">GIÁ TRỊ NHẤT</span>
+                                    }
+                                </div>
+                                <h5 class="fw-bold mb-2">@v.Name</h5>
+                                <p class="text-brand-gray small mb-4">Giảm giá @v.DiscountPercent% cho đơn hàng của bạn. @(v.ExpiresAtUtc.HasValue ? $"HSD: {v.ExpiresAtUtc.Value.ToString("dd/MM/yyyy")}" : "Mã không thời hạn")</p>
+                                <div class="bg-brand-bg rounded-3 p-3 d-flex justify-content-between align-items-center border">
+                                    <span class="fw-black font-monospace fs-5 text-brand-dark">@v.Code</span>
+                                    <button class="btn btn-link text-brand-orange p-0 text-decoration-none fw-black small" onclick="copyToClipboard('@v.Code')">Lưu mã</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12 text-center py-5">
+                        <p class="text-brand-gray">Hiện tại chưa có mã giảm giá nào. Hãy quay lại sau nhé!</p>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <!-- Featured Pizzas -->
+        <section class="featured-section py-5">
+            <div class="d-flex justify-content-between align-items-end mb-5 border-bottom pb-3">
+                <h2 class="fw-black font-work-sans m-0">Pizza nổi bật</h2>
+                <a asp-controller="Product" asp-action="Index" class="text-brand-orange text-decoration-none fw-bold small hover-underline">Xem tất cả thực đơn <i class="bi bi-arrow-right ms-1"></i></a>
+            </div>
+            <div class="marquee-slider-container">
+                <button class="slider-nav slider-nav-prev" onclick="pizzaSlider.prev()"><i class="bi bi-chevron-left"></i></button>
+                <div class="marquee-slider" id="pizza-slider">
+                    <div class="marquee-content" id="pizza-content">
+                        @* Render products twice for seamless infinite loop *@
+                        @for (int loop = 0; loop < 2; loop++)
+                        {
+                            @foreach (var p in Model.TopProducts)
+                            {
+                                <div class="marquee-item">
+                                    <div class="brand-card h-100 d-flex flex-column position-relative border-0 shadow-sm bg-white m-2">
+                                        <button class="position-absolute top-0 end-0 m-3 btn btn-white rounded-circle p-2 shadow-sm z-3 border-0 transition-all hover-scale"><i class="bi bi-heart"></i></button>
+                                        <div class="ratio ratio-1x1 overflow-hidden rounded-top-4">
+                                            <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "/images/v17_972.png")" class="card-img-top object-fit-cover transition-transform" alt="@p.Name">
+                                        </div>
+                                        <div class="p-4 d-flex flex-column flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h5 class="fw-black m-0 fs-6 flex-grow-1 pe-2 text-brand-dark">@p.Name</h5>
+                                                <span class="text-brand-red fw-black fs-5">@p.Price.ToString("N0")K</span>
+                                            </div>
+                                            <p class="text-brand-gray extra-small mb-4 line-clamp-2">@p.Description</p>
+                                            <div class="mt-auto pt-3 border-top d-flex flex-column gap-3">
+                                                <div class="d-flex align-items-center gap-1">
+                                                    @for(int i=0; i<5; i++) { <i class="bi bi-star-fill text-brand-yellow extra-small"></i> }
+                                                    <span class="text-brand-gray extra-small ms-1 fw-bold">(150)</span>
+                                                </div>
+                                                <button onclick="cart.add({ id: @p.ProductId, name: '@p.Name', price: @p.Price, imageUrl: '@p.ImageUrl', type: 'product' })" class="btn btn-brand-outline w-100 py-2 small fw-bold">Thêm vào giỏ hàng</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <button class="slider-nav slider-nav-next" onclick="pizzaSlider.next()"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <!-- Popular Combos -->
+        <section class="combo-section py-5 bg-brand-bg rounded-4 px-4 my-5">
+            <h2 class="fw-black font-work-sans mb-5">Combo phổ biến</h2>
+            <div class="row g-5">
+                @foreach (var c in Model.ActiveCombos.Take(2))
+                {
+                    var firstImage = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl
+                        ?? "/images/v17_1114.png";
+                    decimal originalPrice = c.Items.Where(i => i.Product != null).Sum(i => i.Product!.Price * i.MinQuantity);
+                    decimal finalPrice = originalPrice - c.DiscountAmount;
+                    
+                    <div class="col-lg-6">
+                        <div class="brand-card border-0 shadow-lg bg-white overflow-hidden rounded-4">
+                            <div class="row g-0">
+                                <div class="col-md-5 ratio ratio-1x1 overflow-hidden">
+                                    <img src="@firstImage" class="img-fluid h-100 object-fit-cover" alt="@c.Name">
+                                </div>
+                                <div class="col-md-7 p-4 d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h4 class="fw-black m-0 text-brand-dark">@c.Name</h4>
+                                        <span class="badge bg-brand-red text-white py-2 px-3 rounded-pill">TIẾT KIỆM @(c.DiscountPercent?.ToString("0") ?? (c.DiscountAmount > 0 ? "ƯU ĐÃI" : "0"))%</span>
+                                    </div>
+                                    <p class="text-brand-gray small mb-4 line-clamp-2">@c.Description</p>
+                                    <div class="small text-brand-gray mb-4 border-start ps-3 border-brand-orange bg-light p-2 rounded-end">
+                                        <strong>Gồm có:</strong> @string.Join(", ", c.Items.Where(i=>i.Product!=null).Select(i => $"{i.Product!.Name} x{i.MinQuantity}"))
+                                    </div>
+                                    <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
+                                        <div>
+                                            <div class="text-brand-gray text-decoration-line-through extra-small">@originalPrice.ToString("N0")₫</div>
+                                            <div class="fw-black fs-3 text-brand-orange">@finalPrice.ToString("N0")₫</div>
+                                        </div>
+                                        <button onclick="cart.add({ id: @c.Id, name: '@c.Name', price: @finalPrice, imageUrl: '@firstImage', type: 'combo' })" class="btn btn-brand-primary py-2 px-4 shadow-sm fw-bold">Thêm ngay</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
     </div>
-</section>
+</div>
 
 <style>
-    .hero-banner {
-        min-height: 60vh;
-        background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.35)), url('/images/banner.png') center/cover no-repeat;
-        color: var(--light-text-color);
-        padding: 80px 16px;
+    .ms-n2 { margin-left: -0.5rem; }
+    .extra-small { font-size: 0.75rem; }
+    .hero-section { padding: 5rem 0; margin-top: -3rem; }
+    .pizza-glow {
+        width: 120%; height: 120%;
+        background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%);
+        top: -10%; left: -10%; z-index: -1;
     }
-    .brand-hero-title {
-        font-family: 'Playfair Display', serif;
-        font-weight: 900;
-        font-size: clamp(48px, 8vw, 96px);
-        letter-spacing: 1px;
-        margin: 0;
-        text-shadow: 0 10px 30px rgba(0,0,0,.35);
+    .drop-shadow { filter: drop-shadow(0 35px 50px rgba(0,0,0,0.2)); }
+    .delivery-badge {
+        bottom: 20px; left: -20px;
+        min-width: 280px; z-index: 10;
+        border-radius: var(--border-radius-lg);
     }
-    .brand-hero-sub {
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(16px, 2vw, 24px);
-        opacity: .9;
-        margin-top: 8px;
-    }
-    .brand-section-title {
-        font-family: 'Playfair Display', serif !important;
-        font-weight: 600 !important;
-        font-size: clamp(32px, 5vw, 48px) !important;
-        letter-spacing: 0.5px !important;
-        margin-bottom: 2rem;
-    }
-    .product-card {
-        border: none;
-        border-radius: 12px;
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .product-card-description {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.7rem;
-        color: #666;
-        line-height: 1.5;
-        margin-bottom: 1rem;
-        min-height: 3rem;
-    }
-    .product-card-price {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #da291c;
-        margin-bottom: 1rem;
-    }
-    .product-card-btn {
-        border: 2px solid #da291c;
-        color: #da291c;
-        background: transparent;
-        font-weight: 500;
-        padding: 0.5rem 1.5rem;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-block;
-    }
-    .product-card-btn:hover {
-        background: #da291c;
-        color: white;
-        transform: translateY(-2px);
-    }
-    .bestseller-banner {
-        background: #ffffff;
-        background-image: 
-            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
-            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
-        position: relative;
-        padding: 60px 0;
-        margin: 3rem 0;
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
     }
-    .bestseller-banner::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: repeating-linear-gradient(
-            90deg,
-            #ff7a00 0px,
-            #ff7a00 20px,
-            #ffffff 20px,
-            #ffffff 40px
-        );
-    }
-    .bestseller-banner-content {
-        position: relative;
-        z-index: 1;
-    }
-    .bestseller-title {
-        font-family: 'Playfair Display', serif;
-        font-weight: 900;
-        font-size: clamp(36px, 6vw, 72px);
-        color: #da291c;
-        margin-bottom: 0.5rem;
-        line-height: 1.1;
-    }
-    .bestseller-subtitle {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: clamp(20px, 3vw, 32px);
-        color: #da291c;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .bestseller-image {
-        height: 250px;
-        width: 500px;
-        margin-right: 15px;
-    }
-    @@media (max-width: 768px) {
-        .bestseller-banner {
-            padding: 40px 0;
-        }
-        .bestseller-image {
-            margin-top: 2rem;
-        }
-    }
-    .combo-banner {
-        background: #ffffff;
-        background-image: 
-            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
-            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
-        position: relative;
-        padding: 60px 0;
-        margin: 3rem 0;
-        overflow: hidden;
-    }
-    .combo-banner::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: repeating-linear-gradient(
-            90deg,
-            #ff7a00 0px,
-            #ff7a00 20px,
-            #ffffff 20px,
-            #ffffff 40px
-        );
-    }
-    .combo-banner-content {
-        position: relative;
-        z-index: 1;
-    }
-    .combo-title {
-        font-family: 'Playfair Display', serif;
-        font-weight: 900;
-        font-size: clamp(36px, 6vw, 72px);
-        color: #da291c;
-        margin-bottom: 0.5rem;
-        line-height: 1.1;
-    }
-    .combo-subtitle {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: clamp(20px, 3vw, 32px);
-        color: #da291c;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .combo-image {
-        width: 450px;
-        height: 350px;
-        margin-right: 50px;
-    }
-    @@media (max-width: 768px) {
-        .combo-banner {
-            padding: 40px 0;
-        }
-        .combo-image {
-            margin-top: 2rem;
-        }
-    }
+    .card-img-top { cursor: pointer; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+    .brand-card:hover .card-img-top { transform: scale(1.1); }
+    .hover-scale { transition: all 0.2s ease; }
+    .hover-scale:hover { transform: scale(1.1); }
+    .hover-underline:hover { text-decoration: underline !important; }
+    .lh-1 { line-height: 1.1; }
+    .bg-white { background-color: #ffffff !important; }
 </style>
 
-<!-- Product Showcase Section -->
-    <!-- Bestseller Banner -->
-    <div class="bestseller-banner">
-        <div class="container bestseller-banner-content">
-            <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <h1 class="bestseller-title">MÓN BÁN CHẠY</h1>
-                    <div class="bestseller-subtitle">
-                        <span>LA PIZZARIA</span>
-                    </div>
-                </div>
-                <div class="col-lg-6 text-center text-lg-end">
-                    <img src="/images/banner2.png" alt="Best Seller Pizza" class="bestseller-image" onerror="this.style.display='none'">
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="container">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-            @foreach (var p in Model.TopProducts.Take(3))
-            {
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "https://via.placeholder.com/600x400?text=Pizza")" class="card-img-top" alt="@p.Name">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="product-card-title">@p.Name</h5>
-                            @if (!string.IsNullOrEmpty(p.Description))
-                            {
-                                <p class="product-card-description">@p.Description</p>
-                            }
-                            <p class="card-text mb-1"><span class="badge bg-success">Đặt @p.TotalOrdered lần</span></p>               
-                            <p class="product-card-price mt-auto">@p.Price.ToString("N0")₫</p>
-                            <a asp-controller="Product" asp-action="Index" class="product-card-btn text-center">Xem trong menu</a>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    </div>
-
-    <hr class="my-5" />
-    
-    <!-- Combo Banner -->
-    <div class="combo-banner">
-        <div class="container combo-banner-content">
-            <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <h1 class="combo-title">COMBO</h1>
-                    <div class="combo-subtitle">
-                        <span>LA PIZZARIA</span>
-                    </div>
-                </div>
-                <div class="col-lg-6 text-center text-lg-end">
-                    <img src="/images/banner3.png" alt="Combo Pizza" class="combo-image" onerror="this.style.display='none'">
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-        @foreach (var c in Model.ActiveCombos)
-        {
-            var firstImage = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl
-                ?? "https://via.placeholder.com/600x400?text=Combo";
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <img src="@firstImage" class="card-img-top" alt="@c.Name">
-                    <div class="card-body">
-                        <h5 class="card-title">@c.Name</h5>
-                        @if (!string.IsNullOrEmpty(c.Description))
-                        {
-                            <p class="card-text">@c.Description</p>
-                        }
-                        <p class="card-text text-danger fw-bold">Giảm @c.DiscountAmount.ToString("N0") đ @(c.DiscountPercent.HasValue ? $" / {c.DiscountPercent}%" : "")</p>
-                        <div class="small text-muted">
-                            gồm: @string.Join(", ", c.Items.Where(i=>i.Product!=null).Select(i => $"{i.Product!.Name} x{i.MinQuantity}"))
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-        </div>
-    </div>
+<script>
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Đã sao chép mã: ' + text);
+        });
+    }
+</script>
 </div>

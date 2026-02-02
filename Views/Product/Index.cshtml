@@ -1,328 +1,410 @@
+@using Microsoft.AspNetCore.Identity
+@using LaPizzaria.Models
 @model LaPizzaria.ViewModels.ProductIndexViewModel
-@{ ViewData["Title"] = "Quản lý Món ăn"; }
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "Quản lý Sản phẩm";
+    Layout = null;
+}
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-<style>
-    :root {
-        --primary-red: #da291c;
-        --light-cream: #f8f5ed;
-        --wood-brown: #5a2e0a;
-    }
-    .product-banner {
-        background: #ffffff;
-        background-image: 
-            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
-            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
-        position: relative;
-        padding: 60px 0;
-        margin-bottom: 3rem;
-        overflow: hidden;
-    }
-    .product-banner::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: repeating-linear-gradient(
-            90deg,
-            #ff7a00 0px,
-            #ff7a00 20px,
-            #ffffff 20px,
-            #ffffff 40px
-        );
-    }
-    .product-title {
-        font-family: 'Playfair Display', serif;
-        font-weight: 900;
-        font-size: clamp(36px, 6vw, 64px);
-        color: #da291c;
-        margin-bottom: 0.5rem;
-        line-height: 1.1;
-    }
-    .product-subtitle {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: clamp(20px, 3vw, 28px);
-        color: #5a2e0a;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .brand-card {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 5px 5px rgba(0, 0, 0, 0.250);
-        background: white;
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .product-item-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(218, 41, 28, 0.1) !important;
-    }
-    .btn-brand-primary {
-        background-color: var(--primary-red);
-        border-color: var(--primary-red);
-        color: white;
-        font-weight: bold;
-        padding: 10px 24px;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-    .btn-brand-primary:hover {
-        background-color: var(--wood-brown);
-        border-color: var(--wood-brown);
-        transform: translateY(-2px);
-    }
-    .search-pill {
-        border: 2px solid #eee;
-        transition: all 0.3s ease;
-    }
-    .search-pill:focus {
-        border-color: var(--primary-red);
-        box-shadow: 0 0 0 4px rgba(218, 41, 28, 0.1);
-    }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Pizza Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    /* Category List Styles */
-    .brand-list-group .list-group-item {
-        border: none;
-        margin-bottom: 8px;
-        border-radius: 8px !important;
-        font-weight: 600;
-        color: #666;
-        transition: all 0.2s ease;
-        padding: 12px 16px;
-    }
-    .brand-list-group .list-group-item:hover {
-        background-color: #f8f5ed;
-        color: var(--primary-red);
-        padding-left: 20px;
-    }
-    .brand-list-group .list-group-item.active {
-        background-color: var(--primary-red);
-        color: white;
-        box-shadow: 0 4px 12px rgba(218, 41, 28, 0.3);
-    }
-    
-    /* Product Card Styles */
-    .card-title {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        color: #333;
-    }
-    .price-tag {
-        color: var(--primary-red);
-        font-weight: 800;
-        font-size: 1.2rem;
-        font-family: 'Inter', sans-serif;
-    }
-    .img-wrap {
-        position: relative;
-        width: 100%;
-        padding-top: 75%; /* 4:3 Aspect Ratio */
-        background: #f8f5ed;
-        overflow: hidden;
-    }
-    .img-wrap img {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-    }
-    .product-item-card:hover .img-wrap img {
-        transform: scale(1.1);
-    }
-    .img-placeholder {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 3rem;
-    }
-</style>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-size: 14px; margin: 0; padding: 0; font-family: 'Work Sans', sans-serif; background: #f8f7f5; }
 
-<!-- Banner Section -->
-<div class="product-banner">
-    <div class="container position-relative" style="z-index: 1;">
-        <div class="row align-items-center">
-            <div class="col-lg-7">
-                <h1 class="product-title">THỰC ĐƠN</h1>
-                <div class="product-subtitle">
-                    <span>QUẢN LÝ MÓN ĂN & COMBO</span>
-                </div>
+        /* Unified Class Styles from User's Figma Code */
+        .v17_2600 { width: 100%; min-height: 100vh; background: rgba(248,247,245,1); position: relative; overflow-x: hidden; }
+        
+        /* Navbar (Header) */
+        .v272_48 { width: calc(100% - 256px); height: 80px; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); position: fixed; top: 0; left: 256px; z-index: 1000; border-bottom: 1px solid #f1f5f9; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; }
+        .v272_59 { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+        .v272_60 { color: rgba(24,20,17,1); font-weight: 900; font-size: 20px; }
+        
+        .header-center-nav { display: flex; gap: 32px; list-style: none; margin: 0; padding: 0; }
+        .nav-item-link { color: rgba(24,20,17,1); font-weight: 600; font-size: 14px; text-decoration: none; position: relative; padding: 10px 0; }
+        .nav-item-link.active { color: rgba(244,140,37,1); }
+        .nav-item-link.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: rgba(244,140,37,1); }
+
+        .header-right-actions { display: flex; align-items: center; gap: 20px; }
+        .v272_73 { background: rgba(245,242,240,1); border-radius: 8px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; width: 250px; }
+        .v272_79 { border: none; background: transparent; color: rgba(107,114,128,1); font-size: 14px; width: 100%; outline: none; }
+        
+        .v272_81 { background: rgba(244,140,37,1); border-radius: 8px; padding: 10px 20px; color: white !important; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer; }
+        .v272_91 { position: absolute; top: -5px; right: -10px; background: rgba(244,140,37,1); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: 800; }
+
+        /* Sidebar */
+        .v17_2729 { width: 256px; height: 100vh; background: rgba(255,255,255,1); position: fixed; top: 0; left: 0; z-index: 1010; border-right: 1px solid #f1f5f9; display: flex; flex-direction: column; }
+        .v17_2730 { padding: 24px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .v17_2731 { width: 40px; height: 40px; background: rgba(244,140,37,1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; }
+        .v17_2735 { font-weight: 700; font-size: 18px; margin: 0; }
+        .v17_2736 { font-size: 12px; color: rgba(107,114,128,1); }
+        
+        .sidebar-menu { flex-grow: 1; padding: 0 16px; }
+        .v17_2738 { padding: 12px 16px; display: flex; align-items: center; gap: 12px; color: rgba(75,85,99,1); text-decoration: none; font-weight: 500; border-radius: 8px; transition: all 0.2s; margin-bottom: 4px; }
+        .v17_2742 { background: rgba(244,140,37,0.1); color: rgba(244,140,37,1); font-weight: 600; }
+        .v17_2738:hover { background: #f9fafb; color: rgba(244,140,37,1); }
+
+        .v17_2762 { padding: 16px; border-top: 1px solid #f1f5f9; }
+        .v17_2763 { background: rgba(243,244,246,1); border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; color: rgba(55,65,81,1); font-weight: 700; width: 100%; border: none; cursor: pointer; }
+
+        /* Main Content */
+        .main-wrapper { margin-left: 256px; padding-top: 80px; min-height: 100vh; }
+        .content-container { padding: 40px; position: relative; }
+        
+        .v17_2603 { display: flex; flex-direction: column; margin-bottom: 40px; }
+        .v17_2604 { font-weight: 900; font-size: 30px; color: rgba(24,20,17,1); margin: 0; }
+        .v17_2605 { font-size: 16px; color: rgba(107,114,128,1); margin-top: 8px; }
+        
+        .v17_2606 { position: absolute; top: 40px; right: 40px; background: rgba(244,140,37,1); color: white !important; border-radius: 12px; padding: 12px 24px; font-weight: 700; font-size: 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(244,140,37,0.2); }
+
+        /* Search/Filter Bar */
+        .v17_2610 { background: white; border-radius: 16px; padding: 10px; display: flex; align-items: center; gap: 20px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .v17_2768 { flex-grow: 1; background: rgba(249,250,251,1); border-radius: 12px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; position: relative; }
+        .v17_2769 { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; padding-left: 30px; }
+        
+        .v17_2612 { display: flex; gap: 4px; background: rgba(249,250,251,1); border-radius: 12px; padding: 4px; }
+        .cat-tab-link { padding: 8px 16px; border-radius: 8px; color: rgba(107,114,128,1); text-decoration: none; font-weight: 600; font-size: 14px; }
+        .cat-tab-link.active { background: white; color: rgba(244,140,37,1); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .v17_2618 { background: rgba(249,250,251,1); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 10px; color: rgba(24,20,17,1); font-weight: 600; font-size: 14px; border: 1px solid #f1f5f9; }
+
+        /* Table Card */
+        .v17_2622 { background: white; border-radius: 16px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .v17_2625 { background: rgba(249,250,251,1); border-bottom: 1px solid #f1f5f9; }
+        .admin-table th { padding: 16px 24px; text-align: left; color: rgba(107,114,128,1); font-weight: 700; font-size: 12px; text-transform: uppercase; }
+        .admin-table td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        
+        .product-img-v { width: 48px; height: 48px; border-radius: 8px; background: rgba(243,244,246,1); object-fit: cover; }
+        .product-name-v { font-weight: 700; font-size: 14px; color: rgba(24,20,17,1); margin: 0; }
+        .product-desc-v { font-size: 12px; color: rgba(107,114,128,1); margin: 2px 0 0; }
+        
+        .v17_2639 { background: rgba(254,226,226,1); color: rgba(220,38,38,1); border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .v17_2657 { background: rgba(220,252,231,1); color: rgba(22,163,74,1); border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .v17_2675 { background: rgba(244,140,37,0.2); color: rgba(244,140,37,1); border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        
+        .v17_2643 { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .sd-green { background: rgba(34,197,94,1); box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+        .sd-orange { background: rgba(249,115,22,1); }
+        .sd-gray { background: rgba(156,163,175,1); }
+
+        /* Stats Section */
+        .v17_2716 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px; }
+        .stat-box-v { border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: center; min-height: 109px; position: relative; }
+        .stat-box-v span { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .stat-box-v h2 { font-weight: 900; font-size: 30px; margin: 0; color: rgba(24,20,17,1); }
+        .v17_2717 { background: rgba(244,140,37,0.05); color: rgba(244,140,37,1); }
+        .v17_2721 { background: rgba(240,253,244,1); color: rgba(22,163,74,1); }
+        .v17_2725 { background: rgba(254,242,242,1); color: rgba(220,38,38,1); }
+
+        /* Global Overwrites */
+        .v272_49 { padding-top: 100px; }
+    </style>
+</head>
+<body class="v17_2600">
+    @* Top Header (v272_48) *@
+    <header class="v272_48">
+        <ul class="header-center-nav">
+            <li><a asp-controller="Home" asp-action="Index" class="nav-item-link">Trang chủ</a></li>
+            <li><a asp-controller="Product" asp-action="Index" class="nav-item-link active">Món ăn</a></li>
+            <li><a asp-controller="Voucher" asp-action="Index" class="nav-item-link">Khuyến mãi</a></li>
+            <li><a asp-controller="Order" asp-action="Index" class="nav-item-link">Đơn hàng của tôi</a></li>
+            <li><a href="#" class="nav-item-link">Tích điểm</a></li>
+        </ul>
+        
+        <div class="header-right-actions">
+            <div class="v272_73">
+                <i class="bi bi-search" style="color: #94a3b8;"></i>
+                <input type="text" class="v272_79" placeholder="Tìm kiếm pizza của bạn...">
             </div>
-            <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
-                <div class="d-flex gap-2 justify-content-lg-end">
-                    <a asp-action="Upsert" class="btn btn-brand-primary shadow-sm flex-grow-1 flex-lg-grow-0">
-                        <i class="bi bi-plus-circle me-2"></i>Thêm Món
-                    </a>
-                    <a asp-action="CreateCombo" class="btn btn-outline-dark shadow-sm flex-grow-1 flex-lg-grow-0" style="padding: 10px 24px; font-weight: 600;">
-                        <i class="bi bi-box-seam me-2"></i>Tạo Combo
-                    </a>
-                </div>
+            <a asp-controller="Account" asp-action="Manage" class="v272_81">
+                <i class="bi bi-person-fill"></i>
+                Hồ sơ
+            </a>
+            <a href="#" style="position: relative; font-size: 22px; color: #4b5563;" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+                <i class="bi bi-cart3"></i>
+                <span id="cart-count" class="v272_91" style="display: none;">0</span>
+            </a>
+        </div>
+    </header>
+
+    @* Sidebar (v17_2729) *@
+    <aside class="v17_2729">
+        <div class="v17_2730">
+            <div class="v17_2731">🍕</div>
+            <div>
+                <h6 class="v17_2735">Pizza Admin</h6>
+                <span class="v17_2736">Quản trị viên</span>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="container mb-5">
-    <!-- Search Bar -->
-    <div class="brand-card p-4 mb-4">
-        <div class="position-relative">
-            <i class="bi bi-search position-absolute top-50 translate-middle-y text-muted" style="left: 15px; font-size: 1.1rem;"></i>
-            <input id="searchBox" type="text" class="form-control form-control-lg search-pill ps-5" placeholder="Tìm kiếm món ăn, combo...">
+        <nav class="sidebar-menu">
+            <a asp-controller="Statistics" asp-action="Daily" class="v17_2738">
+                <i class="bi bi-grid"></i> Thống kê
+            </a>
+            <a asp-controller="Product" asp-action="Index" class="v17_2738 v17_2742">
+                <i class="bi bi-box-seam"></i> Quản lý Sản phẩm
+            </a>
+            <a asp-controller="Table" asp-action="Index" class="v17_2738">
+                <i class="bi bi-calendar-event"></i> Đặt bàn
+            </a>
+            <a href="#" class="v17_2738">
+                <i class="bi bi-people"></i> Nhân viên
+            </a>
+            <a asp-controller="Ingredient" asp-action="Index" class="v17_2738">
+                <i class="bi bi-egg-fried"></i> Nguyên liệu
+            </a>
+            <a asp-controller="Voucher" asp-action="Index" class="v17_2738">
+                <i class="bi bi-ticket-perforated"></i> Voucher
+            </a>
+            <a href="#" class="v17_2738">
+                <i class="bi bi-chat-dots"></i> Khách hàng
+            </a>
+        </nav>
+
+        <div class="v17_2762">
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="v17_2763">
+                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </button>
+            </form>
         </div>
-    </div>
+    </aside>
 
-    <div class="row g-4">
-        <!-- Sidebar Categories -->
-        <div class="col-lg-3">
-            <div class="brand-card p-3 h-100">
-                <h5 class="font-weight-bold mb-3 px-2" style="font-family: 'Playfair Display', serif; color: var(--wood-brown);">Danh Mục</h5>
-                <div class="list-group brand-list-group" id="catList">
-                    <a href="#" class="list-group-item list-group-item-action active" data-cat="All"><i class="bi bi-grid-fill me-2"></i>Tất cả</a>
-                    <a href="#" class="list-group-item list-group-item-action" data-cat="Pizza"><i class="bi bi-disc me-2"></i>Pizza</a>
-                    <a href="#" class="list-group-item list-group-item-action" data-cat="Đồ uống"><i class="bi bi-cup-straw me-2"></i>Đồ uống</a>
-                    <a href="#" class="list-group-item list-group-item-action" data-cat="Món phụ"><i class="bi bi-basket me-2"></i>Món phụ</a>
-                    <a href="#" class="list-group-item list-group-item-action" data-cat="Combo"><i class="bi bi-stars me-2"></i>Combo</a>
-                </div>
+    @* Main Content *@
+    <main class="main-wrapper">
+        <div class="content-container">
+            <div class="v17_2603">
+                <h1 class="v17_2604">Quản lý Sản phẩm</h1>
+                <p class="v17_2605">Quản lý thực đơn và các gói combo hiệu quả.</p>
+                <a asp-action="Upsert" class="v17_2606">
+                    <i class="bi bi-plus-lg"></i> Thêm sản phẩm mới
+                </a>
             </div>
-        </div>
 
-        <!-- Product Grid -->
-        <div class="col-lg-9">
-            <div id="menuGrid" class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-4">
-                @{ var outIds = Model.OutOfStockIds ?? new List<int>(); }
-                
-                @* Products *@
-                @foreach (var p in Model.Products)
-                {
-                    var isOut = outIds.Contains(p.Id);
-                    <div class="col" data-cat="@p.Category" data-name="@p.Name">
-                        <div class="brand-card product-item-card h-100 d-flex flex-column">
-                            <div class="img-wrap">
-                                @if (!string.IsNullOrEmpty(p.ImageUrl)) {
-                                    <img src="@p.ImageUrl" alt="@p.Name" onerror="this.parentElement.classList.add('img-placeholder');this.remove();this.parentElement.innerText='🍕';"/>
-                                } else {
-                                    <div class="img-placeholder">🍕</div>
-                                }
-                                @if (isOut) {
-                                    <div class="position-absolute top-0 end-0 m-2 badge bg-secondary">Hết hàng</div>
-                                }
-                            </div>
-                            <div class="card-body d-flex flex-column flex-grow-1 p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">@p.Name</h5>
-                                </div>
-                                <div class="text-muted small mb-2"><i class="bi bi-tag me-1"></i>@p.Category</div>
-                                <div class="mt-auto d-flex justify-content-between align-items-center">
-                                    <span class="price-tag">@p.Price.ToString("N0")₫</span>
-                                    <div class="btn-group">
-                                        <a asp-action="Upsert" asp-route-id="@p.Id" class="btn btn-sm btn-outline-primary" title="Sửa"><i class="bi bi-pencil"></i></a>
-                                        <a asp-action="Ingredients" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary" title="Nguyên liệu"><i class="bi bi-egg-fried"></i></a>
+            @* Search & Tab Bar *@
+            <div class="v17_2610">
+                <div class="v17_2768">
+                    <i class="bi bi-search" style="position: absolute; left: 15px; color: #9ca3af;"></i>
+                    <input type="text" id="searchBox" class="v17_2769" placeholder="Tìm tên pizza, mã hoặc thành phần...">
+                </div>
+                <div class="v17_2612" id="catTabs">
+                    <a href="#" class="cat-tab-link active" data-cat="All">Tất cả</a>
+                    <a href="#" class="cat-tab-link" data-cat="Pizza">Pizza</a>
+                    <a href="#" class="cat-tab-link" data-cat="Combo">Combo</a>
+                    <a href="#" class="cat-tab-link" data-cat="Món phụ">Món phụ</a>
+                </div>
+                <button class="v17_2618">
+                    <i class="bi bi-sliders"></i> Lọc thêm
+                </button>
+            </div>
+
+            @* Table Container *@
+            <div class="v17_2622">
+                <table class="admin-table">
+                    <thead>
+                        <tr class="v17_2625">
+                            <th style="width: 40%;">SẢN PHẨM</th>
+                            <th>DANH MỤC</th>
+                            <th>GIÁ</th>
+                            <th>TRẠNG THÁI</th>
+                            <th class="text-end">HÀNH ĐỘNG</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        @{
+                            var outIds = Model.OutOfStockIds ?? new List<int>();
+                            var pizzaCount = Model.Products.Count(p => p.Category == "Pizza" && p.IsActive && !outIds.Contains(p.Id));
+                            var comboCount = Model.Combos.Count(c => c.IsActive);
+                            var outCount = outIds.Count;
+                        }
+
+                        @* Products *@
+                        @foreach (var p in Model.Products)
+                        {
+                            var isOut = outIds.Contains(p.Id);
+                            var bcClass = p.Category == "Pizza" ? "v17_2675" : (p.Category == "Món phụ" ? "v17_2657" : "v17_2639");
+                            
+                            <tr data-cat="@p.Category" data-name="@p.Name">
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 16px;">
+                                        <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "https://placehold.co/100x100?text=🍕" : p.ImageUrl)" class="product-img-v" alt="@p.Name" onerror="this.src='https://placehold.co/100x100?text=🍕'">
+                                        <div>
+                                            <p class="product-name-v">@p.Name</p>
+                                            <p class="product-desc-v">@p.Description</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                @* Combos *@
-                @foreach (var c in Model.Combos)
-                {
-                    var fallbackImg = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl;
-                    var img = !string.IsNullOrEmpty(c.ImageUrl) ? c.ImageUrl : fallbackImg;
-                    var raw = c.Items.Where(i=>i.Product!=null).Select(i => i.Product!.Price * i.MinQuantity).DefaultIfEmpty(0m).Sum();
-                    var afterAmount = raw - (c.DiscountAmount > 0 ? c.DiscountAmount : 0);
-                    var afterPercent = c.DiscountPercent.HasValue ? afterAmount * (1 - (c.DiscountPercent.Value/100m)) : afterAmount;
-                    var comboPrice = afterPercent < 0 ? 0 : afterPercent;
-
-                    <div class="col" data-cat="Combo" data-name="@c.Name">
-                        <div class="brand-card product-item-card h-100 d-flex flex-column position-relative">
-                             <div class="position-absolute top-0 start-0 m-2 badge bg-danger shadow-sm" style="z-index:2">Combo</div>
-                            <div class="img-wrap">
-                                @if (!string.IsNullOrEmpty(img)) {
-                                    <img src="@img" alt="@c.Name" onerror="this.parentElement.classList.add('img-placeholder');this.remove();this.parentElement.innerText='🍕';"/>
-                                } else {
-                                    <div class="img-placeholder">🍕</div>
-                                }
-                            </div>
-                            <div class="card-body d-flex flex-column flex-grow-1 p-3">
-                                <h5 class="card-title mb-2">@c.Name</h5>
-                                <div class="small text-muted mb-3 flex-grow-1" style="max-height: 3em; overflow: hidden; text-overflow: ellipsis;">
-                                    @string.Join(", ", c.Items.Where(i=>i.Product!=null).Select(i => $"{i.Product!.Name} x{i.MinQuantity}"))
-                                </div>
-                                <div class="mt-auto d-flex justify-content-between align-items-center">
-                                    <span class="price-tag text-danger">@comboPrice.ToString("N0")₫</span>
-                                    <div class="btn-group">
-                                        <a asp-action="EditCombo" asp-route-id="@c.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                                        <form asp-action="DeleteCombo" asp-route-id="@c.Id" method="post" class="d-inline" onsubmit="return confirm('Xoá combo này?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </td>
+                                <td><span class="@bcClass">@(p.Category?.ToUpper() ?? "KHÁC")</span></td>
+                                <td><span style="font-weight: 800; color: #1e293b;">@p.Price.ToString("N0")₫</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center;">
+                                        <span class="v17_2643 @(isOut ? "sd-gray" : "sd-green")"></span>
+                                        <span style="font-weight: 600; color: #374151;">@(isOut ? "Hết hàng" : "Còn hàng")</span>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                        <a asp-action="Upsert" asp-route-id="@p.Id" style="color: #cbd5e1; font-size: 18px;"><i class="bi bi-pencil"></i></a>
+                                        <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline" onsubmit="return confirm('Xoá sản phẩm này?');">
+                                            <button type="submit" style="background: none; border: none; color: #cbd5e1; font-size: 18px; padding: 0;"><i class="bi bi-trash"></i></button>
                                         </form>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
+                                </td>
+                            </tr>
+                        }
+
+                        @* Combos *@
+                        @foreach (var c in Model.Combos)
+                        {
+                            var comboPrice = (c.Items.Select(i => ((i.Product?.Price) ?? 0m) * Math.Max(1, i.MinQuantity)).Sum() - (c.DiscountAmount > 0 ? c.DiscountAmount : 0m)) * (1 - (c.DiscountPercent ?? 0m) / 100m);
+                            if (comboPrice < 0) comboPrice = 0;
+
+                            <tr data-cat="Combo" data-name="@c.Name">
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 16px;">
+                                        <img src="@(string.IsNullOrEmpty(c.ImageUrl) ? "https://placehold.co/100x100?text=📦" : c.ImageUrl)" class="product-img-v" alt="@c.Name" onerror="this.src='https://placehold.co/100x100?text=📦'">
+                                        <div>
+                                            <p class="product-name-v">@c.Name</p>
+                                            <p class="product-desc-v">@string.Join(", ", c.Items.Select(i => i.Product?.Name))</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="v17_2675">COMBO</span></td>
+                                <td><span style="font-weight: 800; color: #1e293b;">@comboPrice.ToString("N0")₫</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center;">
+                                        <span class="v17_2643 sd-green"></span>
+                                        <span style="font-weight: 600; color: #374151;">Còn hàng</span>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                        <a asp-action="EditCombo" asp-route-id="@c.Id" style="color: #cbd5e1; font-size: 18px;"><i class="bi bi-pencil"></i></a>
+                                        <form asp-action="DeleteCombo" asp-route-id="@c.Id" method="post" class="d-inline" onsubmit="return confirm('Xoá combo này?');">
+                                            <button type="submit" style="background: none; border: none; color: #cbd5e1; font-size: 18px; padding: 0;"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="pagination-footer">
+                    <div>Đang hiển thị <span id="visibleCount">0</span> trong tổng số <span id="totalCount">0</span> sản phẩm</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-pg"><i class="bi bi-chevron-left"></i></button>
+                        <button class="btn-pg"><i class="bi bi-chevron-right"></i></button>
                     </div>
-                }
+                </div>
+            </div>
+
+            @* Stats Grid (v17_2716) *@
+            <div class="v17_2716">
+                <div class="stat-box-v v17_2717">
+                    <span>Tổng Pizza đang bán</span>
+                    <h2>@pizzaCount</h2>
+                </div>
+                <div class="stat-box-v v17_2721">
+                    <span>Combo hiện có</span>
+                    <h2>@comboCount</h2>
+                </div>
+                <div class="stat-box-v v17_2725">
+                    <span>Sản phẩm hết hàng</span>
+                    <h2>@outCount</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    @* Cart Offcanvas *@
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
+        <div class="offcanvas-header bg-brand-orange text-white">
+            <h5 class="offcanvas-title fw-black">Giỏ hàng của bạn</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            <div id="cart-items-container" class="flex-grow-1 overflow-auto mb-3">
+                <div class="text-center py-5">
+                    <i class="bi bi-cart-x fs-1 text-brand-gray-light"></i>
+                    <p class="text-brand-gray mt-2">Giỏ hàng trống</p>
+                </div>
+            </div>
+            <div id="cart-summary" class="border-top pt-3" style="display: none;">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="fw-bold">Tổng cộng:</span>
+                    <span id="cart-total-price" class="fw-black text-brand-orange fs-5">0₫</span>
+                </div>
+                <div class="d-grid gap-2">
+                    <a asp-controller="Order" asp-action="ScanQr" class="btn btn-brand-primary py-2 fw-bold">Đặt món ngay</a>
+                    <button onclick="cart.clear()" class="btn btn-link text-brand-gray small text-decoration-none">Xóa tất cả</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', initMenu);
+    @* Scripts *@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <script>
+        $(document).ready(function() {
+            const $searchBox = $('#searchBox');
+            const $catTabs = $('#catTabs .cat-tab-link');
+            const $rows = $('#tableBody tr');
+            const $visibleCount = $('#visibleCount');
+            const $totalCount = $('#totalCount');
 
-async function initMenu(){
-    const catList = document.getElementById('catList');
-    const menuGrid = document.getElementById('menuGrid');
-    const searchBox = document.getElementById('searchBox');
+            $totalCount.text($rows.length);
 
-    function normalize(s){ return (s||'').toLowerCase(); }
-    function canonicalCategory(raw){
-        const s = normalize(raw);
-        if (s.includes('pizza')) return 'Pizza';
-        if (s.includes('uống') || s.includes('drink') || s.includes('beverage')) return 'Đồ uống';
-        if (s.includes('phụ') || s.includes('side')) return 'Món phụ';
-        if (s.includes('combo')) return 'Combo';
-        if (s === 'all') return 'All';
-        return raw || '';
-    }
-    function applies(el, cat, term){
-        const ec = canonicalCategory(el.getAttribute('data-cat') || '');
-        const name = el.getAttribute('data-name') || '';
-        const catOk = (canonicalCategory(cat) === 'All') || (ec === canonicalCategory(cat));
-        const textOk = normalize(name).includes(normalize(term));
-        return catOk && textOk;
-    }
-    function render(cat){
-        const term = searchBox.value || '';
-        const cards = Array.from(menuGrid.querySelectorAll('[data-cat]'));
-        cards.forEach(el => {
-            el.style.display = applies(el, cat, term) ? '' : 'none';
+            function filter() {
+                const term = $searchBox.val().toLowerCase();
+                const activeCat = $('#catTabs .cat-tab-link.active').data('cat');
+                let count = 0;
+
+                $rows.each(function() {
+                    const $row = $(this);
+                    const name = ($row.data('name') || "").toString().toLowerCase();
+                    const cat = ($row.data('cat') || "").toString();
+                    
+                    const matchesSearch = name.includes(term);
+                    const matchesCat = (activeCat === 'All' || cat === activeCat);
+
+                    if (matchesSearch && matchesCat) {
+                        $row.show();
+                        count++;
+                    } else {
+                        $row.hide();
+                    }
+                });
+                $visibleCount.text(count);
+            }
+
+            $searchBox.on('input', filter);
+
+            $catTabs.on('click', function(e) {
+                e.preventDefault();
+                $catTabs.removeClass('active');
+                $(this).addClass('active');
+                filter();
+            });
+
+            filter();
         });
-    }
-    catList.querySelectorAll('a').forEach(a => {
-        a.addEventListener('click', (e)=>{
-            e.preventDefault();
-            catList.querySelectorAll('a').forEach(x=>x.classList.remove('active'));
-            a.classList.add('active');
-            render(a.getAttribute('data-cat'));
-        });
-    });
-    searchBox.addEventListener('input', () => {
-        const active = catList.querySelector('a.active');
-        const cat = active ? active.getAttribute('data-cat') : 'All';
-        render(cat);
-    });
-    render('All');
-}
-</script>
+    </script>
+</body>
+</html>
