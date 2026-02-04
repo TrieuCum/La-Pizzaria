@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace LaPizzaria.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
+
     public class EmployeeController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -89,6 +90,7 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpPost]
+        [HttpDelete]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
@@ -99,6 +101,13 @@ namespace LaPizzaria.Controllers
                 await _context.SaveChangesAsync();
                 TempData["success"] = "Xóa nhân viên thành công!";
             }
+            
+            if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                Request.Method == "DELETE")
+            {
+                return Ok(new { success = true, message = "Xóa nhân viên thành công!" });
+            }
+            
             return RedirectToAction(nameof(Index));
         }
     }

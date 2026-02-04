@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Quản lý Nhân viên - La Pizzaria</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="admin-info">
+                <div class="admin-avatar"></div>
+                <div class="admin-details">
+                    <h3>Pizza Admin</h3>
+                    <p>Quản trị viên</p>
+                </div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <ul>
+                    <li><a href="#"><i class="fas fa-chart-bar"></i> Thống kê</a></li>
+                    <li class="active"><a href="#"><i class="fas fa-users"></i> Quản lý nhân viên</a></li>
+                    <li><a href="#"><i class="fas fa-table"></i> Đặt bàn</a></li>
+                    <li><a href="#"><i class="fas fa-box"></i> Nguyên liệu</a></li>
+                    <li><a href="#"><i class="fas fa-ticket-alt"></i> Voucher</a></li>
+                    <li><a href="#"><i class="fas fa-user-friends"></i> Quản lý khách hàng</a></li>
+                </ul>
+            </nav>
+            
+            <div class="logout-section">
+                <a href="#" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="logo-section">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">LaPizzaria</span>
+                </div>
+                
+                <nav class="header-nav">
+                    <a href="#">Trang chủ</a>
+                    <a href="#">Món ăn</a>
+                    <a href="#">Khuyến mãi</a>
+                    <a href="#">Đơn hàng của tôi</a>
+                    <a href="#">Tích điểm</a>
+                </nav>
+                
+                <div class="header-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Tìm kiếm pizza của bạn...">
+                    </div>
+                    <button class="profile-btn">
+                        <i class="fas fa-user"></i> Hồ sơ
+                    </button>
+                    <div class="cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge">3</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Quản lý Nhân viên</h1>
+                        <p>Xem và quản lý danh sách nhân viên trong hệ thống.</p>
+                    </div>
+                    <button class="add-employee-btn">
+                        <i class="fas fa-plus"></i> Thêm nhân viên mới
+                    </button>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="search-input">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Tìm kiếm nhân viên...">
+                    </div>
+                    <select class="filter-select">
+                        <option>Lọc theo chức vụ</option>
+                        <option>Quản lý</option>
+                        <option>Thu ngân</option>
+                        <option>Đầu bếp</option>
+                        <option>Shipper</option>
+                        <option>Phục vụ</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>Lọc theo trạng thái</option>
+                        <option>Đang làm việc</option>
+                        <option>Nghỉ phép</option>
+                    </select>
+                </div>
+
+                <!-- Employee Table -->
+                <div class="table-container">
+                    <table class="employee-table">
+                        <thead>
+                            <tr>
+                                <th>Tên nhân viên</th>
+                                <th>Chức vụ</th>
+                                <th>Số điện thoại</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-avatar"></div>
+                                        <div class="employee-details">
+                                            <span class="employee-name">Nguyễn Văn A</span>
+                                            <span class="employee-id">ID: #EMP001</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge">Quản lý</span></td>
+                                <td>0901 234 567</td>
+                                <td><span class="status active"><i class="fas fa-circle"></i> Đang làm việc</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-avatar"></div>
+                                        <div class="employee-details">
+                                            <span class="employee-name">Trần Thị B</span>
+                                            <span class="employee-id">ID: #EMP002</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge">Thu ngân</span></td>
+                                <td>0909 876 543</td>
+                                <td><span class="status inactive"><i class="fas fa-circle"></i> Nghỉ phép</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-avatar"></div>
+                                        <div class="employee-details">
+                                            <span class="employee-name">Lê Văn C</span>
+                                            <span class="employee-id">ID: #EMP003</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge">Đầu bếp</span></td>
+                                <td>0912 345 678</td>
+                                <td><span class="status active"><i class="fas fa-circle"></i> Đang làm việc</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-avatar"></div>
+                                        <div class="employee-details">
+                                            <span class="employee-name">Phạm Văn D</span>
+                                            <span class="employee-id">ID: #EMP004</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge">Shipper</span></td>
+                                <td>0987 654 321</td>
+                                <td><span class="status active"><i class="fas fa-circle"></i> Đang làm việc</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-avatar"></div>
+                                        <div class="employee-details">
+                                            <span class="employee-name">Hoàng Thị E</span>
+                                            <span class="employee-id">ID: #EMP005</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge">Phục vụ</span></td>
+                                <td>0912 233 445</td>
+                                <td><span class="status inactive"><i class="fas fa-circle"></i> Nghỉ phép</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    <div class="pagination">
+                        <span class="pagination-info">Hiển thị 1-5 trên 24 nhân viên</span>
+                        <div class="pagination-controls">
+                            <button class="page-btn prev"><i class="fas fa-chevron-left"></i></button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">2</button>
+                            <button class="page-btn">3</button>
+                            <button class="page-btn next"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
