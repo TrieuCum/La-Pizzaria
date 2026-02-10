@@ -6,21 +6,18 @@
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item d-flex align-items-center">
+    <li class="nav-item d-flex align-items-center gap-2">
         @{
             var user = await UserManager.GetUserAsync(User);
-            var displayName = string.IsNullOrWhiteSpace(user?.FirstName + user?.LastName) ? UserManager.GetUserName(User) : ($"{user!.FirstName} {user!.LastName}").Trim();
             var avatar = string.IsNullOrWhiteSpace(user?.AvatarUrl) ? "/images/default-avatar.png" : user!.AvatarUrl;
         }
-        <a id="manage" class="nav-link d-flex align-items-center gap-2" asp-controller="Account" asp-action="Manage" title="Manage">
-            <img src="@avatar" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover" />
-            <span>@displayName</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <form id="logoutForm" class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button id="logout" type="submit" class="nav-link btn btn-link">Logout</button>
-        </form>
+        <div class="d-flex align-items-center gap-2">
+            <img src="@avatar" alt="avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border: 2px solid var(--brand-orange-light)" />
+            <a id="manage" class="btn-profile-v" asp-controller="Account" asp-action="Manage" title="Manage">
+                <i class="bi bi-person-fill"></i>
+                Hồ sơ
+            </a>
+        </div>
     </li>
 }
 else

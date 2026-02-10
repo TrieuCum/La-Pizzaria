@@ -123,7 +123,10 @@
                                     <div class="brand-card h-100 d-flex flex-column position-relative border-0 shadow-sm bg-white m-2">
                                         <button class="position-absolute top-0 end-0 m-3 btn btn-white rounded-circle p-2 shadow-sm z-3 border-0 transition-all hover-scale"><i class="bi bi-heart"></i></button>
                                         <div class="ratio ratio-1x1 overflow-hidden rounded-top-4">
-                                            <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "/images/v17_972.png")" class="card-img-top object-fit-cover transition-transform" alt="@p.Name">
+                                            <img src="@SanitizeUrl(p.ImageUrl)" 
+                                                 class="card-img-top object-fit-cover transition-transform" 
+                                                 alt="@p.Name"
+                                                 onerror="this.onerror=null;this.src='/images/v17_972.png';">
                                         </div>
                                         <div class="p-4 d-flex flex-column flex-grow-1">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -152,36 +155,65 @@
         <!-- Popular Combos -->
         <section class="combo-section py-5 bg-brand-bg rounded-4 px-4 my-5">
             <h2 class="fw-black font-work-sans mb-5">Combo phổ biến</h2>
-            <div class="row g-5">
-                @foreach (var c in Model.ActiveCombos.Take(2))
+            
+            @functions {
+                string SanitizeUrl(string? url) {
+                    if (string.IsNullOrEmpty(url)) return "/images/v17_1114.png";
+                    if (url.StartsWith("file:///", StringComparison.OrdinalIgnoreCase)) {
+                        return "/images/" + System.IO.Path.GetFileName(url);
+                    }
+                    return url;
+                }
+            }
+
+            <div class="row g-4">
+                @foreach (var c in Model.ActiveCombos)
                 {
-                    var firstImage = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl
-                        ?? "/images/v17_1114.png";
+                    var firstProdImage = c.Items.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl;
+                    var comboThumb = SanitizeUrl(!string.IsNullOrEmpty(c.ImageUrl) ? c.ImageUrl : firstProdImage);
+                    
                     decimal originalPrice = c.Items.Where(i => i.Product != null).Sum(i => i.Product!.Price * i.MinQuantity);
                     decimal finalPrice = originalPrice - c.DiscountAmount;
                     
-                    <div class="col-lg-6">
-                        <div class="brand-card border-0 shadow-lg bg-white overflow-hidden rounded-4">
-                            <div class="row g-0">
-                                <div class="col-md-5 ratio ratio-1x1 overflow-hidden">
-                                    <img src="@firstImage" class="img-fluid h-100 object-fit-cover" alt="@c.Name">
+                    <div class="col-lg-4">
+                        <div class="brand-card h-100 d-flex flex-column position-relative border-0 shadow-sm bg-white overflow-hidden rounded-4 transition-all">
+                            <button class="position-absolute top-0 end-0 m-3 btn btn-white rounded-circle p-2 shadow-sm z-3 border-0 transition-all hover-scale"><i class="bi bi-heart"></i></button>
+                            
+                            @if(c.DiscountPercent > 0 || c.DiscountAmount > 0)
+                            {
+                                <div class="position-absolute top-0 start-0 m-3 z-3">
+                                    <span class="badge bg-brand-red text-white py-2 px-3 rounded-pill fw-bold shadow-sm">
+                                        -@(c.DiscountPercent?.ToString("0") ?? "SIÊU ƯU ĐÃI")%
+                                    </span>
                                 </div>
-                                <div class="col-md-7 p-4 d-flex flex-column">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h4 class="fw-black m-0 text-brand-dark">@c.Name</h4>
-                                        <span class="badge bg-brand-red text-white py-2 px-3 rounded-pill">TIẾT KIỆM @(c.DiscountPercent?.ToString("0") ?? (c.DiscountAmount > 0 ? "ƯU ĐÃI" : "0"))%</span>
+                            }
+
+                            <div class="ratio ratio-1x1 overflow-hidden">
+                                <img src="@comboThumb" 
+                                     class="card-img-top object-fit-cover transition-transform" 
+                                     alt="@c.Name"
+                                     onerror="this.onerror=null;this.src='/images/v17_1114.png';">
+                            </div>
+
+                            <div class="p-4 d-flex flex-column flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="fw-black m-0 fs-6 flex-grow-1 pe-2 text-brand-dark">@c.Name</h5>
+                                    <div class="text-end">
+                                        <div class="text-brand-gray text-decoration-line-through extra-small">@originalPrice.ToString("N0")₫</div>
+                                        <div class="fw-black fs-5 text-brand-orange">@finalPrice.ToString("N0")₫</div>
                                     </div>
-                                    <p class="text-brand-gray small mb-4 line-clamp-2">@c.Description</p>
-                                    <div class="small text-brand-gray mb-4 border-start ps-3 border-brand-orange bg-light p-2 rounded-end">
-                                        <strong>Gồm có:</strong> @string.Join(", ", c.Items.Where(i=>i.Product!=null).Select(i => $"{i.Product!.Name} x{i.MinQuantity}"))
+                                </div>
+                                <p class="text-brand-gray extra-small mb-3 line-clamp-2">@c.Description</p>
+                                <div class="extra-small text-brand-gray mb-4 border-start ps-3 border-brand-orange bg-brand-bg p-2 rounded-end">
+                                    <strong class="text-brand-dark">Gồm:</strong> @string.Join(", ", c.Items.Where(i=>i.Product!=null).Select(i => i.Product!.Name))
+                                </div>
+                                <div class="mt-auto pt-3 border-top d-flex flex-column gap-3">
+                                    <div class="d-flex align-items-center gap-1">
+                                        @for(int i=0; i<5; i++) { <i class="bi bi-star-fill text-brand-yellow extra-small"></i> }
+                                        <span class="text-brand-gray extra-small ms-1 fw-bold">(150+)</span>
                                     </div>
-                                    <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
-                                        <div>
-                                            <div class="text-brand-gray text-decoration-line-through extra-small">@originalPrice.ToString("N0")₫</div>
-                                            <div class="fw-black fs-3 text-brand-orange">@finalPrice.ToString("N0")₫</div>
-                                        </div>
-                                        <button onclick="cart.add({ id: @c.Id, name: '@c.Name', price: @finalPrice, imageUrl: '@firstImage', type: 'combo' })" class="btn btn-brand-primary py-2 px-4 shadow-sm fw-bold">Thêm ngay</button>
-                                    </div>
+                                    <button onclick="cart.add({ id: @c.Id, name: '@c.Name', price: @finalPrice, imageUrl: '@comboThumb', type: 'combo' })" 
+                                            class="btn btn-brand-outline w-100 py-2 small fw-bold">Thêm vào giỏ hàng</button>
                                 </div>
                             </div>
                         </div>

@@ -309,3 +309,41 @@ document.addEventListener('DOMContentLoaded', () => {
     PizzaSlider.init();
     window.pizzaSlider = PizzaSlider;
 });
+
+/**
+ * Admin Sidebar Toggle Logic
+ */
+(function() {
+    'use strict';
+    
+    function initSidebar() {
+        const toggleBtn = document.getElementById('sidebarToggle');
+        const body = document.body;
+        const sidebar = document.getElementById('adminSidebar');
+        
+        if (!sidebar) return;
+        
+        // Add class to body to indicate sidebar existence
+        body.classList.add('has-sidebar');
+        
+        // Load state from localStorage
+        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        if (isCollapsed) {
+            body.classList.add('sidebar-collapsed');
+        }
+        
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                body.classList.toggle('sidebar-collapsed');
+                const collapsed = body.classList.contains('sidebar-collapsed');
+                localStorage.setItem('sidebar-collapsed', collapsed);
+            });
+        }
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSidebar);
+    } else {
+        initSidebar();
+    }
+})();
