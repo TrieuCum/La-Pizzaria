@@ -1,7 +1,16 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\Controllers",
+    "\\Models",
+    "\\Views",
+    "\\Views\\Account",
+    "\\Views\\Ingredient",
+    "\\Views\\Order",
+    "\\Views\\Product",
+    "\\Views\\Statistics",
+    "\\Views\\Table"
   ],
-  "SelectedNode": "\\LaPizzaria.sln",
+  "SelectedNode": "\\Views\\Ingredient\\Index.cshtml",
   "PreviewInSolutionExplorer": false
 }

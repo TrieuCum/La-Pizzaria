@@ -3291,23 +3291,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\nphuo\\.nuget\\packages\\": {},
+    "C:\\Users\\admin\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\DuAnCS6\\LaPizzaria.Data\\LaPizzaria.Data.csproj",
+      "projectUniqueName": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Data\\LaPizzaria.Data.csproj",
       "projectName": "LaPizzaria.Data",
-      "projectPath": "E:\\DuAnCS6\\LaPizzaria.Data\\LaPizzaria.Data.csproj",
-      "packagesPath": "C:\\Users\\nphuo\\.nuget\\packages\\",
-      "outputPath": "E:\\DuAnCS6\\LaPizzaria.Data\\obj\\",
+      "projectPath": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Data\\LaPizzaria.Data.csproj",
+      "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
+      "outputPath": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Data\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\nphuo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -3323,8 +3323,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "E:\\DuAnCS6\\LaPizzaria.Models\\LaPizzaria.Models.csproj": {
-              "projectPath": "E:\\DuAnCS6\\LaPizzaria.Models\\LaPizzaria.Models.csproj"
+            "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Models\\LaPizzaria.Models.csproj": {
+              "projectPath": "C:\\File hoc tap nang\\LaPizzaria\\LaPizzaria.Models\\LaPizzaria.Models.csproj"
             }
           }
         }
@@ -3339,7 +3339,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -3378,7 +3378,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

@@ -40,3 +40,17 @@ E:\DuAnCS6\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.dll
 E:\DuAnCS6\LaPizzaria.Data\obj\Debug\net8.0\refint\LaPizzaria.Data.dll
 E:\DuAnCS6\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.pdb
 E:\DuAnCS6\LaPizzaria.Data\obj\Debug\net8.0\ref\LaPizzaria.Data.dll
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\bin\Debug\net8.0\LaPizzaria.Data.deps.json
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\bin\Debug\net8.0\LaPizzaria.Data.dll
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\bin\Debug\net8.0\LaPizzaria.Data.pdb
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\bin\Debug\net8.0\LaPizzaria.Models.dll
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\bin\Debug\net8.0\LaPizzaria.Models.pdb
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.csproj.AssemblyReference.cache
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.GeneratedMSBuildEditorConfig.editorconfig
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.csproj.CoreCompileInputs.cache
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.sourcelink.json
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\LaPizzar.AC596C2B.Up2Date
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.dll
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\refint\LaPizzaria.Data.dll
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\LaPizzaria.Data.pdb
+C:\File hoc tap nang\LaPizzaria\LaPizzaria.Data\obj\Debug\net8.0\ref\LaPizzaria.Data.dll
