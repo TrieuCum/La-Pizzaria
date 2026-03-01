@@ -180,7 +180,7 @@
                     <a href="#" class="cat-tab-link active" data-cat="All">Tất cả</a>
                     <a href="#" class="cat-tab-link" data-cat="Pizza">Pizza</a>
                     <a href="#" class="cat-tab-link" data-cat="Combo">Combo</a>
-                    <a href="#" class="cat-tab-link" data-cat="Món phụ">Món phụ</a>
+                    <a href="#" class="cat-tab-link" data-cat="Side Dish">Món phụ</a>
                 </div>
                 <button class="v17_2618">
                     <i class="bi bi-sliders"></i> Lọc thêm
@@ -211,7 +211,7 @@
                         @foreach (var p in Model.Products)
                         {
                             var isOut = outIds.Contains(p.Id);
-                            var bcClass = p.Category == "Pizza" ? "v17_2675" : (p.Category == "Món phụ" ? "v17_2657" : "v17_2639");
+                            var bcClass = p.Category == "Pizza" ? "v17_2675" : (p.Category == "Side Dish" ? "v17_2657" : "v17_2639");
                             
                             <tr data-cat="@p.Category" data-name="@p.Name">
                                 <td>

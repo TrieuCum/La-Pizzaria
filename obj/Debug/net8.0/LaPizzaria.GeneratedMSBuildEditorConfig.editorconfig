@@ -40,6 +40,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZWdpc3Rlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[E:/DuAnCS6/Views/Card/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ2FyZFxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [E:/DuAnCS6/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -54,6 +58,18 @@ build_metadata.AdditionalFiles.CssScope =
 
 [E:/DuAnCS6/Views/Ingredient/Upsert.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW5ncmVkaWVudFxVcHNlcnQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/DuAnCS6/Views/Menu/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWVudVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/DuAnCS6/Views/Menu/_ComboCard.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWVudVxfQ29tYm9DYXJkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/DuAnCS6/Views/Menu/_ProductCard.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWVudVxfUHJvZHVjdENhcmQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [E:/DuAnCS6/Views/Order/Index.cshtml]

@@ -66,11 +66,11 @@
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <h2 class="fw-black font-work-sans m-0">Phiếu quà tặng đang hoạt động</h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-white rounded-circle shadow-sm p-3 border-0"><i class="bi bi-chevron-left"></i></button>
-                    <button class="btn btn-white rounded-circle shadow-sm p-3 border-0"><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-white rounded-circle shadow-sm p-3 border-0" id="voucherPrev"><i class="bi bi-chevron-left"></i></button>
+                    <button class="btn btn-white rounded-circle shadow-sm p-3 border-0" id="voucherNext"><i class="bi bi-chevron-right"></i></button>
                 </div>
             </div>
-            <div class="row g-4 highlight-vouchers">
+            <div class="row g-4 highlight-vouchers flex-nowrap overflow-hidden" id="voucherSlider">
                 @if (Model.Vouchers != null && Model.Vouchers.Any())
                 {
                     @foreach (var v in Model.Vouchers)
@@ -123,14 +123,18 @@
                                     <div class="brand-card h-100 d-flex flex-column position-relative border-0 shadow-sm bg-white m-2">
                                         <button class="position-absolute top-0 end-0 m-3 btn btn-white rounded-circle p-2 shadow-sm z-3 border-0 transition-all hover-scale"><i class="bi bi-heart"></i></button>
                                         <div class="ratio ratio-1x1 overflow-hidden rounded-top-4">
-                                            <img src="@SanitizeUrl(p.ImageUrl)" 
-                                                 class="card-img-top object-fit-cover transition-transform" 
-                                                 alt="@p.Name"
-                                                 onerror="this.onerror=null;this.src='/images/v17_972.png';">
+                                            <a href="javascript:void(0)" class="d-block w-100 h-100">
+                                                <img src="@SanitizeUrl(p.ImageUrl)" 
+                                                     class="card-img-top object-fit-cover transition-transform" 
+                                                     alt="@p.Name"
+                                                     onerror="this.onerror=null;this.src='/images/v17_972.png';">
+                                            </a>
                                         </div>
                                         <div class="p-4 d-flex flex-column flex-grow-1">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <h5 class="fw-black m-0 fs-6 flex-grow-1 pe-2 text-brand-dark">@p.Name</h5>
+                                                <a href="javascript:void(0)" class="text-decoration-none flex-grow-1 pe-2">
+                                                    <h5 class="fw-black m-0 fs-6 text-brand-dark hover-orange">@p.Name</h5>
+                                                </a>
                                                 <span class="text-brand-red fw-black fs-5">@p.Price.ToString("N0")K</span>
                                             </div>
                                             <p class="text-brand-gray extra-small mb-4 line-clamp-2">@p.Description</p>
@@ -189,15 +193,19 @@
                             }
 
                             <div class="ratio ratio-1x1 overflow-hidden">
-                                <img src="@comboThumb" 
-                                     class="card-img-top object-fit-cover transition-transform" 
-                                     alt="@c.Name"
-                                     onerror="this.onerror=null;this.src='/images/v17_1114.png';">
+                                <a href="javascript:void(0)" class="d-block w-100 h-100">
+                                    <img src="@comboThumb" 
+                                         class="card-img-top object-fit-cover transition-transform" 
+                                         alt="@c.Name"
+                                         onerror="this.onerror=null;this.src='/images/v17_1114.png';">
+                                </a>
                             </div>
 
                             <div class="p-4 d-flex flex-column flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="fw-black m-0 fs-6 flex-grow-1 pe-2 text-brand-dark">@c.Name</h5>
+                                    <a href="javascript:void(0)" class="text-decoration-none flex-grow-1 pe-2">
+                                        <h5 class="fw-black m-0 fs-6 text-brand-dark hover-orange">@c.Name</h5>
+                                    </a>
                                     <div class="text-end">
                                         <div class="text-brand-gray text-decoration-line-through extra-small">@originalPrice.ToString("N0")₫</div>
                                         <div class="fw-black fs-5 text-brand-orange">@finalPrice.ToString("N0")₫</div>
@@ -225,6 +233,9 @@
 </div>
 
 <style>
+    .brand-card { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid rgba(0,0,0,0.05) !important; }
+    .brand-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important; border-color: rgba(249,115,22,0.2) !important; }
+    .hover-orange:hover { color: var(--brand-orange) !important; }
     .ms-n2 { margin-left: -0.5rem; }
     .extra-small { font-size: 0.75rem; }
     .hero-section { padding: 5rem 0; margin-top: -3rem; }
@@ -246,12 +257,16 @@
         overflow: hidden;
     }
     .card-img-top { cursor: pointer; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-    .brand-card:hover .card-img-top { transform: scale(1.1); }
+    .brand-card:hover .card-img-top { transform: scale(1.08); }
     .hover-scale { transition: all 0.2s ease; }
     .hover-scale:hover { transform: scale(1.1); }
     .hover-underline:hover { text-decoration: underline !important; }
     .lh-1 { line-height: 1.1; }
     .bg-white { background-color: #ffffff !important; }
+    
+    #voucherSlider { scroll-behavior: smooth; }
+    .highlight-vouchers::-webkit-scrollbar { display: none; }
+    .highlight-vouchers { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
 <script>
@@ -260,5 +275,17 @@
             alert('Đã sao chép mã: ' + text);
         });
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const voucherSlider = document.getElementById('voucherSlider');
+        const prevBtn = document.getElementById('voucherPrev');
+        const nextBtn = document.getElementById('voucherNext');
+
+        if (voucherSlider && prevBtn && nextBtn) {
+            const scrollAmount = 350;
+            prevBtn.onclick = () => voucherSlider.scrollLeft -= scrollAmount;
+            nextBtn.onclick = () => voucherSlider.scrollLeft += scrollAmount;
+        }
+    });
 </script>
 </div>

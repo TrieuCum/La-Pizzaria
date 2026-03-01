@@ -128,9 +128,17 @@ namespace LaPizzaria.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ApiMenu()
         {
-            var products = await _db.Products.Where(p => p.IsActive)
-                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category })
+            var productsRaw = await _db.Products.Where(p => p.IsActive)
+                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category, imageUrl = p.ImageUrl })
                 .ToListAsync();
+
+            var products = productsRaw.Select(p => new {
+                p.id,
+                p.name,
+                p.price,
+                p.category,
+                imageUrl = SanitizeImageUrl(p.imageUrl)
+            }).ToList();
 
             // Materialize combos and compute price on client to avoid EF translation issues
             var combosRaw = await _db.Combos.Where(c => c.IsActive)
@@ -149,7 +157,7 @@ namespace LaPizzaria.Controllers
             var result = new List<object>();
             var productGroups = products
                 .GroupBy(p => p.category)
-                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price }) });
+                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price, imageUrl = x.imageUrl }) });
             result.AddRange(productGroups);
             result.Add(new { key = "Combo", type = "combo", items = combos.Select(c => new { id = c.id, name = c.name, price = c.price, items = c.items }) });
 

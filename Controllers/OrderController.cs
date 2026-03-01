@@ -153,7 +153,7 @@ namespace LaPizzaria.Controllers
                     Subtotal = i.UnitPrice * i.Quantity
                 }).ToList();
 
-                var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>());
+                var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>(), req.Latitude, req.Longitude);
                 // Attach up to 2 vouchers if provided and valid
                 if (req.VoucherIds != null && req.VoucherIds.Count > 0)
                 {
@@ -271,7 +271,7 @@ namespace LaPizzaria.Controllers
                     var t = await _db.Tables.FirstOrDefaultAsync(x => x.Code == req.TableCode);
                     if (t != null) tableIds.Add(t.Id);
                 }
-                var order = await _orderService.CreateOrderAsync(null, details, tableIds);
+                var order = await _orderService.CreateOrderAsync(null, details, tableIds, req.Latitude, req.Longitude);
                 if (req.VoucherIds != null && req.VoucherIds.Count > 0)
                 {
                     foreach (var vid in req.VoucherIds.Take(2))
@@ -300,6 +300,8 @@ namespace LaPizzaria.Controllers
         public List<ItemDto> Items { get; set; } = new();
         public List<int>? TableIds { get; set; }
         public List<int> VoucherIds { get; set; } = new();
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 
     public class ItemDto
@@ -314,6 +316,8 @@ namespace LaPizzaria.Controllers
         public string? TableCode { get; set; }
         public List<QrOrderItem>? Items { get; set; }
         public List<int>? VoucherIds { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 
     public class QrOrderItem

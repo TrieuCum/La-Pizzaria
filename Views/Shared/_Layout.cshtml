@@ -29,7 +29,7 @@
                     <div class="collapse navbar-collapse" id="mainNavbar">
                         <ul class="header-center-nav mx-auto mb-2 mb-lg-0">
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
-                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Product" ? "active" : "")" asp-controller="Product" asp-action="Index">Món ăn</a></li>
+                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Menu" ? "active" : "")" asp-controller="Menu" asp-action="Index">Món ăn</a></li>
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Voucher" ? "active" : "")" asp-controller="Voucher" asp-action="Index">Khuyến mãi</a></li>
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Order" ? "active" : "")" asp-controller="Order" asp-action="Index">Đơn hàng của tôi</a></li>
                             <li><a class="nav-item-link" href="#">Tích điểm</a></li>
@@ -81,7 +81,7 @@
                         <span id="cart-total-price" class="fw-black text-brand-orange fs-5">0₫</span>
                     </div>
                     <div class="d-grid gap-2">
-                        <a asp-controller="Order" asp-action="ScanQr" class="btn btn-brand-primary py-2 fw-bold">Đặt món ngay</a>
+                        <a asp-controller="Card" asp-action="Index" class="btn btn-brand-primary py-2 fw-bold">Đặt món ngay</a>
                         <button onclick="cart.clear()" class="btn btn-link text-brand-gray small text-decoration-none">Xóa tất cả</button>
                     </div>
                 </div>

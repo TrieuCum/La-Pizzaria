@@ -17,6 +17,8 @@ namespace LaPizzaria.Services
     public class QrOrderRequest
     {
         public string TableCode { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public List<QrOrderItem> Items { get; set; } = new();
     }
 }

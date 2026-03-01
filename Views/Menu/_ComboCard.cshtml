@@ -1,0 +1,31 @@
+@model LaPizzaria.Models.Combo
+@{
+    var comboPrice = (Model.Items.Select(i => ((i.Product?.Price) ?? 0m) * Math.Max(1, i.MinQuantity)).Sum() - (Model.DiscountAmount > 0 ? Model.DiscountAmount : 0m)) * (1 - (Model.DiscountPercent ?? 0m) / 100m);
+    if (comboPrice < 0) comboPrice = 0;
+}
+
+<div class="col-md-6 col-lg-4">
+    <div class="menu-card h-100 bg-white shadow-sm border-0 position-relative transition-all hover-up">
+        <span class="card-badge badge-red">COMBO TIẾT KIỆM</span>
+        <div class="card-img-wrap ratio ratio-1x1">
+            <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/placeholder.png" : Model.ImageUrl)" 
+                 class="object-fit-cover" alt="@Model.Name"
+                 onerror="this.src='/images/v17_1114.png'">
+        </div>
+        
+        <div class="card-body p-4 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="fw-bold text-brand-dark mb-0 pe-2">@Model.Name</h5>
+                <span class="fw-black text-brand-orange fs-5">@comboPrice.ToString("N0")₫</span>
+            </div>
+            <p class="text-brand-gray extra-small mb-4 flex-grow-1">
+                @string.Join(", ", Model.Items.Select(i => i.Product?.Name))
+            </p>
+            
+            <button class="btn btn-brand-primary w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2"
+                    onclick="cart.add({ id: @Model.Id, name: '@Model.Name', price: @comboPrice, imageUrl: '@Model.ImageUrl', type: 'combo' }); window.showToast('Đã thêm combo vào giỏ', 'success');">
+                <i class="bi bi-cart-plus fs-5"></i> Thêm vào giỏ
+            </button>
+        </div>
+    </div>
+</div>
