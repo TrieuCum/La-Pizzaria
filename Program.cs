@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
 using LaPizzaria.Hubs;
@@ -24,9 +24,17 @@ builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddHostedService<VoucherCleanupService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options
-        .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+            sqlOptions.CommandTimeout(60); // Tăng thời gian chờ lên 60 giây
+        }
+    )
+    .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
 );
 
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)

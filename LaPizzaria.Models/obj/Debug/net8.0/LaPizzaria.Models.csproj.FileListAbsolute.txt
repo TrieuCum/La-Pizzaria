@@ -42,3 +42,14 @@ C:\File hoc tap nang\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Mo
 C:\File hoc tap nang\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\refint\LaPizzaria.Models.dll
 C:\File hoc tap nang\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.pdb
 C:\File hoc tap nang\LaPizzaria\LaPizzaria.Models\obj\Debug\net8.0\ref\LaPizzaria.Models.dll
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.deps.json
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.dll
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\bin\Debug\net8.0\LaPizzaria.Models.pdb
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.csproj.AssemblyReference.cache
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.sourcelink.json
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.dll
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\refint\LaPizzaria.Models.dll
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\LaPizzaria.Models.pdb
+C:\Users\Admin\Downloads\pizzatotnghiep\La-Pizzaria\LaPizzaria.Models\obj\Debug\net8.0\ref\LaPizzaria.Models.dll

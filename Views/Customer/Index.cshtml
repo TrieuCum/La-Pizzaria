@@ -1,0 +1,338 @@
+﻿@{
+    ViewData["Title"] = "Quản lý khách hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* 1. CẤU TRÚC CHUNG */
+    .admin-wrapper {
+        position: relative;
+        margin: -20px;
+        background: #f8f9fa;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    .admin-container {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* 2. SIDEBAR CẬP NHẬT ICON */
+    .sidebar {
+        width: 260px;
+        background: #ffffff;
+        border-right: 1px solid #edf2f7;
+        padding: 25px 15px;
+        flex-shrink: 0;
+    }
+
+        .sidebar .logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #1a202c;
+            margin-bottom: 35px;
+            padding-left: 15px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar li {
+            padding: 12px 15px;
+            margin-bottom: 4px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+
+    /* Style cho Icon PNG */
+    .sidebar-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 14px;
+        object-fit: contain;
+        /* Nếu icon gốc là màu đen, dùng filter này để chuyển sang màu cam khi hover */
+        transition: filter 0.2s;
+    }
+
+    .sidebar li:hover, .sidebar li.active {
+        background: #fff5f0;
+        color: #ff793f;
+        font-weight: 600;
+    }
+
+        .sidebar li:hover .sidebar-icon, .sidebar li.active .sidebar-icon {
+            /* Filter này giúp đổi màu icon sang tone cam nếu cần */
+            filter: sepia(100%) saturate(2000%) hue-rotate(345deg) brightness(100%) contrast(105%);
+        }
+
+    /* 3. NỘI DUNG CHÍNH */
+    .main-content {
+        flex-grow: 1;
+        padding: 40px;
+    }
+
+        .main-content h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+
+    .subtitle {
+        color: #718096;
+        margin-bottom: 30px;
+        font-size: 14px;
+    }
+
+    /* 4. THANH CÔNG CỤ */
+    .toolbar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .search-input {
+        flex-grow: 1;
+        padding: 12px 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        outline: none;
+        font-size: 14px;
+        background: #fff;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        color: #4a5568;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .add-btn {
+        padding: 10px 24px;
+        background: #ff793f;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* 5. BẢNG DỮ LIỆU */
+    .table-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        border: 1px solid #edf2f7;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 16px 24px;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #a0aec0;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    td {
+        padding: 16px 24px;
+        border-bottom: 1px solid #f7fafc;
+        vertical-align: middle;
+    }
+
+    .customer-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .avatar {
+        width: 42px;
+        height: 42px;
+        background: #feebc8;
+        color: #c05621;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .badge {
+        padding: 6px 14px;
+        border-radius: 99px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+        .badge.active {
+            background: #f0fff4;
+            color: #38a169;
+        }
+
+        .badge.locked {
+            background: #fff5f5;
+            color: #e53e3e;
+        }
+
+    .points {
+        color: #ff793f;
+        font-weight: 700;
+    }
+
+    /* 6. PHÂN TRANG (PAGINATION) - MỚI */
+    .table-footer {
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .info-text {
+        font-size: 14px;
+        color: #718096;
+    }
+
+        .info-text b {
+            color: #2d3748;
+        }
+
+    .pagination {
+        display: flex;
+        gap: 8px;
+    }
+
+    .page-node {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.2s;
+        color: #4a5568;
+    }
+
+        .page-node.active {
+            background: #ff793f;
+            color: white;
+            font-weight: 600;
+        }
+
+        .page-node:hover:not(.active) {
+            background: #edf2f7;
+        }
+</style>
+
+<div class="admin-wrapper">
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">🍕 Pizza Admin</div>
+            <nav>
+                <ul>
+                    <li><img src="~/images/v197_153.png" class="sidebar-icon" /> Thống kê</li>
+                    <li><img src="~/images/v197_155.png" class="sidebar-icon" /> Đặt bàn</li>
+                    <li><img src="~/images/v197_257.png" class="sidebar-icon" /> Nhân viên</li>
+                    <li><img src="~/images/v197_153.png" class="sidebar-icon" /> Nguyên liệu</li>
+                    <li><img src="~/images/v197_155.png" class="sidebar-icon" /> Voucher</li>
+                    <li class="active"><img src="~/images/v197_257.png" class="sidebar-icon" /> Quản lý khách hàng</li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header>
+                <h1>Quản lý Khách hàng</h1>
+                <p class="subtitle">Xem và quản lý thông tin khách hàng thành viên</p>
+            </header>
+
+            <div class="toolbar">
+                <input type="text" placeholder="Tìm kiếm theo tên, số điện thoại, email..." class="search-input" />
+                <button class="filter-btn">Lọc theo trạng thái</button>
+                <button class="add-btn">+ Thêm mới</button>
+            </div>
+
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tên khách hàng</th>
+                            <th>Liên hệ</th>
+                            <th>Trạng thái</th>
+                            <th>Tổng đơn</th>
+                            <th>Điểm tích lũy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="customer-info">
+                                    <div class="avatar">NA</div>
+                                    <div>
+                                        <strong>Nguyễn Văn A</strong><br />
+                                        <small style="color:#a0aec0">ID: #CUS-001</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>0901234567<br /><small style="color:#a0aec0">a.nguyen@email.com</small></td>
+                            <td><span class="badge active">Hoạt động</span></td>
+                            <td>15</td>
+                            <td class="points">350</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="customer-info">
+                                    <div class="avatar" style="background:#edf2f7; color:#4a5568;">TB</div>
+                                    <div>
+                                        <strong>Trần Thị B</strong><br />
+                                        <small style="color:#a0aec0">ID: #CUS-002</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>0987654321<br /><small style="color:#a0aec0">b.tran@email.com</small></td>
+                            <td><span class="badge locked">Đã khóa</span></td>
+                            <td>2</td>
+                            <td class="points">20</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="table-footer">
+                    <div class="info-text">
+                        Hiển thị <b>1</b> đến <b>5</b> trong tổng số <b>128</b> khách hàng
+                    </div>
+                    <div class="pagination">
+                        <div class="page-node"> < </div>
+                        <div class="page-node active">1</div>
+                        <div class="page-node">2</div>
+                        <div class="page-node"> > </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
