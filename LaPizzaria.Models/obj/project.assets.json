@@ -811,23 +811,25 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\nphuo\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\ducqu\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {},
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\DuAnCS6\\LaPizzaria.Models\\LaPizzaria.Models.csproj",
+      "projectUniqueName": "D:\\do an\\La-Pizzaria\\LaPizzaria.Models\\LaPizzaria.Models.csproj",
       "projectName": "LaPizzaria.Models",
-      "projectPath": "E:\\DuAnCS6\\LaPizzaria.Models\\LaPizzaria.Models.csproj",
-      "packagesPath": "C:\\Users\\nphuo\\.nuget\\packages\\",
-      "outputPath": "E:\\DuAnCS6\\LaPizzaria.Models\\obj\\",
+      "projectPath": "D:\\do an\\La-Pizzaria\\LaPizzaria.Models\\LaPizzaria.Models.csproj",
+      "packagesPath": "C:\\Users\\ducqu\\.nuget\\packages\\",
+      "outputPath": "D:\\do an\\La-Pizzaria\\LaPizzaria.Models\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
       ],
       "configFilePaths": [
-        "C:\\Users\\nphuo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\ducqu\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -836,7 +838,6 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -882,7 +883,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
