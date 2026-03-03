@@ -1,4 +1,4 @@
-@model IEnumerable<LaPizzaria.Models.Table>
+@model LaPizzaria.ViewModels.TableIndexViewModel
 
 @{
     ViewData["Title"] = "Quản lý Bàn ăn";
@@ -6,252 +6,444 @@
 
 <style>
     :root {
-        --primary-red: #da291c;
-        --light-cream: #f8f5ed;
-        --wood-brown: #5a2e0a;
+        --figma-bg: #F8F9FA;
+        --figma-green: #27AE60;
+        --figma-orange: #E67E22;
+        --figma-text-muted: #828282;
+        --figma-text-dark: #333333;
+        --figma-card-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
 
-    .table-banner {
-        background: #ffffff;
-        background-image: 
-            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px),
-            url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="paper" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="80" cy="40" r="1" fill="rgba(0,0,0,0.03)"/><circle cx="40" cy="80" r="1" fill="rgba(0,0,0,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23paper)"/></svg>');
-        position: relative;
-        padding: 60px 0;
-        margin-bottom: 3rem;
-        overflow: hidden;
+    body {
+        background-color: var(--figma-bg);
+        color: var(--figma-text-dark);
     }
-    
-    .table-banner::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: repeating-linear-gradient(
-            90deg,
-            #ff7a00 0px,
-            #ff7a00 20px,
-            #ffffff 20px,
-            #ffffff 40px
-        );
+
+    /* Breadcrumbs */
+    .admin-breadcrumb {
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+        color: var(--figma-text-muted);
     }
-    
-    .table-title {
-        font-family: 'Playfair Display', serif;
-        font-weight: 900;
-        font-size: clamp(36px, 6vw, 64px);
-        color: #da291c;
-        margin-bottom: 0.5rem;
-        line-height: 1.1;
-    }
-    
-    .table-subtitle {
-        font-family: 'Playfair Display', serif;
+    .admin-breadcrumb span {
         font-weight: 700;
-        font-size: clamp(20px, 3vw, 28px);
-        color: #5a2e0a;
+        color: var(--figma-text-dark);
+        text-transform: uppercase;
+    }
+
+    /* Stats Cards */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--figma-card-shadow);
+        position: relative;
+    }
+    .stat-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--figma-text-muted);
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--figma-text-dark);
+    }
+    .stat-badge {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+    }
+    .stat-badge-green { background: #E8F8F0; color: #27AE60; }
+    .stat-badge-orange { background: #FEF5EE; color: #E67E22; }
+    .stat-badge-red { background: #FBEEEE; color: #EB5757; }
+
+    /* Action Bar */
+    .action-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        box-shadow: var(--figma-card-shadow);
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .action-left {
+        display: flex;
+        gap: 0.75rem;
+    }
+    .action-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .btn-figma {
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 0.6rem 1.2rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        text-transform: uppercase;
+        border: 1px solid #E0E0E0;
     }
-    
-    .table-card {
+    .btn-figma-primary {
+        background: var(--figma-orange);
+        color: white;
         border: none;
-        border-radius: 16px;
-        transition: all 0.3s ease;
+    }
+    .btn-figma-light {
+        background: #F2F2F2;
+        color: var(--figma-text-dark);
+    }
+
+    /* Table Grid & Card */
+    .table-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    .figma-table-card {
         background: white;
-        overflow: hidden;
+        border-radius: 12px;
+        padding: 1.25rem;
+        box-shadow: var(--figma-card-shadow);
+        border: 2px solid #E0E0E0;
+        position: relative;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        min-height: 180px;
+    }
+    .figma-table-card:hover { 
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
     
-    .table-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
+    .figma-table-card.free { border-color: var(--figma-green); }
+    .figma-table-card.occupied { border-color: var(--figma-orange); }
 
-    .table-code {
-        font-family: 'Playfair Display', serif;
+    .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+    }
+    .card-code {
+        font-size: 1.75rem;
         font-weight: 800;
-        font-size: 2rem;
-        color: var(--primary-red);
+        line-height: 1;
     }
+    .figma-table-card.free .card-code { color: var(--figma-green); }
+    .figma-table-card.occupied .card-code { color: var(--figma-orange); }
 
-    .control-panel {
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(10px);
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-    }
-
-    .status-badge {
-        padding: 0.5em 1em;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.8rem;
+    .card-status-pill {
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
+    .free .card-status-pill { background: #27AE60; color: white; }
+    .occupied .card-status-pill { background: var(--figma-orange); color: white; }
 
-    .status-active { background-color: #e8f5e9; color: #2e7d32; }
-    .status-inactive { background-color: #f5f5f5; color: #616161; }
-    
-    .status-occupied { background-color: #ffebee; color: #c62828; }
-    .status-free { background-color: #e3f2fd; color: #1565c0; }
+    .card-body-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-grow: 1;
+    }
 
-    .action-btn-group .btn {
+    .card-text-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .card-label {
+        color: var(--figma-text-muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .card-main-info {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--figma-text-dark);
+    }
+    .card-ready {
+        color: var(--figma-green);
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .card-icon-side {
+        font-size: 2.5rem;
+        line-height: 1;
+        opacity: 0.2;
+    }
+    .occupied .card-icon-side { color: var(--figma-orange); opacity: 0.4; }
+
+    .card-actions-overlay {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .figma-table-card:hover .card-actions-overlay { opacity: 1; }
+
+    .action-mini-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid #eee;
+        color: var(--figma-text-muted);
+        font-size: 0.8rem;
+        transition: all 0.2s;
+    }
+    .action-mini-btn:hover { background: #f8f9fa; color: var(--figma-orange); }
+
+    .table-check-container {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+        z-index: 5;
+    }
+
+    /* Footer QR Section */
+    .qr-footer-card {
+        background: #FDFEFE;
+        border: 2px dashed #D2D2D2;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        margin-top: 4rem;
+        margin-bottom: 4rem;
+    }
+    .qr-footer-icon {
+        font-size: 3rem;
+        color: #BDBDBD;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    .qr-footer-title {
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+    .qr-footer-text {
+        font-size: 0.9rem;
+        color: var(--figma-text-muted);
+        max-width: 400px;
+        margin: 0 auto 1.5rem;
+    }
+    .btn-pdf {
+        background: #1B1B1B;
+        color: white;
         border-radius: 8px;
-        padding: 0.4rem 0.8rem;
-        font-weight: 500;
+        padding: 0.8rem 2rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        border: none;
+    }
+
+    .order-selector {
+        width: 250px;
+        border-radius: 8px;
+        border: 1px solid #E0E0E0;
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .table-check {
+        width: 1.2rem;
+        height: 1.2rem;
+        cursor: pointer;
     }
 </style>
 
-<!-- Banner Section -->
-<div class="table-banner">
-    <div class="container position-relative" style="z-index: 1;">
-        <div class="row align-items-center">
-            <div class="col-lg-7">
-                <h1 class="table-title">QUẢN LÝ BÀN ĂN</h1>
-                <div class="table-subtitle">
-                    <span>SẮP XẾP & QUẢN LÝ KHÔNG GIAN</span>
-                </div>
-            </div>
-            <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
-                <!-- Optional: Add decorative image or keep clean like Product page's right side -->
-                <i class="bi bi-grid-3x3-gap-fill text-muted opacity-25" style="font-size: 8rem;"></i>
-            </div>
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <div class="admin-breadcrumb">
+        Admin / <span>Quản lý bàn</span>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <span class="stat-label">Tổng số bàn</span>
+            <div class="stat-value">@Model.TotalTables</div>
+            <span class="stat-badge stat-badge-green">+2 new</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Tỉ lệ bàn được sử dụng</span>
+            <div class="stat-value">@Model.OccupancyRate%</div>
+            <span class="stat-badge stat-badge-orange">High</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Chỗ ngồi còn trống</span>
+            <div class="stat-value">@Model.FreeSeats</div>
+            <span class="stat-badge stat-badge-red">-5 min ago</span>
         </div>
     </div>
-</div>
 
-<!-- Main Content -->
-<div class="container" style="margin-top: 2rem; position: relative; z-index: 2;">
-    
-    <!-- Control Panel -->
-    <div class="card control-panel p-4 mb-5">
-        <form asp-controller="Order" asp-action="MergeTables" method="post" id="mergeForm" class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label fw-bold text-muted small text-uppercase">Gắn vào Order đang mở</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-receipt"></i></span>
-                    <select name="orderId" class="form-select border-start-0 ps-0" required style="border-left: none;">
-                        <option value="" selected disabled>Chọn Order cần gắn bàn...</option>
-                        @foreach (var o in (IEnumerable<LaPizzaria.Models.Order>)ViewBag.OpenOrders)
-                        {
-                            <option value="@o.Id">Order #@o.Id - @o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</option>
-                        }
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-8">
-                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-                    <button type="submit" class="btn btn-brand-primary" id="btnMerge">
-                        <span class="fs-5 me-1">🔗</span> Gộp bàn
-                    </button>
-                    <button type="button" class="btn btn-outline-orange" id="btnAssign">
-                        <span class="fs-5 me-1">📌</span> Gắn Order
-                    </button>
-                    <div class="vr mx-2 text-muted d-none d-md-block"></div>
-                    <a asp-action="Upsert" class="btn btn-dark">
-                        <span class="fs-5 me-1">+</span> Tạo bàn mới
-                    </a>
-                    <a asp-controller="Order" asp-action="Qr" class="btn btn-outline-secondary">
-                         Tạo QR
-                    </a>
-                </div>
-            </div>
-            <div class="col-12 mt-2">
-                 <div class="alert alert-light border-0 bg-light rounded-3 d-flex align-items-center py-2 px-3 mb-0 text-muted small">
-                     <span class="me-2">💡</span> Chọn các bàn bằng checkbox trên thẻ, sau đó bấm nút Gộp hoặc Gắn Order ở trên.
-                 </div>
-            </div>
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <div class="action-left">
+            <a asp-action="Upsert" class="btn btn-figma btn-figma-light">
+                <i class="bi bi-plus-lg"></i> Thêm bàn
+            </a>
+            <a asp-controller="Order" asp-action="Qr" class="btn btn-figma btn-figma-light">
+                <i class="bi bi-qr-code-scan"></i> Tạo mã QR
+            </a>
+        </div>
+        
+        <form id="mergeForm" class="action-right">
+            <select name="orderId" class="order-selector">
+                <option value="" selected disabled>Chọn Order cần gắn bàn...</option>
+                @foreach (var o in Model.OpenOrders)
+                {
+                    <option value="@o.Id">Order #@o.Id - @o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</option>
+                }
+            </select>
+            <button type="button" id="btnAssign" class="btn btn-figma btn-figma-light">
+                <i class="bi bi-pin-angle"></i> Gắn Order
+            </button>
+            <button type="button" id="btnMerge" class="btn btn-figma btn-figma-primary">
+                <i class="bi bi-diagram-2"></i> Gộp bàn
+            </button>
         </form>
     </div>
 
-    <!-- Table Grid -->
-    <div class="row g-4">
-        @foreach (var t in Model)
+    <!-- Grid -->
+    <div class="table-grid">
+        @foreach (var t in Model.Tables)
         {
-            var attach = ((System.Collections.Generic.Dictionary<int, string>)ViewBag.TableAttachInfo).TryGetValue(t.Id, out var info) ? info : "";
-            <div class="col-sm-6 col-md-4 col-lg-3">
-                <div class="card table-card shadow-sm h-100 position-relative">
-                    <!-- Selection Checkbox -->
-                    <div class="position-absolute top-0 end-0 p-3">
-                         <input class="form-check-input shadow-none" type="checkbox" name="tableIds" value="@t.Id" form="mergeForm" style="width: 1.5em; height: 1.5em; cursor: pointer; border-color: #ddd;" title="Chọn bàn này" />
+            var attach = Model.TableAttachInfo.TryGetValue(t.Id, out var info) ? info : "";
+            <div class="figma-table-card @(t.IsOccupied ? "occupied" : "free")">
+                <!-- Actions on Hover -->
+                <div class="card-actions-overlay">
+                    <a asp-action="Upsert" asp-route-id="@t.Id" class="action-mini-btn" title="Chỉnh sửa"><i class="bi bi-pencil-fill"></i></a>
+                    <form asp-action="Clear" method="post" class="d-inline">
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <button type="submit" class="action-mini-btn" title="Dọn bàn"><i class="bi bi-stars"></i></button>
+                    </form>
+                </div>
+
+                <div class="card-top">
+                    <div class="card-code">@t.Code</div>
+                    <span class="card-status-pill">@(t.IsOccupied ? "ĐÃ ĐẶT" : "TRỐNG")</span>
+                </div>
+
+                <div class="card-body-content">
+                    <div class="card-text-group">
+                        <span class="card-label">Capacity: @t.Capacity Seats</span>
+                        @if (t.IsOccupied)
+                        {
+                            <div class="card-main-info">@attach</div>
+                        }
+                        else
+                        {
+                            <div class="card-ready">Ready to serve</div>
+                        }
                     </div>
-
-                    <div class="card-body d-flex flex-column text-center p-4">
-                        <div class="mb-3">
-                            <div class="table-code">@t.Code</div>
-                            <div class="text-muted small text-uppercase fw-bold tracking-wide">Sức chứa: @t.Capacity</div>
-                        </div>
-
-                        <div class="d-flex justify-content-center gap-2 mb-3">
-                            <span class="status-badge @(t.IsActive ? "status-active" : "status-inactive")">
-                                @(t.IsActive ? "Hoạt động" : "Khóa")
-                            </span>
-                            <span class="status-badge @(t.IsOccupied ? "status-occupied" : "status-free")">
-                                @(t.IsOccupied ? "Có khách" : "Trống")
-                            </span>
-                        </div>
-
-                        <div class="text-secondary small flex-grow-1 mb-3 fst-italic">
-                            @if(!string.IsNullOrEmpty(attach)) {
-                                <div class="p-2 bg-light rounded-3">@attach</div>
-                            } else {
-                                <span class="opacity-50">Chưa có thông tin</span>
-                            }
-                        </div>
-
-                        <div class="action-btn-group d-flex gap-2 justify-content-center mt-auto">
-                            <form asp-action="Clear" method="post" class="d-inline flex-fill">
-                                <input type="hidden" name="id" value="@t.Id" />
-                                <button type="submit" class="btn btn-light text-muted w-100 border hover-shadow" title="Dọn bàn/Reset">
-                                    🧹 Dọn
-                                </button>
-                            </form>
-                            <a asp-action="Upsert" asp-route-id="@t.Id" class="btn btn-light text-warning w-100 border hover-shadow" title="Chỉnh sửa">
-                                ✏️
-                            </a>
-                            <a asp-action="Delete" asp-route-id="@t.Id" class="btn btn-light text-danger w-100 border hover-shadow" title="Xóa">
-                                🗑️
-                            </a>
-                        </div>
+                    
+                    <div class="card-icon-side">
+                        @if (t.IsOccupied)
+                        {
+                            <i class="bi bi-egg-fried"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check2-circle"></i>
+                        }
                     </div>
+                </div>
+
+                <div class="table-check-container">
+                    <input class="form-check-input table-check" type="checkbox" name="tableIds" value="@t.Id" form="mergeForm" />
                 </div>
             </div>
         }
     </div>
+
+    <!-- QR Footer -->
+    <div class="qr-footer-card">
+        <i class="bi bi-qr-code qr-footer-icon"></i>
+        <div class="qr-footer-title">In tất cả QR bàn</div>
+        <p class="qr-footer-text">Tự động tạo mã QR chất lượng cao cho tất cả @Model.TotalTables bàn hiện có để khách hàng có thể quét menu trực tiếp.</p>
+        <button class="btn btn-pdf">Tải gói PDF</button>
+    </div>
 </div>
 
 <script>
-document.getElementById('btnMerge')?.addEventListener('click', function(e){
+document.getElementById('btnMerge')?.addEventListener('click', async function(){
+    const form = document.getElementById('mergeForm');
     const checked = Array.from(document.querySelectorAll('input[name="tableIds"]:checked')).map(cb => cb.value);
+    const orderId = document.querySelector('select[name="orderId"]').value;
+
     if (checked.length !== 2) {
-        e.preventDefault();
         alert('Vui lòng chọn đúng 2 bàn để gộp.');
+        return;
+    }
+    if (!orderId) {
+        alert('Vui lòng chọn Order đích.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('orderId', orderId);
+    checked.forEach(id => formData.append('tableIds', id));
+
+    try {
+        const res = await fetch('/Order/MergeTables', { method: 'POST', body: formData });
+        window.location.reload();
+    } catch(err) {
+        console.error(err);
+        alert('Lỗi kết nối.');
     }
 });
 
 document.getElementById('btnAssign')?.addEventListener('click', async function(){
     const orderSelect = document.querySelector('select[name="orderId"]');
-    const orderId = parseInt(orderSelect?.value || '0');
-    const checked = Array.from(document.querySelectorAll('input[name="tableIds"]:checked')).map(cb => parseInt(cb.value));
+    const orderId = orderSelect?.value;
+    const checked = Array.from(document.querySelectorAll('input[name="tableIds"]:checked')).map(cb => cb.value);
+    
     if (!orderId) { alert('Vui lòng chọn Order.'); return; }
     if (checked.length !== 1) { alert('Chọn đúng 1 bàn để gắn vào order.'); return; }
+    
     const formData = new FormData();
-    formData.append('orderId', String(orderId));
-    formData.append('tableId', String(checked[0]));
+    formData.append('orderId', orderId);
+    formData.append('tableId', checked[0]);
     
     try {
         const res = await fetch('/Order/Assign', { method: 'POST', body: formData });
-        if (res.redirected) { window.location.href = res.url; return; }
-        if (res.ok) {
-            window.location.reload();
-        } else {
-             alert('Có lỗi xảy ra khi gắn bàn.');
-        }
+        window.location.reload();
     } catch(err) {
         console.error(err);
         alert('Lỗi kết nối.');
