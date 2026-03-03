@@ -76,43 +76,43 @@ app.MapRazorPages();
 app.MapHub<OrderingHub>("/hub/ordering");
 
 // Apply pending EF Core migrations and seed default admin user and role
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//    await db.Database.MigrateAsync();
 
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    const string adminRole = "Admin";
-    if (!await roleManager.RoleExistsAsync(adminRole))
-    {
-        await roleManager.CreateAsync(new IdentityRole(adminRole));
-    }
-    var adminEmail = "admin@lapizzaria.local";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-    if (adminUser == null)
-    {
-        adminUser = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            EmailConfirmed = true,
-            FirstName = "Admin",
-            LastName = "Root"
-        };
-        var createResult = await userManager.CreateAsync(adminUser, "Admin@12345!");
-        if (createResult.Succeeded)
-        {
-            await userManager.AddToRoleAsync(adminUser, adminRole);
-        }
-    }
-    else
-    {
-        if (!await userManager.IsInRoleAsync(adminUser, adminRole))
-        {
-            await userManager.AddToRoleAsync(adminUser, adminRole);
-        }
-    }
-}
+//    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//    const string adminRole = "Admin";
+//    if (!await roleManager.RoleExistsAsync(adminRole))
+//    {
+//        await roleManager.CreateAsync(new IdentityRole(adminRole));
+//    }
+//    var adminEmail = "admin@lapizzaria.local";
+//    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+//    if (adminUser == null)
+//    {
+//        adminUser = new ApplicationUser
+//        {
+//            UserName = adminEmail,
+//            Email = adminEmail,
+//            EmailConfirmed = true,
+//            FirstName = "Admin",
+//            LastName = "Root"
+//        };
+//        var createResult = await userManager.CreateAsync(adminUser, "Admin@12345!");
+//        if (createResult.Succeeded)
+//        {
+//            await userManager.AddToRoleAsync(adminUser, adminRole);
+//        }
+//    }
+//    else
+//    {
+//        if (!await userManager.IsInRoleAsync(adminUser, adminRole))
+//        {
+//            await userManager.AddToRoleAsync(adminUser, adminRole);
+//        }
+//    }
+//}
 
 app.Run();

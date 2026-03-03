@@ -27,6 +27,7 @@ namespace LaPizzaria.Data
 		public DbSet<Voucher> Vouchers { get; set; }
 		public DbSet<OrderVoucher> OrderVouchers { get; set; }
 
+        public DbSet<Customer> Customers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
