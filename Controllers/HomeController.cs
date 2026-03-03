@@ -21,21 +21,19 @@ namespace LaPizzaria.Controllers
         public async Task<IActionResult> Index()
         {
             // Top ordered products by total quantity, only active ones
-            var topProducts = await _db.OrderDetails
-                .Include(od => od.Product)
-                .Where(od => od.Product != null && od.Product.IsActive)
-                .GroupBy(od => od.Product!)
-                .Select(g => new TopProductVm
+            // Fetch all active products in the 'Pizza' category
+            var topProducts = await _db.Products
+                .Where(p => p.IsActive && (p.Category == "Pizza" || p.Category.Contains("Pizza")))
+                .Select(p => new TopProductVm
                 {
-                    ProductId = g.Key.Id,
-                    Name = g.Key.Name,
-                    Description = g.Key.Description,
-                    ImageUrl = g.Key.ImageUrl,
-                    TotalOrdered = g.Sum(x => x.Quantity),
-                    Price = g.Key.Price
+                    ProductId = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    ImageUrl = p.ImageUrl,
+                    TotalOrdered = p.OrderDetails.Sum(od => od.Quantity),
+                    Price = p.Price
                 })
                 .OrderByDescending(x => x.TotalOrdered)
-                .Take(6)
                 .ToListAsync();
 
             var activeCombos = await _db.Combos
@@ -43,10 +41,17 @@ namespace LaPizzaria.Controllers
                 .Where(c => c.IsActive)
                 .ToListAsync();
 
+            var activeVouchers = await _db.Vouchers
+                .Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > DateTime.UtcNow))
+                .OrderByDescending(v => v.DiscountPercent)
+                .Take(3)
+                .ToListAsync();
+
             var vm = new HomeIndexViewModel
             {
                 TopProducts = topProducts,
-                ActiveCombos = activeCombos
+                ActiveCombos = activeCombos,
+                Vouchers = activeVouchers
             };
             return View(vm);
         }

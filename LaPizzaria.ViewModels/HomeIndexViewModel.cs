@@ -17,6 +17,7 @@ namespace LaPizzaria.ViewModels
     {
         public List<TopProductVm> TopProducts { get; set; } = new List<TopProductVm>();
         public List<Combo> ActiveCombos { get; set; } = new List<Combo>();
+        public List<Voucher> Vouchers { get; set; } = new List<Voucher>();
     }
 }
 

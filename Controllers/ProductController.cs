@@ -15,6 +15,24 @@ namespace LaPizzaria.Controllers
         {
             _db = db;
         }
+
+        /// <summary>
+        /// Sanitizes image URLs: converts file:// URLs to /images/ paths
+        /// </summary>
+        private string? SanitizeImageUrl(string? imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl))
+                return imageUrl;
+
+            // If it's a file:// URL, extract the filename and convert to web path
+            if (imageUrl.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+            {
+                var filename = System.IO.Path.GetFileName(imageUrl);
+                return $"/images/{filename}";
+            }
+
+            return imageUrl;
+        }
         public async Task<IActionResult> Index(string? q, string? category, string? status)
         {
             var query = _db.Products.Include(p => p.ProductIngredients).AsQueryable();
@@ -91,7 +109,18 @@ namespace LaPizzaria.Controllers
             var list = await _db.Products.Where(p => p.IsActive)
                 .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category, imageUrl = p.ImageUrl })
                 .ToListAsync();
-            return Ok(list);
+            
+            // Sanitize image URLs to convert file:// to web paths
+            var sanitized = list.Select(p => new 
+            { 
+                p.id, 
+                p.name, 
+                p.price, 
+                p.category, 
+                imageUrl = SanitizeImageUrl(p.imageUrl) 
+            }).ToList();
+            
+            return Ok(sanitized);
         }
 
         // Grouped menu for QR: products by category + combos as separate category
@@ -99,9 +128,17 @@ namespace LaPizzaria.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ApiMenu()
         {
-            var products = await _db.Products.Where(p => p.IsActive)
-                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category })
+            var productsRaw = await _db.Products.Where(p => p.IsActive)
+                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category, imageUrl = p.ImageUrl })
                 .ToListAsync();
+
+            var products = productsRaw.Select(p => new {
+                p.id,
+                p.name,
+                p.price,
+                p.category,
+                imageUrl = SanitizeImageUrl(p.imageUrl)
+            }).ToList();
 
             // Materialize combos and compute price on client to avoid EF translation issues
             var combosRaw = await _db.Combos.Where(c => c.IsActive)
@@ -112,7 +149,7 @@ namespace LaPizzaria.Controllers
             var combos = combosRaw.Select(c => new {
                 id = c.Id,
                 name = c.Name,
-                imageUrl = c.ImageUrl,
+                imageUrl = SanitizeImageUrl(c.ImageUrl),
                 price = (c.Items.Select(i => ((i.Product?.Price) ?? 0m) * Math.Max(1, i.MinQuantity)).Sum() - (c.DiscountAmount > 0 ? c.DiscountAmount : 0m)) * (1 - (c.DiscountPercent ?? 0m) / 100m),
                 items = c.Items.Select(i => new { productId = i.ProductId, minQty = Math.Max(1, i.MinQuantity) })
             }).ToList();
@@ -120,7 +157,7 @@ namespace LaPizzaria.Controllers
             var result = new List<object>();
             var productGroups = products
                 .GroupBy(p => p.category)
-                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price }) });
+                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price, imageUrl = x.imageUrl }) });
             result.AddRange(productGroups);
             result.Add(new { key = "Combo", type = "combo", items = combos.Select(c => new { id = c.id, name = c.name, price = c.price, items = c.items }) });
 

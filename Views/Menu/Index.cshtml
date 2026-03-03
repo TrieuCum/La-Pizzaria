@@ -1,0 +1,280 @@
+@model LaPizzaria.ViewModels.MenuViewModel
+@{
+    ViewData["Title"] = "Thực đơn";
+    var curCat = ViewBag.CurrentCategory as string;
+    var isAll = curCat == "All";
+    var expanded = (bool)(ViewBag.Expanded ?? false);
+
+    var pizzas = Model.Products.Where(p => p.Category == "Pizza").ToList();
+    var drinks = Model.Products.Where(p => p.Category == "Drink").ToList();
+    var sides = Model.Products.Where(p => p.Category == "Side Dish").ToList();
+    var combos = Model.Combos.ToList();
+}
+
+<div class="menu-page bg-brand-bg min-vh-100 font-work-sans py-4">
+    <div class="container">
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb breadcrumb-custom">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Món ăn</li>
+            </ol>
+        </nav>
+
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <h1 class="fw-black text-brand-dark mb-1">
+                    @if (isAll) { <span>Thực đơn</span> }
+                    else { <span>Các món @curCat</span> }
+                </h1>
+                <p class="text-brand-gray mb-0">Thưởng thức hương vị pizza truyền thống nướng củi.</p>
+            </div>
+            <div class="d-flex gap-3">
+                <button class="btn btn-white shadow-sm border-0 rounded-3 px-4 py-2 fw-bold extra-small d-flex align-items-center gap-2 transition-all hover-scale" onclick="window.location.href='?category=All'">
+                    <i class="bi bi-justify-left text-brand-dark"></i> Phổ biến
+                </button>
+                <button class="btn btn-white shadow-sm border-0 rounded-3 px-4 py-2 fw-bold extra-small d-flex align-items-center gap-2 transition-all hover-scale" onclick="toggleFilters()">
+                    <i class="bi bi-filter text-brand-dark"></i> Bộ lọc
+                </button>
+            </div>
+        </div>
+
+        <!-- Category Tabs -->
+        <div id="filterSection" class="mb-5 animate-fade-in">
+            <div class="d-flex gap-3 overflow-auto pb-2 scrollbar-hide">
+                <a asp-action="Index" asp-route-category="All" class="cat-pill @(curCat == "All" ? "active" : "")">Tất cả</a>
+                <a asp-action="Index" asp-route-category="Pizza" class="cat-pill @(curCat == "Pizza" ? "active" : "")">Pizza</a>
+                <a asp-action="Index" asp-route-category="Drink" class="cat-pill @(curCat == "Drink" ? "active" : "")">Đồ uống</a>
+                <a asp-action="Index" asp-route-category="Side Dish" class="cat-pill @(curCat == "Side Dish" ? "active" : "")">Món ăn kèm</a>
+                <a asp-action="Index" asp-route-category="Combo" class="cat-pill @(curCat == "Combo" ? "active" : "")">Combo</a>
+            </div>
+        </div>
+
+        @if (isAll)
+        {
+            <!-- SECTION: Always Visible (First 6 Pizzas) -->
+            <div class="section-group mb-5">
+                <h2 class="fw-black fs-4 text-brand-dark mb-4 border-start border-4 border-brand-orange ps-3">Pizza tiêu biểu</h2>
+                <div class="row g-4">
+                    @foreach (var p in pizzas.Take(6))
+                    {
+                        @await Html.PartialAsync("_ProductCard", p)
+                    }
+                </div>
+            </div>
+
+            <!-- SECTION: Expandable Content -->
+            <div id="expandedContent" style="display: none;" class="animate-fade-in">
+                @if (pizzas.Skip(6).Any())
+                {
+                    <div class="section-group mb-5">
+                        <div class="row g-4">
+                            @foreach (var p in pizzas.Skip(6))
+                            {
+                                @await Html.PartialAsync("_ProductCard", p)
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (sides.Any())
+                {
+                    <div class="section-group mb-5">
+                        <h2 class="fw-black fs-4 text-brand-dark mb-4 border-start border-4 border-brand-orange ps-3">Món ăn kèm</h2>
+                        <div class="row g-4">
+                            @foreach (var p in sides)
+                            {
+                                @await Html.PartialAsync("_ProductCard", p)
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (drinks.Any())
+                {
+                    <div class="section-group mb-5">
+                        <h2 class="fw-black fs-4 text-brand-dark mb-4 border-start border-4 border-brand-orange ps-3">Đồ uống</h2>
+                        <div class="row g-4">
+                            @foreach (var p in drinks)
+                            {
+                                @await Html.PartialAsync("_ProductCard", p)
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (combos.Any())
+                {
+                    <div class="section-group mb-5">
+                        <h2 class="fw-black fs-4 text-brand-dark mb-4 border-start border-4 border-brand-orange ps-3">Gói Combo</h2>
+                        <div class="row g-4">
+                            @foreach (var c in combos)
+                            {
+                                @await Html.PartialAsync("_ComboCard", c)
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="text-center py-4" id="expandBtnWrapper">
+                <button onclick="expandMenu()" class="btn btn-outline-brand rounded-pill px-5 py-3 fw-bold border-2 transition-all">
+                    Xem thêm thực đơn
+                </button>
+            </div>
+        }
+        else
+        {
+            <!-- SECTION: Specific Category View -->
+            <div class="row g-4 mb-5">
+                @foreach (var p in Model.Products)
+                {
+                    @await Html.PartialAsync("_ProductCard", p)
+                }
+            </div>
+
+            @if (curCat != "Combo" && Model.Combos.Any())
+            {
+                <div class="section-group mb-5">
+                    <h2 class="fw-black fs-4 text-brand-dark mb-4 border-start border-4 border-brand-orange ps-3">Gợi ý Combo</h2>
+                    <div class="row g-4">
+                        @foreach (var c in Model.Combos)
+                        {
+                            @await Html.PartialAsync("_ComboCard", c)
+                        }
+                    </div>
+                </div>
+            }
+            else if (curCat == "Combo")
+            {
+                <div class="row g-4 mb-5">
+                    @foreach (var c in Model.Combos)
+                    {
+                        @await Html.PartialAsync("_ComboCard", c)
+                    }
+                </div>
+            }
+            
+            <div class="text-center py-4">
+                <a asp-action="Index" asp-route-category="All" class="btn btn-outline-brand rounded-pill px-5 py-3 fw-bold border-2 transition-all text-decoration-none d-inline-block">
+                    Quay lại thực đơn chính
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .menu-page {
+        --brand-orange: #f48c25;
+        --brand-bg: #f8f7f5;
+        --brand-dark: #181411;
+        --brand-gray: #6b7280;
+        --brand-red: #dc2626;
+    }
+
+    .bg-brand-bg { background-color: var(--brand-bg); }
+    .text-brand-dark { color: var(--brand-dark); }
+    .text-brand-gray { color: var(--brand-gray); }
+    .text-brand-orange { color: var(--brand-orange); }
+
+    .fw-black { font-weight: 900; }
+    .extra-small { font-size: 0.8rem; }
+
+    .breadcrumb-custom { font-size: 0.85rem; font-weight: 500; }
+    .breadcrumb-custom a { color: var(--brand-gray); text-decoration: none; }
+    .breadcrumb-custom .active { color: var(--brand-dark); font-weight: 600; }
+
+    .btn-white { background: white; color: var(--brand-gray); border-radius: 12px !important; }
+    .btn-white:hover { background: #f9fafb; color: var(--brand-orange); }
+
+    .cat-pill { 
+        display: inline-block; 
+        padding: 10px 24px; 
+        background: white; 
+        border-radius: 99px; 
+        color: var(--brand-gray); 
+        text-decoration: none; 
+        font-weight: 700; 
+        font-size: 0.9rem;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        transition: all 0.3s;
+    }
+    .cat-pill.active { background: var(--brand-orange); color: white; box-shadow: 0 4px 12px rgba(244,140,37,0.3); }
+    .cat-pill:hover:not(.active) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); color: var(--brand-orange); }
+
+    .menu-card { 
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        border: 1px solid rgba(0,0,0,0.02);
+        border-radius: 30px;
+        overflow: hidden;
+    }
+    .card-img-wrap {
+        border-radius: 30px 30px 0 0;
+        overflow: hidden;
+    }
+    .hover-up:hover { transform: translateY(-12px); box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
+
+    .card-badge {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        z-index: 2;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: white;
+    }
+    .badge-red { background: var(--brand-red); }
+    .badge-orange { background: var(--brand-orange); }
+
+    .btn-outline-brand {
+        color: var(--brand-orange);
+        border-color: var(--brand-orange);
+        font-size: 0.9rem;
+    }
+    .btn-outline-brand:hover {
+        background: var(--brand-orange);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    function toggleFilters() {
+        const el = document.getElementById('filterSection');
+        if (el.style.display === 'none') {
+            el.style.display = 'block';
+            el.classList.add('animate-fade-in');
+        } else {
+            el.style.display = 'none';
+        }
+    }
+
+    function expandMenu() {
+        const content = document.getElementById('expandedContent');
+        const btn = document.getElementById('expandBtnWrapper');
+        
+        if (content) content.style.display = 'block';
+        if (btn) btn.style.display = 'none';
+        
+        window.scrollTo({
+            top: content.offsetTop - 100,
+            behavior: 'smooth'
+        });
+    }
+</script>

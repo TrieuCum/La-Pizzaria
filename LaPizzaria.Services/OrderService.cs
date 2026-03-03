@@ -22,7 +22,7 @@ namespace LaPizzaria.Services
             _pricingService = pricingService;
         }
 
-        public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds)
+        public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds, double? latitude = null, double? longitude = null)
         {
             var itemList = items.ToList();
             var ok = await _inventory.CheckAndReserveAsync(itemList);
@@ -34,7 +34,9 @@ namespace LaPizzaria.Services
             var order = new Order
             {
                 OrderStatus = "Pending",
-                OrderDetails = itemList
+                OrderDetails = itemList,
+                Latitude = latitude,
+                Longitude = longitude
             };
             if (!string.IsNullOrEmpty(userId))
             {
