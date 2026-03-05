@@ -1,0 +1,841 @@
+﻿@using LaPizzaria.Models
+@{
+    ViewData["Title"] = "Theo dõi Đơn hàng";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - LaPizzaria</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* =========================================
+                   CORE RESET & BASE STYLES
+                ========================================= */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            background-color: #f8f7f5;
+            color: #181411;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .v17_2600 {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            background: #f8f7f5;
+        }
+
+        /* =========================================
+                   HEADER / NAVBAR (TOP BAR)
+                ========================================= */
+        .v272_48 {
+            width: calc(100% - 256px);
+            height: 80px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            left: 256px;
+            z-index: 1000;
+            border-bottom: 1px solid #edf2f7;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .header-center-nav {
+            display: flex;
+            gap: 35px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-item-link {
+            color: #181411;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            position: relative;
+            padding: 28px 0;
+            transition: color 0.2s ease;
+        }
+
+            .nav-item-link:hover {
+                color: #F48C25;
+            }
+
+            .nav-item-link.active {
+                color: #F48C25;
+            }
+
+                .nav-item-link.active::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 3px;
+                    background: #F48C25;
+                    border-radius: 3px 3px 0 0;
+                }
+
+        .header-right-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .v272_81 {
+            background: #F48C25;
+            border-radius: 10px;
+            padding: 10px 22px;
+            color: #ffffff !important;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(244, 140, 37, 0.2);
+        }
+
+            .v272_81:hover {
+                background: #e67e1a;
+                transform: translateY(-1px);
+            }
+
+        .cart-icon-wrapper {
+            position: relative;
+            font-size: 24px;
+            color: #4b5563;
+            text-decoration: none;
+            display: flex;
+            padding: 5px;
+        }
+
+        .v272_91 {
+            position: absolute;
+            top: -2px;
+            right: -5px;
+            background: #F48C25;
+            color: #ffffff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ffffff;
+            font-weight: 800;
+        }
+
+        /* =========================================
+                   SIDEBAR
+                ========================================= */
+        .v17_2729 {
+            width: 256px;
+            height: 100vh;
+            background: #ffffff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1010;
+            border-right: 1px solid #edf2f7;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .v17_2730 {
+            padding: 30px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .v17_2731 {
+            width: 42px;
+            height: 42px;
+            background: #F48C25;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 22px;
+            box-shadow: 0 4px 10px rgba(244, 140, 37, 0.15);
+        }
+
+        .v17_2735 {
+            font-weight: 900;
+            font-size: 20px;
+            margin: 0;
+            color: #181411;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-nav {
+            flex-grow: 1;
+            padding: 10px 16px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+
+            .sidebar-link:hover {
+                background: #f8f9fa;
+                color: #181411;
+            }
+
+            .sidebar-link.active {
+                background: #fff7ed;
+                color: #F48C25;
+            }
+
+        /* =========================================
+                   MAIN WRAPPER & LAYOUT
+                ========================================= */
+        .main-wrapper {
+            margin-left: 256px;
+            padding-top: 80px;
+            min-height: 100vh;
+        }
+
+        .content-container {
+            padding: 40px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(244, 140, 37, 0.1);
+            color: #F48C25;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #F48C25;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+       
+        @@keyframes pulse {
+            0%
+
+        {
+            transform: scale(0.95);
+            opacity: 0.7;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(0.95);
+            opacity: 0.7;
+        }
+
+        }
+
+        /* =========================================
+                   TRACKING CARDS & GRID
+                ========================================= */
+        .tracking-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr; /* Chia tỉ lệ trái to hơn chút cho đẹp */
+            gap: 30px;
+            margin-bottom: 30px;
+            align-items: stretch;
+        }
+
+        .glass-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 35px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .v-timeline {
+            position: relative;
+            padding-left: 45px;
+        }
+
+            .v-timeline::before {
+                content: "";
+                position: absolute;
+                left: 16px;
+                top: 10px;
+                bottom: 10px;
+                width: 2px;
+                background: #f1f5f9;
+            }
+
+        .t-step {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+            .t-step:last-child {
+                margin-bottom: 0;
+            }
+
+        .t-dot {
+            position: absolute;
+            left: -45px;
+            width: 34px;
+            height: 34px;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            color: #cbd5e1;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .t-step.active .t-dot {
+            border-color: #F48C25;
+            background: #fff7ed;
+            color: #F48C25;
+        }
+
+        .t-step h4 {
+            font-weight: 700;
+            font-size: 15px;
+            margin: 0;
+            color: #94a3b8;
+        }
+
+        .t-step.active h4 {
+            color: #181411;
+        }
+
+        .t-step p {
+            color: #64748b;
+            margin: 2px 0 0 0;
+            font-size: 13px;
+        }
+
+        .progress-container {
+            width: 80%;
+            height: 6px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 45%;
+            background: linear-gradient(90deg, #F48C25, #ffb061, #F48C25);
+            background-size: 200% 100%;
+            animation: moveProgress 1.8s infinite linear;
+        }
+
+        @@keyframes moveProgress {
+            0% {
+                left: -45%;
+                background-position: 100% 0;
+            }
+
+            100% {
+                left: 100%;
+                background-position: 0 0;
+            }
+        }
+
+        .info-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .delivery-time {
+            font-size: 48px;
+            font-weight: 900;
+            color: #181411;
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .status-badge-inline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #10b981;
+            font-weight: 700;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .address-box {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .btn-main {
+            background: #F48C25;
+            color: #ffffff;
+            border: none;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 15px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+            .btn-main:hover {
+                background: #e67e1a;
+                transform: translateY(-2px);
+            }
+
+        .btn-ghost-danger {
+            background: #fff1f2;
+            color: #e11d48;
+            border: 1px solid #fecdd3;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* Order Details Table */
+        .details-section {
+            margin-top: 10px;
+        }
+
+        .order-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .item-info-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .item-img {
+            width: 50px;
+            height: 50px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .item-name {
+            font-weight: 700;
+            font-size: 14px;
+            display: block;
+        }
+
+        .item-desc {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .item-price {
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .summary-block {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            width: 250px;
+            color: #64748b;
+        }
+
+        .total-row-highlight {
+            width: 250px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 2px solid #f8f9fa;
+        }
+
+        .footer-grid-widgets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .footer-widget-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .widget-icon-box {
+            width: 50px;
+            height: 50px;
+            background: #fff7ed;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #F48C25;
+            font-size: 24px;
+        }
+
+        .widget-content h5 {
+            font-weight: 800;
+            margin-bottom: 2px;
+            font-size: 16px;
+        }
+
+        .widget-content p {
+            color: #94a3b8;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .action-link {
+            color: #F48C25;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .copyright-footer {
+            text-align: center;
+            padding: 40px 0;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* Responsive cho mobile */
+        @@media (max-width: 992px) {
+            .tracking-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .v272_48 {
+                left: 0;
+                width: 100%;
+            }
+
+            .v17_2729 {
+                display: none;
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="v17_2600">
+
+    <header class="v272_48">
+        <ul class="header-center-nav">
+            <li><a href="/" class="nav-item-link">Trang chủ</a></li>
+            <li><a href="#" class="nav-item-link">Món ăn</a></li>
+            <li><a href="#" class="nav-item-link">Khuyến mãi</a></li>
+            <li><a href="#" class="nav-item-link active">Đơn hàng của tôi</a></li>
+            <li><a href="#" class="nav-item-link">Tích điểm</a></li>
+        </ul>
+
+        <div class="header-right-actions">
+            <a href="#" class="v272_81">
+                <i class="bi bi-person-fill"></i>
+                Hồ sơ
+            </a>
+            <a href="#" class="cart-icon-wrapper">
+                <i class="bi bi-cart3"></i>
+                <span class="v272_91">3</span>
+            </a>
+        </div>
+    </header>
+
+    <aside class="v17_2729">
+        <div class="v17_2730">
+            <div class="v17_2731">
+                <i class="bi bi-caret-up-fill"></i>
+            </div>
+            <h1 class="v17_2735">LaPizzaria</h1>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-grid"></i>
+                <span>Tổng quan</span>
+            </a>
+            <a href="#" class="sidebar-link active">
+                <i class="bi bi-receipt"></i>
+                <span>Theo dõi đơn hàng</span>
+            </a>
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-clock-history"></i>
+                <span>Lịch sử</span>
+            </a>
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-credit-card"></i>
+                <span>Thanh toán</span>
+            </a>
+        </nav>
+
+        <div style="padding: 20px; margin-top: auto;">
+            <div style="background: #f8f9fa; border-radius: 16px; padding: 20px; text-align: center;">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 5px;">Hotline hỗ trợ</p>
+                <strong style="font-size: 16px; color: #181411;">1900 6868</strong>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-wrapper">
+        <div class="content-container">
+
+            <div class="page-header">
+                <div class="live-badge">
+                    <span class="live-dot"></span>
+                    Trực tiếp
+                </div>
+                <h2 style="font-weight: 900; font-size: 34px; margin: 0; letter-spacing: -1px;">Theo dõi Đơn hàng</h2>
+                <p style="color: #64748b; margin-top: 5px; font-size: 14px;">Đơn hàng #PZ-99283 • Đặt lúc 12:45 hôm nay</p>
+            </div>
+
+            <div class="tracking-grid">
+
+                <div class="glass-card">
+                    <h5 style="font-weight: 800; margin-bottom: 25px; font-size: 16px;">Trạng thái</h5>
+                    <div class="v-timeline">
+                        <div class="t-step active">
+                            <div class="t-dot"><i class="bi bi-check-lg"></i></div>
+                            <h4>Đặt hàng</h4>
+                            <p>Đã nhận đơn lúc 12:45</p>
+                        </div>
+
+                        <div class="t-step active">
+                            <div class="t-dot"><i class="bi bi-fire"></i></div>
+                            <h4>Đang chế biến</h4>
+                            <p>Đầu bếp đang chuẩn bị bánh.</p>
+                            <div class="progress-container">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="t-step">
+                            <div class="t-dot"><i class="bi bi-bicycle"></i></div>
+                            <h4>Đang giao</h4>
+                            <p>Chờ shipper nhận món.</p>
+                        </div>
+
+                        <div class="t-step">
+                            <div class="t-dot"><i class="bi bi-house-heart"></i></div>
+                            <h4>Hoàn thành</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div>
+                        <span class="info-label">Dự kiến giao hàng</span>
+                        <h3 class="delivery-time">13:15</h3>
+                        <div class="status-badge-inline">
+                            <i class="bi bi-check-circle-fill"></i> Đúng tiến độ
+                        </div>
+
+                        <div class="address-box">
+                            <span class="info-label">Địa chỉ giao</span>
+                            <div style="display: flex; gap: 10px; margin-top: 8px;">
+                                <i class="bi bi-geo-alt-fill" style="color: #F48C25; font-size: 18px;"></i>
+                                <div>
+                                    <strong style="display: block; font-size: 14px;">Căn hộ 4B, Sunset Heights</strong>
+                                    <p style="margin: 0; color: #64748b; font-size: 12px;">Số 123 Đại lộ Công nghệ, TP. Thủ Đức</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: auto; padding-top: 20px;">
+                        <button class="btn-main">
+                            <i class="bi bi-arrow-repeat"></i> Cập nhật
+                        </button>
+                        <button class="btn-ghost-danger">
+                            Hủy đơn hàng
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="glass-card details-section">
+                <h4 style="font-weight: 900; margin-bottom: 20px;">Chi tiết đơn hàng</h4>
+
+                <div class="order-item-row">
+                    <div class="item-info-group">
+                        <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=150" class="item-img" alt="Pizza">
+                        <div>
+                            <span class="item-name">1x Pizza Pepperoni (Size L)</span>
+                            <span class="item-desc">Đế truyền thống, thêm phô mai</span>
+                        </div>
+                    </div>
+                    <span class="item-price">189.000đ</span>
+                </div>
+
+                <div class="order-item-row">
+                    <div class="item-info-group">
+                        <img src="https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?auto=format&fit=crop&q=80&w=150" class="item-img" alt="Side">
+                        <div>
+                            <span class="item-name">1x Bánh cuốn tỏi (6 miếng)</span>
+                            <span class="item-desc">Ăn kèm sốt marinara</span>
+                        </div>
+                    </div>
+                    <span class="item-price">55.000đ</span>
+                </div>
+
+                <div class="summary-block">
+                    <div class="summary-row">
+                        <span>Tạm tính</span>
+                        <strong>244.000đ</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Phí vận chuyển</span>
+                        <strong style="color: #10b981;">Miễn phí</strong>
+                    </div>
+                    <div class="total-row-highlight">
+                        <span style="font-weight: 800; font-size: 16px;">Tổng cộng</span>
+                        <span style="font-weight: 900; font-size: 26px; color: #F48C25;">268.400đ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-grid-widgets">
+                <div class="footer-widget-card">
+                    <div class="widget-icon-box">
+                        <i class="bi bi-headset"></i>
+                    </div>
+                    <div class="widget-content">
+                        <h5>Bạn cần hỗ trợ?</h5>
+                        <p>Đội ngũ chúng tôi luôn sẵn sàng 24/7</p>
+                        <a href="#" class="action-link">Trò chuyện ngay</a>
+                    </div>
+                </div>
+
+                <div class="footer-widget-card">
+                    <div class="widget-icon-box">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                    <div class="widget-content">
+                        <h5>Đối tác giao hàng</h5>
+                        <p>Đang tìm tài xế phù hợp...</p>
+                        <small style="color: #94a3b8; font-size: 11px;">Cập nhật khi shipper bắt đầu đi</small>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="copyright-footer">
+                Đồ án tốt nghiệp LaPizzaria - 2026
+            </footer>
+
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

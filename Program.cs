@@ -21,25 +21,30 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IQrService, QrService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
-builder.Services.AddHostedService<VoucherCleanupService>();
+// builder.Services.AddHostedService<VoucherCleanupService>();
 
+// Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlOptions => {
+        sqlOptions =>
+        {
             sqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(30),
                 errorNumbersToAdd: null);
-            sqlOptions.CommandTimeout(60); // Tăng thời gian chờ lên 60 giây
-        }
-    )
+            sqlOptions.CommandTimeout(60);
+        })
     .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
 );
 
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+// Add Identity
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false;
+})
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<ApplicationDbContext>();
 
 var app = builder.Build();
 
@@ -47,13 +52,13 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-    app.UseHttpsRedirection();
 }
+
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Map local banner images folder to /banners for serving hero images
+// Map local banner images folder to /banners
 var bannerPath = @"C:\\Users\\ooish\\Pictures\\LaPizzaria";
 if (Directory.Exists(bannerPath))
 {
@@ -72,47 +77,9 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
 app.MapRazorPages();
+
 app.MapHub<OrderingHub>("/hub/ordering");
-
-// Apply pending EF Core migrations and seed default admin user and role
-//using (var scope = app.Services.CreateScope())
-//{
-//    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-//    await db.Database.MigrateAsync();
-
-//    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-//    const string adminRole = "Admin";
-//    if (!await roleManager.RoleExistsAsync(adminRole))
-//    {
-//        await roleManager.CreateAsync(new IdentityRole(adminRole));
-//    }
-//    var adminEmail = "admin@lapizzaria.local";
-//    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-//    if (adminUser == null)
-//    {
-//        adminUser = new ApplicationUser
-//        {
-//            UserName = adminEmail,
-//            Email = adminEmail,
-//            EmailConfirmed = true,
-//            FirstName = "Admin",
-//            LastName = "Root"
-//        };
-//        var createResult = await userManager.CreateAsync(adminUser, "Admin@12345!");
-//        if (createResult.Succeeded)
-//        {
-//            await userManager.AddToRoleAsync(adminUser, adminRole);
-//        }
-//    }
-//    else
-//    {
-//        if (!await userManager.IsInRoleAsync(adminUser, adminRole))
-//        {
-//            await userManager.AddToRoleAsync(adminUser, adminRole);
-//        }
-//    }
-//}
 
 app.Run();
