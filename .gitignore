@@ -55,4 +55,10 @@ appsettings.Development.json
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+
+# Rider / IntelliJ
+.idea/
+
+# Logs
+*.log
 Thumbs.db

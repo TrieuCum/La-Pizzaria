@@ -28,7 +28,7 @@
             <a asp-controller="Table" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Table" ? "active" : "")">
                 <i class="bi bi-calendar-event"></i> <span class="link-text">Đặt Bàn</span>
             </a>
-            <a href="#" class="sidebar-link">
+            <a asp-controller="Employee" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" ? "active" : "")">
                 <i class="bi bi-people"></i> <span class="link-text">Nhân viên</span>
             </a>
             <a asp-controller="Ingredient" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Ingredient" ? "active" : "")">

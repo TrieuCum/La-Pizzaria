@@ -1,0 +1,276 @@
+@using LaPizzaria.Models
+@model List<(ApplicationUser User, string Role)>
+@{
+    ViewData["Title"] = "Quản lý nhân viên";
+}
+
+<div class="employee-management-page">
+    <!-- Page Header -->
+    <div class="page-header-section">
+        <div>
+            <h1 class="page-title">Quản lý nhân viên</h1>
+            <p class="page-subtitle">Quản lý thông tin và quyền hạn nhân viên</p>
+        </div>
+        <button class="btn-add-employee" onclick="alert('Chức năng đang phát triển')">
+            <i class="bi bi-plus-circle"></i>
+            Thêm nhân viên
+        </button>
+    </div>
+
+    <!-- Employee Table -->
+    <div class="employee-table-container">
+        <table class="employee-table">
+            <thead>
+                <tr>
+                    <th>Nhân viên</th>
+                    <th>Email</th>
+                    <th>Chức vụ</th>
+                    <th>Số điện thoại</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="employee-info">
+                                <img src="@(item.User.AvatarUrl ?? "/images/default-avatar.png")" alt="Avatar" class="employee-avatar">
+                                <div>
+                                    <div class="employee-name">@item.User.FirstName @item.User.LastName</div>
+                                    <div class="employee-id">ID: @item.User.Id.Substring(0, 8)</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="employee-email">@item.User.Email</td>
+                        <td>
+                            <span class="role-badge role-@item.Role.ToLower()">@item.Role</span>
+                        </td>
+                        <td class="employee-phone">@(item.User.PhoneNumber ?? "Chưa cập nhật")</td>
+                        <td>
+                            @if (item.User.IsActive)
+                            {
+                                <span class="status-badge status-active">
+                                    <span class="status-dot"></span>
+                                    Đang làm việc
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-badge status-inactive">
+                                    <span class="status-dot"></span>
+                                    Nghỉ phép
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn btn-edit" title="Chỉnh sửa">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="action-btn btn-delete" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.employee-management-page {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin: 0;
+}
+
+.page-subtitle {
+    color: var(--brand-gray);
+    margin: 4px 0 0;
+}
+
+.btn-add-employee {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--brand-orange);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-employee:hover {
+    background: var(--brand-orange-hover);
+    transform: translateY(-2px);
+}
+
+.employee-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.employee-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.employee-table thead {
+    background: #F8F7F5;
+}
+
+.employee-table th {
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.employee-table td {
+    padding: 16px 20px;
+    border-top: 1px solid #F0F0F0;
+}
+
+.employee-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.employee-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.employee-name {
+    font-weight: 600;
+    color: var(--brand-dark);
+}
+
+.employee-id {
+    font-size: 12px;
+    color: var(--brand-gray-light);
+    margin-top: 2px;
+}
+
+.employee-email, .employee-phone {
+    color: var(--brand-gray);
+    font-size: 14px;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.role-admin {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+.role-khách {
+    background: #E0E7FF;
+    color: #4F46E5;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-active {
+    color: #10B981;
+}
+
+.status-active .status-dot {
+    background: #10B981;
+}
+
+.status-inactive {
+    color: #9CA3AF;
+}
+
+.status-inactive .status-dot {
+    background: #9CA3AF;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #F8F7F5;
+    color: var(--brand-gray);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background: var(--brand-orange);
+    color: white;
+}
+
+@@media (max-width: 768px) {
+    .employee-management-page {
+        padding: 16px;
+    }
+    
+    .page-header-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .employee-table-container {
+        overflow-x: auto;
+    }
+}
+</style>
