@@ -2,11 +2,12 @@
 
 namespace LaPizzaria.Controllers
 {
-    public class OrderTrackingController : Controller
+    public class ShipperController : Controller
     {
+       
         public IActionResult Index()
         {
-            
+         
             return View();
         }
     }
