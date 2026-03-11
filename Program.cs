@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
 using LaPizzaria.Hubs;
@@ -58,9 +58,9 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Map local banner images folder to /banners
-var bannerPath = @"C:\\Users\\ooish\\Pictures\\LaPizzaria";
-if (Directory.Exists(bannerPath))
+// Banner images: chỉ map khi cấu hình có đường dẫn (Development/local). Production để trống hoặc set trên Azure.
+var bannerPath = builder.Configuration["BannerImagesPath"] ?? "";
+if (!string.IsNullOrWhiteSpace(bannerPath) && Directory.Exists(bannerPath))
 {
     app.UseStaticFiles(new StaticFileOptions
     {
