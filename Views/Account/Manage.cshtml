@@ -1,83 +1,175 @@
 @model LaPizzaria.ViewModels.ManageAccountViewModel
 
 @{
-    ViewData["Title"] = "Quản lý tài khoản";
+    ViewData["Title"] = "Hồ sơ cá nhân";
 }
 
-<h3>@ViewData["Title"]</h3>
+<div class="profile-container">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav class="profile-breadcrumb">
+            <a asp-controller="Home" asp-action="Index">Trang chủ</a> / <span>Hồ sơ cá nhân</span>
+        </nav>
 
-<div class="row g-4">
-    <div class="col-md-4">
-        <div class="card shadow-sm border-0">
-            <div class="card-body text-center p-4">
-                <img id="avatarPreview" src="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "/images/default-avatar.png" : Model.AvatarUrl)" alt="avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover; border: 4px solid var(--brand-orange-light)" />
-                <div class="mt-3 fw-bold">@Model.UserName</div>
-                <div class="text-muted small mb-4">Ảnh đại diện</div>
-                
-                <hr class="opacity-10" />
-                
-                <form id="logoutForm" class="d-grid" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                    <button id="logout" type="submit" class="btn btn-outline-danger btn-sm py-2">
-                        <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
-                    </button>
-                </form>
+        <div class="row g-4">
+            <!-- Left Column: Sidebar -->
+            <div class="col-lg-3">
+                <div class="profile-card profile-sidebar">
+                    <div class="profile-avatar-wrapper">
+                        <img id="avatarPreview" src="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "/images/default-avatar.png" : Model.AvatarUrl)" alt="avatar" class="profile-avatar" />
+                        <div class="profile-rank-badge">
+                            <i class="bi bi-star-fill" style="font-size: 10px;"></i>
+                        </div>
+                    </div>
+                    <div class="profile-name">@Model.FirstName @Model.LastName</div>
+                    <div class="profile-rank-text">Thành viên Vàng</div>
+
+                    <ul class="profile-nav">
+                        <li class="profile-nav-item">
+                            <a href="#" class="profile-nav-link active">
+                                Thông tin tài khoản
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a asp-controller="Order" asp-action="Index" class="profile-nav-link">
+                                Lịch sử đơn hàng
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="#" class="profile-nav-link">
+                                Đánh giá của tôi
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="#" class="profile-nav-link">
+                                Món yêu thích
+                            </a>
+                        </li>
+                        <li class="profile-nav-item mt-4">
+                            <form id="logoutForm" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                                <button type="submit" class="profile-nav-link logout border-0 bg-transparent w-100 text-start">
+                                    Đăng xuất
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Column: Main Content -->
+            <div class="col-lg-9">
+                <div class="profile-card profile-main-content">
+                    <div class="profile-header">
+                        <h1 class="profile-title">Hồ sơ cá nhân</h1>
+                        <p class="profile-subtitle">Quản lý thông tin hồ sơ của bạn để bảo mật tài khoản</p>
+                    </div>
+
+                    <form asp-action="Manage" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <div class="row g-4">
+                            <!-- Name Fields -->
+                            <div class="col-md-6">
+                                <label asp-for="FirstName" class="profile-form-label">Họ và tên đệm</label>
+                                <input asp-for="FirstName" class="form-control profile-form-input" placeholder="Nhập họ và tên đệm" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LastName" class="profile-form-label">Tên</label>
+                                <input asp-for="LastName" class="form-control profile-form-input" placeholder="Nhập tên" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Email and Phone -->
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="profile-form-label">Email</label>
+                                <input asp-for="Email" class="form-control profile-form-input" readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="profile-form-label">Số điện thoại</label>
+                                <input asp-for="PhoneNumber" class="form-control profile-form-input" placeholder="Nhập số điện thoại" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Birthday and Gender -->
+                            <div class="col-md-6">
+                                <label asp-for="Birthday" class="profile-form-label">Ngày sinh</label>
+                                <input asp-for="Birthday" type="date" class="form-control profile-form-input" />
+                                <span asp-validation-for="Birthday" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="profile-form-label">Giới tính</label>
+                                <div class="gender-radio-group">
+                                    <label class="gender-radio-item">
+                                        <input type="radio" asp-for="Gender" value="Nam" /> Nam
+                                    </label>
+                                    <label class="gender-radio-item">
+                                        <input type="radio" asp-for="Gender" value="Nữ" /> Nữ
+                                    </label>
+                                    <label class="gender-radio-item">
+                                        <input type="radio" asp-for="Gender" value="Khác" /> Khác
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="col-12">
+                                <label asp-for="Address" class="profile-form-label">Địa chỉ nhận hàng mặc định</label>
+                                <textarea asp-for="Address" class="form-control profile-form-input" rows="3" placeholder="Nhập địa chỉ của bạn"></textarea>
+                                <span asp-validation-for="Address" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Avatar URL -->
+                            <div class="col-12">
+                                <label asp-for="AvatarUrl" class="profile-form-label">Ảnh đại diện (URL)</label>
+                                <input asp-for="AvatarUrl" class="form-control profile-form-input" placeholder="Dán link ảnh tại đây" id="AvatarUrl" />
+                                <small class="text-muted">Ảnh sẽ được cập nhật ngay lập tức ở khung bên trái.</small>
+                            </div>
+
+                            <hr class="my-4 opacity-5">
+
+                            <!-- Password Section (Quick access) -->
+                            <div class="col-12">
+                                <h5 class="fw-bold mb-3" style="font-size: 1rem;">Thay đổi mật khẩu</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label asp-for="CurrentPassword" class="profile-form-label"></label>
+                                        <input asp-for="CurrentPassword" class="form-control profile-form-input" type="password" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="NewPassword" class="profile-form-label"></label>
+                                        <input asp-for="NewPassword" class="form-control profile-form-input" type="password" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="ConfirmNewPassword" class="profile-form-label"></label>
+                                        <input asp-for="ConfirmNewPassword" class="form-control profile-form-input" type="password" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="col-12 mt-5 d-flex gap-3">
+                                <button type="submit" class="btn-profile-save">Lưu thay đổi</button>
+                                <a asp-controller="Home" asp-action="Index" class="btn-profile-cancel">Hủy bỏ</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <form asp-action="Manage" method="post">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label asp-for="UserName" class="form-label"></label>
-                            <input asp-for="UserName" class="form-control" />
-                            <span asp-validation-for="UserName" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Tên hiển thị</label>
-                            <div class="input-group">
-                                <input asp-for="FirstName" class="form-control" placeholder="Họ" />
-                                <input asp-for="LastName" class="form-control" placeholder="Tên" />
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label asp-for="AvatarUrl" class="form-label"></label>
-                            <input asp-for="AvatarUrl" class="form-control" />
-                            <small class="text-muted">Dán URL ảnh (PNG/JPG). Ảnh sẽ hiển thị ở góc phải trên.</small>
-                        </div>
-                        <hr />
-                        <div class="col-md-6">
-                            <label asp-for="CurrentPassword" class="form-label"></label>
-                            <input asp-for="CurrentPassword" class="form-control" />
-                        </div>
-                        <div class="col-md-6"></div>
-                        <div class="col-md-6">
-                            <label asp-for="NewPassword" class="form-label"></label>
-                            <input asp-for="NewPassword" class="form-control" />
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="ConfirmNewPassword" class="form-label"></label>
-                            <input asp-for="ConfirmNewPassword" class="form-control" />
-                        </div>
-                        <div class="col-12 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
 </div>
 
-<script>
-const urlInput = document.getElementById('AvatarUrl');
-const preview = document.getElementById('avatarPreview');
-urlInput?.addEventListener('input', () => {
-    const v = urlInput.value?.trim();
-    preview.src = v || '/images/default-avatar.png';
-});
-</script>
+@section Scripts {
+    <script>
+        document.getElementById('AvatarUrl')?.addEventListener('input', function(e) {
+            const val = e.target.value?.trim();
+            const preview = document.getElementById('avatarPreview');
+            if (preview) {
+                preview.src = val || '/images/default-avatar.png';
+            }
+        });
+    </script>
+}
 
 

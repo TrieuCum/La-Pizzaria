@@ -24,9 +24,9 @@ namespace LaPizzaria.Controllers
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(u => u.Email.Contains(search) || 
-                                        u.FirstName.Contains(search) || 
-                                        u.LastName.Contains(search));
+                query = query.Where(u => (u.Email != null && u.Email.Contains(search)) || 
+                                        (u.FirstName != null && u.FirstName.Contains(search)) || 
+                                        (u.LastName != null && u.LastName.Contains(search)));
             }
 
             if (!string.IsNullOrEmpty(status))
@@ -83,6 +83,10 @@ namespace LaPizzaria.Controllers
                 Email = model.Email,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
+                PhoneNumber = model.PhoneNumber,
+                Birthday = model.Birthday,
+                Gender = model.Gender,
+                Address = model.Address,
                 EmailConfirmed = true,
                 IsActive = true,
                 CreatedAt = DateTime.Now,
@@ -114,6 +118,10 @@ namespace LaPizzaria.Controllers
 
             user.FirstName = model.FirstName;
             user.LastName = model.LastName;
+            user.PhoneNumber = model.PhoneNumber;
+            user.Birthday = model.Birthday;
+            user.Gender = model.Gender;
+            user.Address = model.Address;
             user.IsActive = model.IsActive;
             user.UpdatedAt = DateTime.Now;
 
@@ -186,7 +194,7 @@ namespace LaPizzaria.Controllers
 
     public class UserViewModel
     {
-        public ApplicationUser User { get; set; }
-        public List<string> Roles { get; set; }
+        public ApplicationUser User { get; set; } = default!;
+        public List<string> Roles { get; set; } = new();
     }
 }

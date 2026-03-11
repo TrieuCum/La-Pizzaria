@@ -76,13 +76,58 @@
                     </div>
                 </div>
                 <div id="cart-summary" class="border-top pt-3" style="display: none;">
-                    <div class="d-flex justify-content-between mb-3">
+                    <div class="voucher-input-group mb-3 position-relative d-flex gap-2">
+                        <i class="bi bi-ticket-perforated voucher-icon-abs" id="openGlobalVoucherModal"></i>
+                        <input type="text" id="globalVoucherCode" class="form-control extra-small rounded-3 ps-5" placeholder="Mã giảm giá">
+                        <button class="btn btn-brand-bg text-brand-dark fw-bold px-3 extra-small" onclick="cart.applyManualVoucher()">Áp dụng</button>
+                    </div>
+                    <div id="globalAppliedVouchers" class="mb-3 d-flex flex-wrap gap-2"></div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small text-brand-gray">Tạm tính:</span>
+                        <span id="cart-subtotal" class="small fw-bold">0₫</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span class="small">Giảm giá:</span>
+                        <span id="cart-discount" class="small fw-bold">- 0₫</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 border-top pt-2">
                         <span class="fw-bold">Tổng cộng:</span>
                         <span id="cart-total-price" class="fw-black text-brand-orange fs-5">0₫</span>
                     </div>
                     <div class="d-grid gap-2">
                         <a asp-controller="Card" asp-action="Index" class="btn btn-brand-primary py-2 fw-bold">Đặt món ngay</a>
                         <button onclick="cart.clear()" class="btn btn-link text-brand-gray small text-decoration-none">Xóa tất cả</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Voucher Selection Modal -->
+        <div class="modal fade" id="globalVoucherModal" tabindex="-1" style="z-index: 1090;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-header border-0 pb-0">
+                        <h6 class="modal-title fw-black">Chọn mã giảm giá</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="nav nav-pills nav-fill mb-3 bg-light p-1 rounded-3" id="globalVoucherTabs">
+                            <li class="nav-item">
+                                <a class="nav-link active small py-2 fw-bold" data-bs-toggle="pill" href="#gvAvailable">Khả dụng</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link small py-2 fw-bold" data-bs-toggle="pill" href="#gvIneligible">Chưa đủ điều kiện</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" style="max-height: 400px; overflow-y: auto;">
+                            <div class="tab-pane fade show active" id="gvAvailable">
+                                <div id="globalListAvailable"></div>
+                            </div>
+                            <div class="tab-pane fade" id="gvIneligible">
+                                <div id="globalListIneligible"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

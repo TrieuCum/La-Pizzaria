@@ -20,14 +20,35 @@ namespace LaPizzaria.Controllers
 			_db = db; _svc = svc;
 		}
 
-		public async Task<IActionResult> Index()
+		public async Task<IActionResult> Index(string? search, string? status)
 		{
-			var list = await _db.Vouchers.OrderBy(v => v.ExpiresAtUtc).ToListAsync();
+			var query = _db.Vouchers.AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(v => v.Code.Contains(search) || v.Name.Contains(search));
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                var now = DateTime.UtcNow;
+                if (status == "Active")
+                    query = query.Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now));
+                else if (status == "Inactive")
+                    query = query.Where(v => !v.IsActive);
+                else if (status == "Expired")
+                    query = query.Where(v => v.ExpiresAtUtc != null && v.ExpiresAtUtc <= now);
+            }
+
+            var list = await query.OrderByDescending(v => v.CreatedAtUtc).ToListAsync();
+            ViewBag.Search = search;
+            ViewBag.Status = status;
 			return View(list);
 		}
 
-		public IActionResult Upsert(int? id)
+		public async Task<IActionResult> Upsert(int? id)
 		{
+            ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
 			if (id == null) return View(new Voucher());
 			var v = _db.Vouchers.Find(id);
 			if (v == null) return NotFound();
@@ -38,20 +59,27 @@ namespace LaPizzaria.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Upsert(Voucher model)
 		{
-			if (!ModelState.IsValid) return View(model);
+			if (!ModelState.IsValid) 
+            {
+                ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
+                return View(model);
+            }
 			if (model.Id == 0)
 			{
-				model.UsedCount = 0; // newly created voucher starts unused
+				model.UsedCount = 0;
 				await _svc.CreateAsync(model);
 			}
 			else
 			{
-				// preserve UsedCount when editing; update only allowed fields
 				var existing = await _svc.GetByIdAsync(model.Id);
 				if (existing == null) return NotFound();
 				existing.Code = model.Code;
 				existing.Name = model.Name;
+                existing.VoucherType = model.VoucherType;
 				existing.DiscountPercent = model.DiscountPercent;
+                existing.DiscountAmount = model.DiscountAmount;
+                existing.MinOrderValue = model.MinOrderValue;
+                existing.TargetUserId = model.TargetUserId;
 				existing.MaxUses = model.MaxUses;
 				existing.ExpiresAtUtc = model.ExpiresAtUtc;
 				existing.IsActive = model.IsActive;
@@ -79,7 +107,10 @@ namespace LaPizzaria.Controllers
 				id = v.Id,
 				code = v.Code,
 				name = v.Name,
+                type = v.VoucherType,
 				percent = v.DiscountPercent,
+                amount = v.DiscountAmount,
+                minOrderValue = v.MinOrderValue,
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
 				expiresAtUtc = v.ExpiresAtUtc,
