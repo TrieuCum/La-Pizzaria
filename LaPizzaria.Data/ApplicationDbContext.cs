@@ -149,6 +149,13 @@ namespace LaPizzaria.Data
                 .WithMany()
                 .HasForeignKey(v => v.TargetUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Customer -> ApplicationUser (UserId)
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

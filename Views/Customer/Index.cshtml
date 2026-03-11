@@ -1,370 +1,436 @@
-﻿@model IEnumerable<LaPizzaria.Models.Customer>
+@model IEnumerable<LaPizzaria.Models.Customer>
 
 @{
     ViewData["Title"] = "Quản lý Khách hàng";
 }
 
 <style>
-    /* GIỮ NGUYÊN CSS SIDEBAR CỦA BẠN */
-    * {
-        box-sizing: border-box;
+    /* Trang Quản lý Khách hàng - dùng sidebar chung từ Layout */
+    .customer-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 2rem;
     }
 
-    body {
-        font-size: 14px;
-        margin: 0;
-        padding: 0;
-        font-family: 'Work Sans', sans-serif;
-        background: #f8f7f5;
-    }
-
-    .v17_2729 {
-        width: 256px;
-        height: 100vh;
-        background: rgba(255,255,255,1);
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1010;
-        border-right: 1px solid #f1f5f9;
+    .customer-page .page-header {
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+        flex-wrap: wrap;
     }
 
-    .v17_2730 {
-        padding: 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .v17_2731 {
-        width: 40px;
-        height: 40px;
-        background: rgba(244,140,37,1);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 24px;
-    }
-
-    .v17_2735 {
+    .customer-page .page-title {
         font-weight: 700;
-        font-size: 18px;
+        font-size: 1.65rem;
         margin: 0;
+        color: #0f172a;
+        letter-spacing: -0.02em;
     }
 
-    .v17_2736 {
-        font-size: 12px;
-        color: rgba(107,114,128,1);
+    .customer-page .page-subtitle {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-top: 0.35rem;
     }
 
-    .sidebar-menu {
-        flex-grow: 1;
-        padding: 0 16px;
-    }
-
-    .v17_2738 {
-        padding: 12px 16px;
-        display: flex;
+    .customer-page .btn-add-customer {
+        display: inline-flex;
         align-items: center;
-        gap: 12px;
-        color: rgba(75,85,99,1);
+        gap: 8px;
+        padding: 0.65rem 1.25rem;
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: #fff !important;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-radius: 10px;
         text-decoration: none;
-        font-weight: 500;
-        border-radius: 8px;
-        transition: all 0.2s;
-        margin-bottom: 4px;
+        border: none;
+        box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+        transition: box-shadow 0.2s, transform 0.1s;
     }
 
-    .v17_2742 {
-        background: rgba(244,140,37,0.1);
-        color: rgba(244,140,37,1);
-        font-weight: 600;
+    .customer-page .btn-add-customer:hover {
+        color: #fff !important;
+        box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+        transform: translateY(-1px);
     }
 
-    .main-wrapper {
-        margin-left: 256px;
-        padding: 40px;
-        min-height: 100vh;
+    .customer-page .btn-add-customer i {
+        font-size: 1.1rem;
     }
 
-    /* --- CẬP NHẬT GIAO DIỆN NỘI DUNG GIỐNG HÌNH 100% --- */
-
-    /* Search & Filter Bar */
-    .filter-section {
+    /* Thanh tìm kiếm & lọc */
+    .customer-page .filter-section {
         display: flex;
-        gap: 16px;
-        margin-top: 24px;
-        margin-bottom: 24px;
+        gap: 12px;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
     }
 
-    .search-input-wrapper {
-        flex-grow: 1;
-        background: white;
-        border-radius: 12px;
-        padding: 12px 16px;
+    .customer-page .search-input-wrapper {
+        flex: 1;
+        min-width: 200px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
         display: flex;
         align-items: center;
         gap: 10px;
-        color: #9CA3AF;
-        border: 1px solid transparent;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    .filter-btn {
-        background: white;
-        padding: 12px 20px;
-        border-radius: 12px;
+    .customer-page .search-input-wrapper:focus-within {
+        border-color: #f97316;
+        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+        outline: none;
+    }
+
+    .customer-page .search-input-wrapper i {
+        font-size: 1.1rem;
+        color: #94a3b8;
+    }
+
+    .customer-page .filter-btn {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         font-weight: 600;
+        font-size: 0.9rem;
+        color: #475569;
         cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
     }
 
-    .orange-dot {
-        width: 12px;
-        height: 12px;
-        background: #A16207;
-        border-radius: 3px;
+    .customer-page .filter-btn:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
     }
 
-    /* Table & Card */
-    .v17_2622 {
-        background: white;
-        border-radius: 16px;
+    .customer-page .filter-btn .dot {
+        width: 8px;
+        height: 8px;
+        background: #f97316;
+        border-radius: 50%;
+    }
+
+    /* Card bảng */
+    .customer-page .table-card {
+        background: #fff;
+        border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        border: 1px solid #f1f5f9;
     }
 
-    .admin-table {
+    .customer-page .admin-table {
         width: 100%;
         border-collapse: collapse;
     }
 
-        .admin-table th {
-            padding: 16px 24px;
-            text-align: left;
-            color: #6B7280;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            border-bottom: 1px solid #F3F4F6;
-        }
+    .customer-page .admin-table th {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
 
-        .admin-table td {
-            padding: 12px 24px;
-            border-bottom: 1px solid #F9FAFB;
-            vertical-align: middle;
-        }
+    .customer-page .admin-table td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
 
-    /* Avatar & Badge */
-    .avatar-circle {
-        width: 40px;
-        height: 40px;
+    .customer-page .admin-table tbody tr {
+        transition: background 0.15s;
+    }
+
+    .customer-page .admin-table tbody tr:hover {
+        background: #fafafa;
+    }
+
+    .customer-page .admin-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Cột tên */
+    .customer-page .cell-customer {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .customer-page .avatar-circle {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 13px;
-        background: #FFEDD5;
-        color: #9A3412;
+        font-size: 0.8rem;
+        background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+        color: #c2410c;
     }
 
-    .status-active {
-        background: #DCFCE7;
+    .customer-page .customer-name {
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .customer-page .customer-id {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    /* Liên hệ */
+    .customer-page .cell-contact .primary {
+        font-weight: 500;
+        color: #334155;
+    }
+
+    .customer-page .cell-contact .secondary {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    /* Trạng thái */
+    .customer-page .status-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .customer-page .status-active {
+        background: #dcfce7;
         color: #166534;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
     }
 
-    .status-locked {
-        background: #FEE2E2;
-        color: #991B1B;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
+    .customer-page .status-locked {
+        background: #fee2e2;
+        color: #991b1b;
     }
 
-    .points-text {
-        color: #F97316;
+    .customer-page .points-cell {
+        color: #f97316;
         font-weight: 700;
-        font-size: 15px;
+        font-size: 1rem;
     }
 
-    /* Pagination (Số trang) */
-    .pagination-footer {
-        padding: 20px 24px;
+    /* Phân trang */
+    .customer-page .pagination-footer {
+        padding: 1rem 1.25rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        color: #6B7280;
-        font-size: 13px;
+        flex-wrap: wrap;
+        gap: 12px;
+        color: #64748b;
+        font-size: 0.85rem;
+        background: #fafafa;
+        border-top: 1px solid #f1f5f9;
     }
 
-    .page-numbers {
+    .customer-page .page-numbers {
         display: flex;
-        gap: 8px;
+        gap: 4px;
         align-items: center;
     }
 
-    .page-btn {
-        width: 32px;
-        height: 32px;
+    .customer-page .page-btn {
+        width: 34px;
+        height: 34px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 8px;
+        color: #475569;
+        font-size: 0.9rem;
+        font-weight: 500;
+        background: transparent;
+        border: 1px solid transparent;
         cursor: pointer;
-        transition: 0.2s;
+        transition: background 0.2s, color 0.2s;
     }
 
-        .page-btn.active {
-            background: #F48C25;
-            color: white;
-            font-weight: 700;
+    .customer-page .page-btn:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+
+    .customer-page .page-btn.active {
+        background: #f97316;
+        color: #fff;
+        border-color: #f97316;
+    }
+
+    /* Empty state */
+    .customer-page .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: #64748b;
+    }
+
+    .customer-page .empty-state i {
+        font-size: 3rem;
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+    }
+
+    .customer-page .empty-state .empty-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #475569;
+        margin-bottom: 0.35rem;
+    }
+
+    .customer-page .empty-state .empty-desc {
+        font-size: 0.9rem;
+    }
+
+    @@media (max-width: 768px) {
+        .customer-page {
+            padding: 1rem 0.75rem 1.5rem;
         }
 
-        .page-btn:hover:not(.active) {
-            background: #F3F4F6;
+        .customer-page .admin-table th,
+        .customer-page .admin-table td {
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
         }
+
+        .customer-page .pagination-footer {
+            flex-direction: column;
+            align-items: stretch;
+            text-align: center;
+        }
+    }
 </style>
 
-<div class="v17_2600">
-    @* --- SIDEBAR (GIỮ NGUYÊN NHƯ BẠN YÊU CẦU) --- *@
-    <aside class="v17_2729">
-        <div class="v17_2730">
-            <div class="v17_2731">🍕</div>
-            <div>
-                <h6 class="v17_2735">Pizza Admin</h6>
-                <span class="v17_2736">Quản trị viên</span>
-            </div>
+<div class="customer-page">
+    <header class="page-header">
+        <div>
+            <h1 class="page-title">Quản lý Khách hàng</h1>
+            <p class="page-subtitle">Xem và quản lý thông tin khách hàng thành viên</p>
         </div>
+        <a asp-controller="Customer" asp-action="Create" class="btn-add-customer">
+            <i class="bi bi-plus-lg"></i>
+            <span>Thêm khách hàng</span>
+        </a>
+    </header>
 
-        <nav class="sidebar-menu">
-            <a asp-controller="Statistics" asp-action="Daily" class="v17_2738">
-                <i class="bi bi-grid"></i> Thống kê
-            </a>
-            <a asp-controller="Product" asp-action="Index" class="v17_2738">
-                <i class="bi bi-box-seam"></i> Quản lý Sản phẩm
-            </a>
-            <a asp-controller="Table" asp-action="Index" class="v17_2738">
-                <i class="bi bi-calendar-event"></i> Đặt bàn
-            </a>
-            <a href="#" class="v17_2738">
-                <i class="bi bi-people"></i> Nhân viên
-            </a>
-            <a asp-controller="Ingredient" asp-action="Index" class="v17_2738">
-                <i class="bi bi-egg-fried"></i> Nguyên liệu
-            </a>
-            <a asp-controller="Voucher" asp-action="Index" class="v17_2738">
-                <i class="bi bi-ticket-perforated"></i> Voucher
-            </a>
-            <a href="#" class="v17_2738 v17_2742">
-                <i class="bi bi-people-fill"></i> Khách hàng
-            </a>
-        </nav>
-
-        <div style="padding: 20px;">
-            <form asp-controller="Account" asp-action="Logout" method="post">
-                <button type="submit" style="border:none; width:100%; cursor:pointer; padding:12px; background:#f3f4f6; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
-                </button>
-            </form>
+    <div class="filter-section">
+        <div class="search-input-wrapper">
+            <i class="bi bi-search"></i>
+            <span>Tìm kiếm theo tên, số điện thoại, email...</span>
         </div>
-    </aside>
+        <button type="button" class="filter-btn">
+            <span class="dot"></span>
+            <span>Lọc theo trạng thái</span>
+        </button>
+    </div>
 
-    @* --- NỘI DUNG CHÍNH (ĐÃ SỬA GIỐNG HÌNH) --- *@
-    <main class="main-wrapper">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <h1 style="font-weight: 700; font-size: 28px; margin: 0;">Quản lý Khách hàng</h1>
-                <p style="color: #6B7280; margin-top: 4px;">Xem và quản lý thông tin khách hàng thành viên</p>
-            </div>
-            <div style="background: #F48C25; color: white; padding: 10px; border-radius: 8px;">
-                <i class="bi bi-app"></i>
-            </div>
-        </div>
-
-        @* Thanh tìm kiếm & lọc *@
-        <div class="filter-section">
-            <div class="search-input-wrapper">
-                <div class="orange-dot"></div>
-                <span>Tìm kiếm theo tên, số điện thoại, email...</span>
-            </div>
-            <div class="filter-btn">
-                <div class="orange-dot"></div>
-                <span>Lọc theo trạng thái</span>
-            </div>
-        </div>
-
-        <div class="v17_2622">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Tên khách hàng</th>
-                        <th>Liên hệ</th>
-                        <th>Trạng thái</th>
-                        <th>Tổng đơn</th>
-                        <th>Điểm tích lũy</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null)
+    <div class="table-card">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Tên khách hàng</th>
+                    <th>Liên hệ</th>
+                    <th>Trạng thái</th>
+                    <th>Tổng đơn</th>
+                    <th>Điểm tích lũy</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var customer in Model)
                     {
-                        @foreach (var customer in Model)
-                        {
-                            <tr>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <div class="avatar-circle">
-                                            @customer.FullName.Substring(0, Math.Min(2, customer.FullName.Length)).ToUpper()
-                                        </div>
-                                        <div>
-                                            <div style="font-weight:700; color: #111827;">@customer.FullName</div>
-                                            <div style="font-size:11px; color:#9CA3AF;">ID: #CUS-@customer.Id.ToString("D3")</div>
-                                        </div>
+                        <tr>
+                            <td>
+                                <div class="cell-customer">
+                                    <div class="avatar-circle">
+                                        @{
+                                            var name = customer.FullName ?? customer.CustomerCode ?? "";
+                                            if (string.IsNullOrEmpty(name)) { name = "#" + customer.Id; }
+                                            var initials = name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+                                        }
+                                        @initials
                                     </div>
-                                </td>
-                                <td>
-                                    <div style="font-weight: 500;">@customer.Phone</div>
-                                    <div style="font-size:12px; color:#6B7280;">@customer.Email</div>
-                                </td>
-                                <td>
-                                    @if (customer.Points > 100)
-                                    {
-                                        <span class="status-active">Hoạt động</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="status-locked">Đã khóa</span>
-                                    }
-                                </td>
-                                <td style="font-weight: 500;">15</td>
-                                <td class="points-text">@customer.Points</td>
-                            </tr>
-                        }
+                                    <div>
+                                        <div class="customer-name">@(customer.FullName ?? customer.CustomerCode ?? "Khách #" + customer.Id)</div>
+                                        <div class="customer-id">ID: #CUS-@customer.Id.ToString("D3")</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="cell-contact">
+                                    <div class="primary">@(customer.Phone ?? "—")</div>
+                                    <div class="secondary">@(customer.Email ?? "—")</div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (string.IsNullOrEmpty(customer.Status) || customer.Status.Equals("Active", StringComparison.OrdinalIgnoreCase) || customer.LoyaltyPoints > 100)
+                                {
+                                    <span class="status-badge status-active">Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-locked">@(customer.Status ?? "Đã khóa")</span>
+                                }
+                            </td>
+                            <td style="font-weight: 600;">@customer.OrderCount</td>
+                            <td class="points-cell">@customer.Points</td>
+                        </tr>
                     }
-                </tbody>
-            </table>
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="bi bi-people"></i>
+                                <div class="empty-title">Chưa có khách hàng</div>
+                                <div class="empty-desc">Danh sách khách hàng sẽ hiển thị khi có dữ liệu trong hệ thống.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
 
-            @* --- THANH PHÂN TRANG (PAGINATION) --- *@
+        @if (Model != null && Model.Any())
+        {
+            var total = Model.Count();
+            var from = total > 0 ? 1 : 0;
+            var to = total;
             <div class="pagination-footer">
-                <div>Hiển thị <b>1</b> đến <b>5</b> trong tổng số <b>128</b> khách hàng</div>
+                <div>Hiển thị <b>@from</b> đến <b>@to</b> trong tổng số <b>@total</b> khách hàng</div>
                 <div class="page-numbers">
-                    <div class="page-btn"><i class="bi bi-chevron-left"></i></div>
-                    <div class="page-btn active">1</div>
-                    <div class="page-btn">2</div>
-                    <div class="page-btn"><i class="bi bi-chevron-right"></i></div>
+                    <button type="button" class="page-btn" aria-label="Trang trước"><i class="bi bi-chevron-left"></i></button>
+                    <button type="button" class="page-btn active">1</button>
+                    <button type="button" class="page-btn" aria-label="Trang sau"><i class="bi bi-chevron-right"></i></button>
                 </div>
             </div>
-        </div>
-    </main>
+        }
+    </div>
 </div>
