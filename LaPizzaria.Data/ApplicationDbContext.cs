@@ -138,6 +138,16 @@ namespace LaPizzaria.Data
 				.HasOne(ov => ov.Voucher)
 				.WithMany()
 				.HasForeignKey(ov => ov.VoucherId);
+
+            modelBuilder.Entity<Voucher>().Property(v => v.DiscountPercent).HasPrecision(18, 2);
+            modelBuilder.Entity<Voucher>().Property(v => v.DiscountAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<Voucher>().Property(v => v.MinOrderValue).HasPrecision(18, 2);
+
+            modelBuilder.Entity<Voucher>()
+                .HasOne(v => v.TargetUser)
+                .WithMany()
+                .HasForeignKey(v => v.TargetUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

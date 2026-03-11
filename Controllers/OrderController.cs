@@ -82,14 +82,35 @@ namespace LaPizzaria.Controllers
                 }
             }
             decimal voucherDiscount = 0m;
-            foreach (var v in vouchers)
+            var validatedVouchers = new List<object>();
+
+            foreach (var vid in req.VoucherIds?.Take(2) ?? new List<int>())
             {
-                voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+                var v = await _voucherService.GetByIdAsync(vid);
+                if (v == null) continue;
+
+                if (!_voucherService.IsUsable(v, System.DateTime.UtcNow))
+                {
+                    return BadRequest(new { error = $"Voucher {v.Code} hiện không khả dụng." });
+                }
+
+                if (subtotal < v.MinOrderValue)
+                {
+                    return BadRequest(new { error = $"Đơn hàng chưa đạt giá trị tối thiểu ({v.MinOrderValue:N0}đ) để sử dụng mã {v.Code}." });
+                }
+
+                validatedVouchers.Add(new { id = v.Id, code = v.Code, name = v.Name, percent = v.DiscountPercent, amount = v.DiscountAmount, type = v.VoucherType });
+                
+                if (v.VoucherType == "Percentage")
+                    voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+                else if (v.VoucherType == "FixedAmount")
+                    voucherDiscount += v.DiscountAmount;
+                else if (v.VoucherType == "FreeShipping")
+                    voucherDiscount += v.DiscountAmount; // Store max shipping discount in DiscountAmount
             }
 
             var total = Math.Max(0, subtotal - voucherDiscount);
-            var vInfo = vouchers.Select(v => new { id = v.Id, code = v.Code, name = v.Name, percent = v.DiscountPercent });
-            return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = vInfo });
+            return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = validatedVouchers });
         }
 
         [HttpGet]

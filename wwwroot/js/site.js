@@ -26,6 +26,20 @@ window.showToast = function(message, type){
   }
 };
 
+// Image URL Helper
+window.sanitizeImageUrl = function(url) {
+    if (!url || typeof url !== 'string') return '/images/v17_1114.png';
+    url = url.trim();
+    if (url === '' || url === 'null') return '/images/v17_1114.png';
+    
+    if (url.startsWith('file://')) {
+        const parts = url.split('/');
+        return '/images/' + parts[parts.length-1];
+    }
+    if (url.startsWith('http') || url.startsWith('/')) return url;
+    return '/images/' + url;
+};
+
 // Modern Navbar - Auto highlight active link
 (function() {
   'use strict';
@@ -76,6 +90,8 @@ window.showToast = function(message, type){
  */
 const Cart = {
   _storageKey: 'lapizzaria_cart',
+  _voucherStorageKey: 'lapizzaria_vouchers',
+  _allVouchers: [],
 
   get() {
     try {
@@ -92,16 +108,29 @@ const Cart = {
       localStorage.setItem(this._storageKey, JSON.stringify(items));
       // Trigger a custom event so other components (like the header badge) can update
       window.dispatchEvent(new CustomEvent('cart-updated', { detail: { count: this.count() } }));
-      this.renderCartUI();
+      this.updateSummary();
     } catch (e) {
       console.error('Error saving cart to localStorage', e);
     }
+  },
+
+  getVoucherIds() {
+    try {
+        const data = localStorage.getItem(this._voucherStorageKey);
+        return data ? JSON.parse(data) : [];
+    } catch (e) { return []; }
+  },
+
+  saveVoucherIds(ids) {
+    localStorage.setItem(this._voucherStorageKey, JSON.stringify(ids));
+    this.updateSummary();
   },
 
   add(product) {
     // product: { id, name, price, imageUrl, type }
     const items = this.get();
     const existing = items.find(i => i.id === product.id && i.type === product.type);
+    const sanitizedUrl = window.sanitizeImageUrl(product.imageUrl);
 
     if (existing) {
       existing.quantity = (existing.quantity || 1) + 1;
@@ -110,7 +139,7 @@ const Cart = {
         id: product.id,
         name: product.name,
         price: product.price,
-        imageUrl: product.imageUrl,
+        imageUrl: sanitizedUrl,
         type: product.type || 'product',
         quantity: 1
       });
@@ -161,30 +190,30 @@ const Cart = {
     }
   },
 
-  renderCartUI() {
+  renderCartUI(summaryData = null) {
     const container = document.getElementById('cart-items-container');
     const summary = document.getElementById('cart-summary');
+    const subtotalEl = document.getElementById('cart-subtotal');
+    const discountEl = document.getElementById('cart-discount');
     const totalPriceEl = document.getElementById('cart-total-price');
+    const voucherBoxes = document.querySelectorAll('#globalAppliedVouchers, #globalAppliedVouchersPlaceholder');
+
     if (!container || !summary || !totalPriceEl) return;
 
     const items = this.get();
     if (items.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-5">
-                <i class="bi bi-cart-x fs-1 text-brand-gray-light"></i>
-                <p class="text-brand-gray mt-2">Giỏ hàng trống</p>
-            </div>`;
+        container.innerHTML = `<div class="text-center py-5"><i class="bi bi-cart-x fs-1 text-brand-gray-light"></i><p class="text-brand-gray mt-2">Giỏ hàng trống</p></div>`;
         summary.style.display = 'none';
         return;
     }
 
     summary.style.display = 'block';
-    totalPriceEl.textContent = this.totalPrice().toLocaleString() + '₫';
-
+    
+    // Items list
     container.innerHTML = items.map(item => `
         <div class="d-flex gap-3 mb-3 pb-3 border-bottom align-items-center">
             <div class="rounded-pill overflow-hidden bg-brand-bg flex-shrink-0" style="width: 60px; height: 60px;">
-                <img src="${item.imageUrl || '/images/placeholder.png'}" class="w-100 h-100 object-fit-cover" alt="${item.name}">
+                <img src="${window.sanitizeImageUrl(item.imageUrl)}" class="w-100 h-100 object-fit-cover" alt="${item.name}">
             </div>
             <div class="flex-grow-1 min-w-0">
                 <h6 class="mb-0 fw-bold text-truncate">${item.name}</h6>
@@ -200,6 +229,159 @@ const Cart = {
             </button>
         </div>
     `).join('');
+
+    // Summary logic
+    const subtotal = summaryData?.subtotal || this.totalPrice();
+    const discount = summaryData?.voucherDiscount || 0;
+    const total = summaryData?.total || subtotal - discount;
+
+    if (subtotalEl) subtotalEl.textContent = subtotal.toLocaleString() + '₫';
+    if (discountEl) discountEl.textContent = '- ' + discount.toLocaleString() + '₫';
+    totalPriceEl.textContent = total.toLocaleString() + '₫';
+
+    // Applied Vouchers
+    if (voucherBoxes.length > 0) {
+        voucherBoxes.forEach(box => {
+            box.innerHTML = '';
+            const vIds = this.getVoucherIds();
+            vIds.forEach((id, idx) => {
+                const v = this._allVouchers.find(x => x.id === id);
+                if (!v) return;
+                const b = document.createElement('div');
+                b.className = 'badge bg-brand-orange-light text-brand-orange p-2 rounded d-flex align-items-center gap-2 border border-brand-orange';
+                b.innerHTML = `<span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeVoucher(${idx})"></i>`;
+                box.appendChild(b);
+            });
+        });
+    }
+  },
+
+  async updateSummary() {
+    const items = this.get().map(i => ({ productId: i.id, quantity: i.quantity, unitPrice: i.price }));
+    const voucherIds = this.getVoucherIds();
+    
+    if (items.length === 0) {
+        this.renderCartUI();
+        return;
+    }
+
+    try {
+        const res = await fetch('/Order/Preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items, voucherIds })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            
+            // Auto-removal logic: if voucher applied but discount is 0 and subtotal > 0
+            if (voucherIds.length > 0 && data.voucherDiscount === 0 && data.subtotal > 0) {
+                const currentIds = this.getVoucherIds();
+                if (currentIds.length > 0) {
+                    this.saveVoucherIds([]); // Clear all vouchers if no longer valid
+                    window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
+                    return; // saveVoucherIds already calls updateSummary again
+                }
+            }
+
+            this.renderCartUI(data);
+        } else if (res.status === 400) {
+            // Auto-removal on validation error (e.g. min order value no longer met)
+            const currentIds = this.getVoucherIds();
+            if (currentIds.length > 0) {
+                this.saveVoucherIds([]); // Clear all
+                window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
+            } else {
+                this.renderCartUI();
+            }
+        } else {
+            this.renderCartUI();
+        }
+    } catch (e) {
+        console.error('Update summary failed', e);
+        this.renderCartUI();
+    }
+  },
+
+  async loadVouchers() {
+    try {
+        const res = await fetch('/api/vouchers');
+        this._allVouchers = await res.json();
+        
+        const btn = document.getElementById('openGlobalVoucherModal');
+        if (btn) {
+            btn.onclick = () => {
+                this.updateVoucherModalUI();
+                new bootstrap.Modal(document.getElementById('globalVoucherModal')).show();
+            };
+        }
+    } catch (e) { console.error('Load vouchers failed', e); }
+  },
+
+  updateVoucherModalUI() {
+    const subtotal = this.totalPrice();
+    const available = document.getElementById('globalListAvailable');
+    const ineligible = document.getElementById('globalListIneligible');
+    if (!available || !ineligible) return;
+
+    available.innerHTML = ''; ineligible.innerHTML = '';
+    this._allVouchers.forEach(v => {
+        const isEligible = subtotal >= (v.minOrderValue || 0);
+        const item = document.createElement('div');
+        item.className = `voucher-item ${isEligible ? '' : 'ineligible'}`;
+        let lbl = v.type === 'Percentage' ? `Giảm ${v.percent}%` : `Giảm ${(v.amount || 0).toLocaleString()}đ`;
+        if (v.type === 'FreeShipping') lbl = 'FreeShip (Tối đa ' + (v.amount || 0).toLocaleString() + 'đ)';
+
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-bold small text-brand-dark">${v.code}</div>
+                    <div class="extra-small text-brand-orange fw-bold">${lbl}</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    ${isEligible ? `<button class="btn btn-brand-primary btn-sm extra-small py-1 px-2" onclick="cart.applyVoucherById(${v.id})">Áp dụng</button>` : ''}
+                    <i class="bi bi-info-circle cursor-pointer text-muted" onclick="cart.toggleCondition(this)"></i>
+                </div>
+            </div>
+            <div class="voucher-condition-text">
+                • Điều kiện: Đơn tối thiếu ${(v.minOrderValue || 0).toLocaleString()}đ<br>
+                • HSD: ${v.expiresAtUtc ? new Date(v.expiresAtUtc).toLocaleDateString() : 'Không thời hạn'}
+            </div>`;
+        if (isEligible) available.appendChild(item);
+        else ineligible.appendChild(item);
+    });
+  },
+
+  toggleCondition(el) {
+    const text = el.closest('.voucher-item').querySelector('.voucher-condition-text');
+    text.style.display = text.style.display === 'block' ? 'none' : 'block';
+  },
+
+  applyVoucherById(id) {
+    const ids = this.getVoucherIds();
+    if (ids.includes(id)) return;
+    if (ids.length >= 1) return window.showToast('Chỉ áp dụng được tối đa 1 mã!', 'warning');
+    
+    ids.push(id);
+    this.saveVoucherIds(ids);
+    const m = bootstrap.Modal.getInstance(document.getElementById('globalVoucherModal'));
+    if (m) m.hide();
+  },
+
+  applyManualVoucher() {
+    const code = document.getElementById('globalVoucherCode').value.trim().toUpperCase();
+    if (!code) return;
+    const v = this._allVouchers.find(x => x.code.toUpperCase() === code);
+    if (!v) return window.showToast('Mã không tồn tại!', 'error');
+    if (this.totalPrice() < (v.minOrderValue || 0)) return window.showToast(`Chưa đủ điều kiện! Đơn hàng cần đạt tối thiểu ${v.minOrderValue.toLocaleString()}đ`, 'warning');
+    this.applyVoucherById(v.id);
+    document.getElementById('globalVoucherCode').value = '';
+  },
+
+  removeVoucher(idx) {
+    const ids = this.getVoucherIds();
+    ids.splice(idx, 1);
+    this.saveVoucherIds(ids);
   }
 };
 
@@ -216,7 +398,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('cart-updated', updateBadge);
   updateBadge(); // Initial update
-  Cart.renderCartUI();
+  Cart.loadVouchers();
+  Cart.updateSummary();
 });
 
 window.cart = Cart;

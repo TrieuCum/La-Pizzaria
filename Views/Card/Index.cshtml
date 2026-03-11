@@ -50,7 +50,7 @@
                 </section>
                 
                 <div class="mt-4">
-                    <a asp-controller="Product" asp-action="Index" class="text-brand-gray text-decoration-none d-inline-flex align-items-center gap-2 hover-orange transition-all">
+                    <a asp-controller="Menu" asp-action="Index" class="text-brand-gray text-decoration-none d-inline-flex align-items-center gap-2 hover-orange transition-all">
                         <i class="bi bi-arrow-left"></i> Tiếp tục mua hàng
                     </a>
                 </div>
@@ -126,10 +126,7 @@
                         </div>
                         <div class="text-brand-gray extra-small text-end mb-4">Thời gian giao dự kiến: 25-35 phút</div>
 
-                        <div class="voucher-input-wrap d-flex gap-2 mb-4">
-                            <input type="text" id="voucherCode" class="form-control extra-small rounded-3" placeholder="Mã giảm giá">
-                            <button class="btn btn-brand-bg text-brand-dark fw-bold px-3 extra-small" onclick="applyVoucher()">Áp dụng</button>
-                        </div>
+                        <div id="globalAppliedVouchersPlaceholder" class="mb-3 d-flex flex-wrap gap-2"></div>
 
                         <button class="btn btn-brand-primary w-100 py-3 rounded-4 fw-bold fs-6 d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="submitOrder()">
                             Xác nhận đặt hàng <i class="bi bi-arrow-right"></i>
@@ -145,6 +142,8 @@
             </div>
         </div>
     </div>
+</div>
+
 </div>
 
 <!-- Map Picker Modal -->
@@ -221,6 +220,43 @@
 
     .btn-outline-light:hover { background: var(--brand-bg); }
     #map-picker-container { position: relative; overflow: hidden; }
+
+    /* Voucher UI Styles */
+    .voucher-icon-abs {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--brand-orange);
+        font-size: 1.2rem;
+        cursor: pointer;
+        z-index: 5;
+    }
+    .voucher-item {
+        border: 1px solid #f1f5f9;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+    }
+    .voucher-item.ineligible {
+        opacity: 0.6;
+        background: #f8fafc;
+    }
+    .voucher-item:not(.ineligible):hover {
+        border-color: var(--brand-orange);
+        background: #fffafa;
+    }
+    .voucher-condition-text {
+        font-size: 11px;
+        color: var(--brand-gray);
+        margin-top: 8px;
+        display: none;
+        padding-top: 8px;
+        border-top: 1px dashed #eee;
+    }
+    .extra-small { font-size: 0.75rem; }
+    .bg-brand-orange-light { background-color: #fff1e6; }
 </style>
 
 @section Scripts {
@@ -232,7 +268,6 @@
         const STORE_LAT = 10.9416;
         const STORE_LNG = 106.8407;
         let deliveryType = 'ship'; // 'ship' or 'dine'
-        let appliedVoucherId = null;
         let map, marker;
         let selectedAddress = '';
         let currentLat = null;
@@ -487,7 +522,7 @@
                     <div class="text-center py-5 bg-white rounded-4 border">
                         <i class="bi bi-cart-x fs-1 text-brand-gray-light"></i>
                         <p class="text-brand-gray mt-2 fw-semibold">Giỏ hàng của bạn đang trống</p>
-                        <a href="/Product" class="btn btn-brand-primary btn-sm mt-2">Đến thực đơn</a>
+                        <a href="/Menu" class="btn btn-brand-primary btn-sm mt-2">Đến thực đơn</a>
                     </div>`;
                 return;
             }
@@ -495,7 +530,7 @@
             container.innerHTML = items.map(item => `
                 <div class="cart-item-card p-3 d-flex align-items-center gap-4">
                     <div class="cart-img-wrap overflow-hidden">
-                        <img src="${item.imageUrl || '/images/v17_1114.png'}" class="w-100 h-100 object-fit-cover">
+                        <img src="${window.sanitizeImageUrl(item.imageUrl)}" class="w-100 h-100 object-fit-cover">
                     </div>
                     <div class="flex-grow-1">
                         <h6 class="fw-black mb-1 text-brand-dark">${item.name}</h6>
@@ -542,7 +577,7 @@
 
         async function updateSummary() {
             const items = cart.get().map(i => ({ productId: i.id, quantity: i.quantity, unitPrice: i.price }));
-            const voucherIds = appliedVoucherId ? [appliedVoucherId] : [];
+            const voucherIds = cart.getVoucherIds();
             
             document.getElementById('count-summary').textContent = cart.count();
 
@@ -572,28 +607,15 @@
                     document.getElementById('discount').textContent = '-' + discountVal.toLocaleString() + 'đ';
                     document.getElementById('vat').textContent = vatVal.toLocaleString() + 'đ';
                     document.getElementById('totalPrice').textContent = total.toLocaleString() + 'đ';
+                } else if (response.status === 400) {
+                    const currentIds = cart.getVoucherIds();
+                    if (currentIds.length > 0) {
+                        cart.saveVoucherIds([]);
+                        window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
+                    }
                 }
             } catch (err) {
                 console.error('Failed to update summary', err);
-            }
-        }
-
-        async function applyVoucher() {
-            const code = document.getElementById('voucherCode').value.trim();
-            if (!code) return;
-
-            try {
-                const res = await fetch('/api/vouchers');
-                const list = await res.json();
-                const v = list.find(x => x.code.toUpperCase() === code.toUpperCase());
-                
-                if (!v) return window.showToast('Mã giảm giá không hợp lệ hoặc hết hạn', 'error');
-                
-                appliedVoucherId = v.id;
-                updateSummary();
-                window.showToast('Đã áp dụng mã: ' + v.code, 'success');
-            } catch (e) {
-                window.showToast('Lỗi khi áp dụng voucher', 'error');
             }
         }
 
@@ -617,7 +639,7 @@
                         <div class="col-md-6">
                             <div class="brand-card p-2 d-flex align-items-center gap-3 bg-white">
                                 <div class="suggestion-img-wrap rounded-3 overflow-hidden" style="width: 80px; height: 60px;">
-                                    <img src="${it.imageUrl || '/images/v17_1114.png'}" class="w-100 h-100 object-fit-cover">
+                                    <img src="${window.sanitizeImageUrl(it.imageUrl)}" class="w-100 h-100 object-fit-cover">
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold small text-truncate" style="max-width: 120px;">${it.name}</div>
@@ -642,7 +664,7 @@
 
             const payload = {
                 items: items.map(i => ({ productId: i.id, quantity: i.quantity, unitPrice: i.price })),
-                voucherIds: appliedVoucherId ? [appliedVoucherId] : [],
+                voucherIds: cart.getVoucherIds(),
                 tableCode: deliveryType === 'dine' ? document.getElementById('tableCode').value : 'SHIPPING',
                 latitude: currentLat,
                 longitude: currentLng

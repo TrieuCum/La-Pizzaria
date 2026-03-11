@@ -93,7 +93,12 @@ namespace LaPizzaria.Controllers
                 UserName = user.UserName ?? string.Empty,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                AvatarUrl = user.AvatarUrl ?? string.Empty
+                AvatarUrl = user.AvatarUrl ?? string.Empty,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Birthday = user.Birthday,
+                Gender = user.Gender,
+                Address = user.Address
             };
             return View(vm);
         }
@@ -119,6 +124,11 @@ namespace LaPizzaria.Controllers
                 }
             }
             user.AvatarUrl = string.IsNullOrWhiteSpace(model.AvatarUrl) ? null : model.AvatarUrl;
+            user.PhoneNumber = model.PhoneNumber;
+            user.Birthday = model.Birthday;
+            user.Gender = model.Gender;
+            user.Address = model.Address;
+
             var update = await _userManager.UpdateAsync(user);
             if (!update.Succeeded)
             {

@@ -21,17 +21,18 @@ namespace LaPizzaria.Controllers
         /// </summary>
         private string? SanitizeImageUrl(string? imageUrl)
         {
-            if (string.IsNullOrEmpty(imageUrl))
-                return imageUrl;
+            if (string.IsNullOrWhiteSpace(imageUrl))
+                return imageUrl?.Trim();
 
+            var trimmed = imageUrl.Trim();
             // If it's a file:// URL, extract the filename and convert to web path
-            if (imageUrl.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+            if (trimmed.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
             {
-                var filename = System.IO.Path.GetFileName(imageUrl);
+                var filename = System.IO.Path.GetFileName(trimmed);
                 return $"/images/{filename}";
             }
 
-            return imageUrl;
+            return trimmed;
         }
         public async Task<IActionResult> Index(string? q, string? category, string? status)
         {
