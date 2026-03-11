@@ -1,495 +1,453 @@
-﻿@using LaPizzaria.Models
 @{
     ViewData["Title"] = "Ưu đãi & Khuyến mãi";
-    Layout = null;
+    Layout = "_Layout";
 }
 
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - LaPizzaria</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+    .voucher-hero-pill {
+        color: #F97316;
+        font-weight: 800;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+    }
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+    .voucher-hero-title {
+        font-weight: 900;
+        font-size: clamp(28px, 3vw, 38px);
+        margin: 6px 0 4px;
+        color: #0f172a;
+        animation: voucher-heading-glow 0.9s ease-out forwards;
+    }
+
+    .voucher-hero-subtitle {
+        color: #64748b;
+        font-size: 15px;
+        max-width: 520px;
+    }
+
+    .voucher-tabs {
+        display: flex;
+        gap: 24px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 12px;
+        margin-bottom: 28px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .voucher-tab {
+        text-decoration: none;
+        color: #94a3b8;
+        padding-bottom: 10px;
+        position: relative;
+    }
+
+    .voucher-tab.active {
+        color: #F97316;
+    }
+
+    .voucher-tab.active::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -11px;
+        height: 3px;
+        background: #F97316;
+        border-radius: 999px;
+    }
+
+    .voucher-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+    }
+
+    .voucher-card {
+        background: #ffffff;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+        transform: translateY(18px) scale(0.98);
+        opacity: 0;
+        animation: voucher-card-in 0.6s ease-out forwards;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .voucher-card:nth-child(1) { animation-delay: 0.05s; }
+    .voucher-card:nth-child(2) { animation-delay: 0.12s; }
+    .voucher-card:nth-child(3) { animation-delay: 0.19s; }
+    .voucher-card:nth-child(4) { animation-delay: 0.26s; }
+    .voucher-card:nth-child(5) { animation-delay: 0.33s; }
+
+    .voucher-card:hover {
+        transform: translateY(0) scale(1.015);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    }
+
+    .voucher-card-banner {
+        height: 180px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .voucher-card-banner img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.02);
+        transition: transform 0.4s ease;
+    }
+
+    .voucher-card:hover .voucher-card-banner img {
+        transform: scale(1.06);
+    }
+
+    .voucher-badge {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        background: #F97316;
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 13px;
+    }
+
+    .voucher-title {
+        position: absolute;
+        bottom: 14px;
+        left: 14px;
+        right: 14px;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 19px;
+        text-shadow: 0 4px 16px rgba(15, 23, 42, 0.9);
+    }
+
+    .voucher-card-body {
+        padding: 22px 22px 20px;
+    }
+
+    .voucher-expiry {
+        color: #F97316;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .voucher-desc {
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.6;
+        min-height: 44px;
+    }
+
+    .voucher-code-box {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 10px 14px;
+        margin-top: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .voucher-code-text {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-weight: 800;
+        font-size: 16px;
+        color: #0f172a;
+    }
+
+    .voucher-primary-btn,
+    .voucher-secondary-btn {
+        width: 100%;
+        border-radius: 12px;
+        border: none;
+        padding: 13px 16px;
+        font-weight: 800;
+        margin-top: 14px;
+        font-size: 14px;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+    }
+
+    .voucher-primary-btn {
+        background: #F97316;
+        color: #ffffff;
+        box-shadow: 0 8px 18px rgba(248, 113, 22, 0.35);
+    }
+
+    .voucher-primary-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 26px rgba(248, 113, 22, 0.45);
+    }
+
+    .voucher-secondary-btn {
+        background: #e2e8f0;
+        color: #64748b;
+    }
+
+    .voucher-secondary-btn:hover {
+        background: #cbd5f1;
+        color: #475569;
+    }
+
+    .voucher-empty-card {
+        border-radius: 20px;
+        border: 2px dashed #e2e8f0;
+        min-height: 240px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: #94a3b8;
+    }
+
+    .voucher-footer-widgets {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+        margin-top: 48px;
+    }
+
+    .voucher-widget {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 22px 24px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .voucher-widget-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        background: #fff7ed;
+        color: #F97316;
+    }
+
+    .voucher-widget-title {
+        font-weight: 800;
+        margin: 0;
+        color: #0f172a;
+    }
+
+    .voucher-widget-text {
+        color: #94a3b8;
+        margin: 4px 0 0;
+        font-size: 13px;
+    }
+
+    .voucher-widget-link {
+        font-weight: 800;
+        text-decoration: none;
+        font-size: 13px;
+    }
+
+    .voucher-site-footer {
+        text-align: center;
+        padding: 40px 0 10px;
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    /* Animations */
+    @@keyframes voucher-card-in {
+        from {
+            opacity: 0;
+            transform: translateY(26px) scale(0.96);
         }
-
-        body {
-            font-family: 'Work Sans', sans-serif;
-            background-color: #f8f7f5;
-            color: #181411;
-            font-size: 14px;
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
+    }
 
-        /* --- NAVBAR (Giống trang Order Tracking) --- */
-        .v272_48 {
-            width: calc(100% - 256px);
-            height: 80px;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            position: fixed;
-            top: 0;
-            left: 256px;
-            z-index: 1000;
-            border-bottom: 1px solid #edf2f7;
-            padding: 0 40px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    @@keyframes voucher-heading-glow {
+        0% { text-shadow: 0 0 0 rgba(248, 113, 22, 0); }
+        100% { text-shadow: 0 10px 30px rgba(248, 113, 22, 0.55); }
+    }
+</style>
 
-        .header-center-nav {
-            display: flex;
-            gap: 32px;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .nav-item-link {
-            color: #181411;
-            font-weight: 600;
-            font-size: 14px;
-            text-decoration: none;
-            position: relative;
-            padding: 10px 0;
-        }
-
-            .nav-item-link.active {
-                color: #F48C25;
-            }
-
-                .nav-item-link.active::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -20px;
-                    left: 0;
-                    right: 0;
-                    height: 3px;
-                    background: #F48C25;
-                    border-radius: 3px;
-                }
-
-        .header-right-actions {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .v272_81 {
-            background: #F48C25;
-            border-radius: 10px;
-            padding: 10px 22px;
-            color: white !important;
-            font-weight: 700;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .v272_91 {
-            position: absolute;
-            top: -5px;
-            right: -10px;
-            background: #F48C25;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid white;
-            font-weight: 800;
-        }
-
-        /* --- SIDEBAR (Giống trang Order Tracking) --- */
-        .v17_2729 {
-            width: 256px;
-            height: 100vh;
-            background: white;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1010;
-            border-right: 1px solid #edf2f7;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .v17_2731 {
-            width: 42px;
-            height: 42px;
-            background: #F48C25;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 22px;
-        }
-
-        /* --- CONTENT LAYOUT --- */
-        .main-wrapper {
-            margin-left: 256px;
-            padding-top: 80px;
-            min-height: 100vh;
-        }
-
-        .content-container {
-            padding: 40px 60px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* --- VOUCHER GRID & CARDS (Theo hình mẫu) --- */
-        .voucher-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-            margin-top: 30px;
-        }
-
-        .voucher-card {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid #f1f5f9;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            transition: transform 0.3s ease;
-        }
-
-            .voucher-card:hover {
-                transform: translateY(-5px);
-            }
-
-        .card-banner {
-            height: 180px;
-            position: relative;
-            overflow: hidden;
-        }
-
-            .card-banner img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-
-        .promo-badge {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: #F48C25;
-            color: white;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-weight: 800;
-            font-size: 13px;
-        }
-
-        .promo-title {
-            position: absolute;
-            bottom: 15px;
-            left: 15px;
-            color: white;
-            font-weight: 800;
-            font-size: 20px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-
-        .card-body {
-            padding: 25px;
-        }
-
-        .expiry-date {
-            color: #F48C25;
-            font-weight: 700;
-            font-size: 13px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .promo-desc {
-            color: #64748b;
-            font-size: 14px;
-            line-height: 1.6;
-            min-height: 45px;
-        }
-
-        .code-box {
-            background: #f8f9fa;
-            border: 1px dashed #cbd5e1;
-            border-radius: 10px;
-            padding: 12px;
-            margin-top: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .code-text {
-            font-family: monospace;
-            font-weight: 800;
-            font-size: 16px;
-            color: #1e293b;
-        }
-
-        .btn-claim {
-            width: 100%;
-            background: #F48C25;
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 800;
-            margin-top: 15px;
-            transition: 0.3s;
-        }
-
-        .btn-claimed {
-            width: 100%;
-            background: #1e293b;
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 800;
-            margin-top: 15px;
-        }
-
-        .empty-slot {
-            border: 2px dashed #e2e8f0;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #94a3b8;
-            height: 100%;
-            min-height: 400px;
-        }
-
-        /* --- FOOTER WIDGETS --- */
-        .footer-widgets {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-top: 60px;
-        }
-
-        .widget-card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            border: 1px solid #f1f5f9;
-        }
-
-        .widget-icon {
-            width: 60px;
-            height: 60px;
-            background: #fff7ed;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #F48C25;
-            font-size: 28px;
-        }
-
-        .site-footer {
-            text-align: center;
-            padding: 50px 0;
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 13px;
-        }
-    </style>
-</head>
-
-<body>
-    <header class="v272_48">
-        <ul class="header-center-nav">
-            <li><a href="/" class="nav-item-link">Trang chủ</a></li>
-            <li><a href="#" class="nav-item-link">Món ăn</a></li>
-            <li><a href="#" class="nav-item-link active">Khuyến mãi</a></li>
-            <li><a href="#" class="nav-item-link">Đơn hàng của tôi</a></li>
-            <li><a href="#" class="nav-item-link">Tích điểm</a></li>
-        </ul>
-        <div class="header-right-actions">
-            <div style="background: #f1f5f9; padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 10px;">
-                <i class="bi bi-search" style="color: #64748b;"></i>
-                <input type="text" placeholder="Tìm kiếm..." style="border: none; background: transparent; outline: none; font-size: 13px; width: 120px;">
-            </div>
-            <a href="#" class="v272_81"><i class="bi bi-person-fill"></i> Hồ sơ</a>
-            <a href="#" style="position: relative; font-size: 24px; color: #4b5563;"><i class="bi bi-cart3"></i><span class="v272_91">3</span></a>
+<section class="py-5" style="background-color:#f8f7f5;">
+    <div class="container">
+        <div class="mb-4">
+            <span class="voucher-hero-pill">Ưu đãi của bạn</span>
+            <h1 class="voucher-hero-title">Ưu đãi &amp; Khuyến mãi</h1>
+            <p class="voucher-hero-subtitle">
+                Khám phá các ưu đãi độc quyền dành cho bữa tiệc pizza của bạn. Lưu mã để sử dụng nhanh khi thanh toán.
+            </p>
         </div>
-    </header>
 
-    <aside class="v17_2729">
-        <div style="padding: 30px 24px; display: flex; align-items: center; gap: 12px;">
-            <div class="v17_2731"><i class="bi bi-caret-up-fill"></i></div>
-            <h1 style="font-weight: 900; font-size: 20px; margin: 0;">LaPizzaria</h1>
+        <div class="voucher-tabs">
+            <a href="#" class="voucher-tab active">Tất cả vouchers</a>
+            <a href="#" class="voucher-tab">Món ăn</a>
+            <a href="#" class="voucher-tab">Vận chuyển</a>
+            <a href="#" class="voucher-tab">Thành viên</a>
         </div>
-        <nav style="padding: 10px 16px;">
-            <a href="#" class="sidebar-link" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #64748b; text-decoration: none; font-weight: 600; border-radius: 12px;">
-                <i class="bi bi-house"></i> Tổng quan
-            </a>
-            <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #F48C25; background: #fff7ed; text-decoration: none; font-weight: 700; border-radius: 12px;">
-                <i class="bi bi-tag"></i> Khuyến mãi
-            </a>
-            <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #64748b; text-decoration: none; font-weight: 600; border-radius: 12px;">
-                <i class="bi bi-receipt"></i> Đơn hàng của tôi
-            </a>
-        </nav>
-    </aside>
 
-    <main class="main-wrapper">
-        <div class="content-container">
-            <div style="margin-bottom: 40px;">
-                <span style="color: #F48C25; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Ưu đãi của bạn</span>
-                <h2 style="font-weight: 900; font-size: 38px; margin: 5px 0;">Ưu đãi & Khuyến mãi</h2>
-                <p style="color: #64748b; font-size: 16px;">Khám phá các ưu đãi độc quyền dành cho bữa tiệc của bạn</p>
-            </div>
-
-            <div style="display: flex; gap: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 30px;">
-                <a href="#" style="color: #F48C25; font-weight: 700; text-decoration: none; border-bottom: 3px solid #F48C25; padding-bottom: 12px;">Tất cả Vouchers</a>
-                <a href="#" style="color: #94a3b8; font-weight: 600; text-decoration: none;">Món ăn</a>
-                <a href="#" style="color: #94a3b8; font-weight: 600; text-decoration: none;">Vận chuyển</a>
-                <a href="#" style="color: #94a3b8; font-weight: 600; text-decoration: none;">Thành viên</a>
-            </div>
-
-            <div class="voucher-grid">
-                <div class="voucher-card">
-                    <div class="card-banner">
-                        <img src="images/v17_2002.png" alt="Margherita Monday">
-                        <div class="promo-badge">50% OFF</div>
-                        <div class="promo-title">Margherita Monday</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="expiry-date"><i class="bi bi-clock"></i> HẾT HẠN: 15/12/2026</div>
-                        <p class="promo-desc">Giảm ngay 50% cho tất cả các loại bánh Margherita. Áp dụng cho cả ăn tại chỗ và mang về.</p>
-                        <div class="code-box">
-                            <span class="code-text">PIZZA50</span>
-                            <i class="bi bi-info-circle" style="color: #94a3b8;"></i>
-                        </div>
-                        <button class="btn-claim">Lưu mã</button>
-                    </div>
+        <div class="voucher-grid">
+            <div class="voucher-card">
+                <div class="voucher-card-banner">
+                    <img src="~/images/v17_2002.png" alt="Margherita Monday" />
+                    <span class="voucher-badge">50% OFF</span>
+                    <div class="voucher-title">Margherita Monday</div>
                 </div>
-
-                <div class="voucher-card">
-                    <div class="card-banner">
-                        <img src="images/v17_2035.png" alt="Combo pizza">
-                        <div class="promo-badge">$10 OFF</div>
-                        <div class="promo-title">Combo pizza tiệc tùng</div>
+                <div class="voucher-card-body">
+                    <div class="voucher-expiry">
+                        <i class="bi bi-clock"></i>
+                        Hết hạn: 15/12/2026
                     </div>
-                    <div class="card-body">
-                        <div class="expiry-date"><i class="bi bi-clock"></i> HẾT HẠN: 15/12/2026</div>
-                        <p class="promo-desc">Giảm ngay 50% cho tất cả các loại bánh Margherita. Áp dụng cho cả ăn tại chỗ và mang về.</p>
-                        <div class="code-box">
-                            <span class="code-text">COMBO10</span>
-                            <i class="bi bi-info-circle" style="color: #94a3b8;"></i>
-                        </div>
-                        <button class="btn-claim">Lưu mã</button>
+                    <p class="voucher-desc">
+                        Giảm ngay 50% cho tất cả các loại bánh Margherita. Áp dụng cho cả ăn tại chỗ và mang về.
+                    </p>
+                    <div class="voucher-code-box">
+                        <span class="voucher-code-text">PIZZA50</span>
+                        <i class="bi bi-info-circle text-secondary"></i>
                     </div>
-                </div>
-
-                <div class="voucher-card">
-                    <div class="card-banner">
-                        <img src="images/v17_2068.png" alt="Free Side">
-                        <div class="promo-badge">FREE SIDE</div>
-                        <div class="promo-title">Miễn phí bánh mì tỏi</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="expiry-date"><i class="bi bi-clock"></i> HẾT HẠN: 15/12/2026</div>
-                        <p class="promo-desc">Giảm ngay 50% cho tất cả các loại bánh Margherita. Áp dụng cho cả ăn tại chỗ và mang về.</p>
-                        <div class="code-box">
-                            <span class="code-text">GARLICFREE</span>
-                            <i class="bi bi-check-circle-fill" style="color: #F48C25;"></i>
-                        </div>
-                        <button class="btn-claimed">Đã nhận mã</button>
-                    </div>
-                </div>
-
-                <div class="voucher-card">
-                    <div class="card-banner">
-                        <img src="images/v17_2101.png" alt="Student">
-                        <div class="promo-badge">25% OFF</div>
-                        <div class="promo-title">Student Discount</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="expiry-date"><i class="bi bi-clock"></i> HẾT HẠN: 11/12/2026</div>
-                        <p class="promo-desc">Ưu đãi đặc biệt hỗ trợ đồ án tốt nghiệp cho sinh viên. Vui lòng xuất trình thẻ khi nhận hàng.</p>
-                        <div class="code-box">
-                            <span class="code-text">STUDY25</span>
-                            <i class="bi bi-info-circle" style="color: #94a3b8;"></i>
-                        </div>
-                        <button class="btn-claim" style="background: #f1f5f9; color: #94a3b8;">Hết lượt</button>
-                    </div>
-                </div>
-
-                <div class="voucher-card">
-                    <div class="card-banner">
-                        <img src="images/v17_2134.png" alt="Freeship">
-                        <div class="promo-badge">FREESHIP</div>
-                        <div class="promo-title">FREESHIP EXTRA</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="expiry-date"><i class="bi bi-clock"></i> HẾT HẠN: 15/12/2026</div>
-                        <p class="promo-desc">Miễn phí vận chuyển cho tất cả các đơn hàng tối đa 30k phí giao hàng.</p>
-                        <div class="code-box">
-                            <span class="code-text">DELIVERY0</span>
-                            <i class="bi bi-info-circle" style="color: #94a3b8;"></i>
-                        </div>
-                        <button class="btn-claim">Lưu mã</button>
-                    </div>
-                </div>
-
-                <div class="empty-slot">
-                    <i class="bi bi-plus-circle" style="font-size: 40px; margin-bottom: 15px;"></i>
-                    <h5 style="font-weight: 800; color: #1e293b;">Đang cập nhật thêm!</h5>
-                    <p style="text-align: center; padding: 0 20px;">Chúng tôi thêm các ưu đãi mới vào mỗi sáng Thứ Ba hàng tuần.</p>
+                    <button class="voucher-primary-btn">Lưu mã</button>
                 </div>
             </div>
 
-            <div class="footer-widgets">
-                <div class="widget-card">
-                    <div class="widget-icon"><i class="bi bi-headset"></i></div>
-                    <div class="widget-content">
-                        <h5 style="font-weight: 800; margin: 0;">Bạn cần hỗ trợ?</h5>
-                        <p style="color: #94a3b8; margin: 5px 0;">Đội ngũ chúng tôi luôn sẵn sàng 24/7</p>
-                        <a href="#" style="color: #F48C25; text-decoration: none; font-weight: 800;">Trò chuyện ngay</a>
-                    </div>
+            <div class="voucher-card">
+                <div class="voucher-card-banner">
+                    <img src="~/images/v17_2035.png" alt="Combo pizza tiệc tùng" />
+                    <span class="voucher-badge">$10 OFF</span>
+                    <div class="voucher-title">Combo pizza tiệc tùng</div>
                 </div>
-                <div class="widget-card">
-                    <div class="widget-icon" style="background: #f1f5f9; color: #1e293b;"><i class="bi bi-journal-text"></i></div>
-                    <div class="widget-content">
-                        <h5 style="font-weight: 800; margin: 0;">Điều khoản áp dụng</h5>
-                        <p style="color: #94a3b8; margin: 5px 0;">Xem quy định sử dụng voucher</p>
-                        <a href="#" style="color: #1e293b; text-decoration: none; font-weight: 800;">Xem chi tiết</a>
+                <div class="voucher-card-body">
+                    <div class="voucher-expiry">
+                        <i class="bi bi-clock"></i>
+                        Hết hạn: 15/12/2026
                     </div>
+                    <p class="voucher-desc">
+                        Giảm ngay 10$ cho combo party từ 3 bánh trở lên. Rất hợp cho buổi tụ tập cuối tuần.
+                    </p>
+                    <div class="voucher-code-box">
+                        <span class="voucher-code-text">COMBO10</span>
+                        <i class="bi bi-info-circle text-secondary"></i>
+                    </div>
+                    <button class="voucher-primary-btn">Lưu mã</button>
                 </div>
             </div>
 
-            <footer class="site-footer">
-                Đồ án tốt nghiệp LaPizzaria - 2026
-            </footer>
+            <div class="voucher-card">
+                <div class="voucher-card-banner">
+                    <img src="~/images/v17_2068.png" alt="Miễn phí bánh mì tỏi" />
+                    <span class="voucher-badge">FREE SIDE</span>
+                    <div class="voucher-title">Miễn phí bánh mì tỏi</div>
+                </div>
+                <div class="voucher-card-body">
+                    <div class="voucher-expiry">
+                        <i class="bi bi-clock"></i>
+                        Hết hạn: 15/12/2026
+                    </div>
+                    <p class="voucher-desc">
+                        Tặng kèm một phần bánh mì tỏi cho mọi đơn hàng pizza từ 2 bánh trở lên.
+                    </p>
+                    <div class="voucher-code-box">
+                        <span class="voucher-code-text">GARLICFREE</span>
+                        <i class="bi bi-check-circle-fill text-warning"></i>
+                    </div>
+                    <button class="voucher-secondary-btn">Đã nhận mã</button>
+                </div>
+            </div>
+
+            <div class="voucher-card">
+                <div class="voucher-card-banner">
+                    <img src="~/images/v17_2101.png" alt="Student Discount" />
+                    <span class="voucher-badge">25% OFF</span>
+                    <div class="voucher-title">Ưu đãi sinh viên</div>
+                </div>
+                <div class="voucher-card-body">
+                    <div class="voucher-expiry">
+                        <i class="bi bi-clock"></i>
+                        Hết hạn: 11/12/2026
+                    </div>
+                    <p class="voucher-desc">
+                        Giảm 25% cho sinh viên khi xuất trình thẻ. Áp dụng tối đa 1 đơn/ngày.
+                    </p>
+                    <div class="voucher-code-box">
+                        <span class="voucher-code-text">STUDY25</span>
+                        <i class="bi bi-info-circle text-secondary"></i>
+                    </div>
+                    <button class="voucher-secondary-btn">Hết lượt</button>
+                </div>
+            </div>
+
+            <div class="voucher-card">
+                <div class="voucher-card-banner">
+                    <img src="~/images/v17_2134.png" alt="Freeship Extra" />
+                    <span class="voucher-badge">FREESHIP</span>
+                    <div class="voucher-title">Freeship Extra</div>
+                </div>
+                <div class="voucher-card-body">
+                    <div class="voucher-expiry">
+                        <i class="bi bi-clock"></i>
+                        Hết hạn: 15/12/2026
+                    </div>
+                    <p class="voucher-desc">
+                        Miễn phí vận chuyển cho đơn hàng từ 200.000đ, tối đa 30.000đ phí giao hàng.
+                    </p>
+                    <div class="voucher-code-box">
+                        <span class="voucher-code-text">DELIVERY0</span>
+                        <i class="bi bi-info-circle text-secondary"></i>
+                    </div>
+                    <button class="voucher-primary-btn">Lưu mã</button>
+                </div>
+            </div>
+
+            <div class="voucher-empty-card">
+                <i class="bi bi-plus-circle mb-2" style="font-size:36px;"></i>
+                <h5 class="fw-bold text-dark mb-1">Đang cập nhật thêm!</h5>
+                <p class="text-muted mb-0 text-center" style="max-width:260px;">
+                    Chúng tôi bổ sung các ưu đãi mới vào mỗi sáng Thứ Ba hàng tuần.
+                </p>
+            </div>
         </div>
-    </main>
-</body>
-</html>
+
+        <div class="voucher-footer-widgets">
+            <div class="voucher-widget">
+                <div class="voucher-widget-icon">
+                    <i class="bi bi-headset"></i>
+                </div>
+                <div>
+                    <p class="voucher-widget-title">Bạn cần hỗ trợ?</p>
+                    <p class="voucher-widget-text">Đội ngũ chúng tôi luôn sẵn sàng 24/7.</p>
+                    <a href="#" class="voucher-widget-link text-warning">Trò chuyện ngay</a>
+                </div>
+            </div>
+
+            <div class="voucher-widget">
+                <div class="voucher-widget-icon" style="background:#e2e8f0;color:#0f172a;">
+                    <i class="bi bi-journal-text"></i>
+                </div>
+                <div>
+                    <p class="voucher-widget-title">Điều khoản áp dụng</p>
+                    <p class="voucher-widget-text">Xem quy định sử dụng voucher và giới hạn khuyến mãi.</p>
+                    <a href="#" class="voucher-widget-link text-dark">Xem chi tiết</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="voucher-site-footer">
+            Đồ án tốt nghiệp LaPizzaria - 2026
+        </div>
+    </div>
+</section>
+

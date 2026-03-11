@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -30,7 +30,7 @@
                         <ul class="header-center-nav mx-auto mb-2 mb-lg-0">
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Menu" ? "active" : "")" asp-controller="Menu" asp-action="Index">Món ăn</a></li>
-                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Voucher" ? "active" : "")" asp-controller="Voucher" asp-action="Index">Khuyến mãi</a></li>
+                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "VoucherCustomer" ? "active" : "")" asp-controller="VoucherCustomer" asp-action="Index">Khuyến mãi</a></li>
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Order" ? "active" : "")" asp-controller="Order" asp-action="Index">Đơn hàng của tôi</a></li>
                             <li><a class="nav-item-link" href="#">Tích điểm</a></li>
                         </ul>
@@ -106,9 +106,9 @@
                     </div>
                     <div class="col-md-4 col-lg-2">
                         <div class="footer-heading">Liên kết nhanh</div>
-                        <a href="#" class="footer-link">Đặt hàng ngay</a>
-                        <a href="#" class="footer-link">Thực đơn của chúng tôi</a>
-                        <a href="#" class="footer-link">Khuyến mãi</a>
+                        <a asp-controller="Card" asp-action="Index" class="footer-link">Đặt hàng ngay</a>
+                        <a asp-controller="Menu" asp-action="Index" class="footer-link">Thực đơn của chúng tôi</a>
+                        <a asp-controller="VoucherCustomer" asp-action="Index" class="footer-link">Khuyến mãi</a>
                         <a href="#" class="footer-link">Định vị cửa hàng</a>
                     </div>
                     <div class="col-md-4 col-lg-2">

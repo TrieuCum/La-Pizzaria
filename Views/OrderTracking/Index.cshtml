@@ -1,4 +1,4 @@
-﻿@using LaPizzaria.Models
+@using LaPizzaria.Models
 @{
     ViewData["Title"] = "Theo dõi Đơn hàng";
     Layout = null;
@@ -632,10 +632,10 @@
 
     <header class="v272_48">
         <ul class="header-center-nav">
-            <li><a href="/" class="nav-item-link">Trang chủ</a></li>
-            <li><a href="#" class="nav-item-link">Món ăn</a></li>
-            <li><a href="#" class="nav-item-link">Khuyến mãi</a></li>
-            <li><a href="#" class="nav-item-link active">Đơn hàng của tôi</a></li>
+            <li><a asp-controller="Home" asp-action="Index" class="nav-item-link">Trang chủ</a></li>
+            <li><a asp-controller="Menu" asp-action="Index" class="nav-item-link">Món ăn</a></li>
+            <li><a asp-controller="VoucherCustomer" asp-action="Index" class="nav-item-link">Khuyến mãi</a></li>
+            <li><a asp-controller="Order" asp-action="Index" class="nav-item-link active">Đơn hàng của tôi</a></li>
             <li><a href="#" class="nav-item-link">Tích điểm</a></li>
         </ul>
 
