@@ -808,8 +808,138 @@ body.has-sidebar.sidebar-collapsed .content-wrapper {
 }
 
 /* ============================================
-   VOUCHER UI COMPONENTS (GLOBAL)
+   VOUCHER UI REDESIGN (PREMIUM TICKET STYLE)
    ============================================ */
+.modal-glass .modal-content {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.voucher-ticket {
+    display: flex;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    height: 100px;
+    border: 1px solid #f1f5f9;
+}
+
+.voucher-ticket::before,
+.voucher-ticket::after {
+    content: '';
+    position: absolute;
+    left: 80px;
+    width: 20px;
+    height: 20px;
+    background: #f8fafc; /* Match modal body bg */
+    border-radius: 50%;
+    z-index: 2;
+}
+
+.voucher-ticket::before { top: -10px; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.02); }
+.voucher-ticket::after { bottom: -10px; box-shadow: inset 0 3px 5px rgba(0,0,0,0.02); }
+
+.voucher-ticket:hover:not(.ineligible) {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 20px rgba(255, 122, 0, 0.15);
+    border-color: var(--brand-orange);
+}
+
+.ticket-left {
+    width: 90px;
+    background: linear-gradient(135deg, var(--brand-orange), #ff9d42);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border-right: 2px dashed rgba(255,255,255,0.3);
+    padding: 10px;
+    flex-shrink: 0;
+}
+
+.ticket-left i { font-size: 1.5rem; margin-bottom: 5px; }
+.ticket-percent { font-size: 1.25rem; font-weight: 900; line-height: 1; }
+.ticket-type { font-size: 10px; font-weight: 600; text-transform: uppercase; opacity: 0.9; }
+
+.ticket-right {
+    flex-grow: 1;
+    padding: 12px 15px 12px 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+}
+
+.ticket-code {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    letter-spacing: 0.5px;
+}
+
+.v-condition-toggle {
+    font-size: 11px;
+    color: var(--brand-gray);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+}
+
+.v-condition-toggle:hover { color: var(--brand-orange); }
+
+.voucher-ticket.ineligible {
+    opacity: 0.7;
+    filter: grayscale(0.5);
+}
+
+.voucher-ticket.ineligible .ticket-left {
+    background: #94a3b8;
+}
+
+.ticket-btn-apply {
+    background: transparent;
+    border: 1.5px solid var(--brand-orange);
+    color: var(--brand-orange);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    transition: all 0.2s;
+}
+
+.ticket-btn-apply:hover {
+    background: var(--brand-orange);
+    color: white;
+}
+
+.voucher-details-expand {
+    display: none;
+    font-size: 11px;
+    color: var(--brand-gray);
+    background: #fdfdfd;
+    padding: 10px 15px;
+    margin-top: -16px;
+    margin-bottom: 16px;
+    border: 1px solid #f1f5f9;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .voucher-icon-abs {
     position: absolute;
     left: 15px;
@@ -820,34 +950,5 @@ body.has-sidebar.sidebar-collapsed .content-wrapper {
     cursor: pointer;
     z-index: 5;
 }
-
-.voucher-item {
-    border: 1px solid #f1f5f9;
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 12px;
-    transition: all 0.2s;
-    background: white;
-}
-
-.voucher-item.ineligible {
-    opacity: 0.6;
-    background: #f8fafc;
-}
-
-.voucher-item:not(.ineligible):hover {
-    border-color: var(--brand-orange);
-    background: #fffafa;
-}
-
-.voucher-condition-text {
-    font-size: 11px;
-    color: var(--brand-gray);
-    margin-top: 8px;
-    display: none;
-    padding-top: 8px;
-    border-top: 1px dashed #eee;
-}
-
 .extra-small { font-size: 0.75rem; }
 .cursor-pointer { cursor: pointer; }

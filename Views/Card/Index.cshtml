@@ -590,6 +590,15 @@
 
                 if (response.ok) {
                     const data = await response.json();
+                    
+                    // Auto-removal logic: if voucher applied but discount is 0 and subtotal > 0
+                    if (voucherIds.length > 0 && data.voucherDiscount === 0 && data.subtotal > 0) {
+                        localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
+                        window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
+                        updateSummary();
+                        return;
+                    }
+
                     const subtotal = data.subtotal || 0;
                     
                     let shipFeeVal = 0;
@@ -607,11 +616,31 @@
                     document.getElementById('discount').textContent = '-' + discountVal.toLocaleString() + 'đ';
                     document.getElementById('vat').textContent = vatVal.toLocaleString() + 'đ';
                     document.getElementById('totalPrice').textContent = total.toLocaleString() + 'đ';
+                    
+                    // Render Voucher UI manually since we bypass Cart.renderCartUI here natively
+                    const placeholder = document.getElementById('globalAppliedVouchersPlaceholder');
+                    if (placeholder) {
+                        placeholder.innerHTML = '';
+                        const currentVIds = cart.getVoucherIds();
+                        if (currentVIds.length > 0 && cart._allVouchers) {
+                           currentVIds.forEach((id, idx) => {
+                               const v = cart._allVouchers.find(x => x.id === id);
+                               if (!v) return;
+                               const b = document.createElement('div');
+                               b.className = 'badge bg-brand-orange-light text-brand-orange p-2 rounded d-flex align-items-center gap-2 border border-brand-orange';
+                               b.innerHTML = `<span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeVoucher(${idx}); updateSummary();"></i>`;
+                               placeholder.appendChild(b);
+                           });
+                        }
+                    }
+
                 } else if (response.status === 400) {
-                    const currentIds = cart.getVoucherIds();
-                    if (currentIds.length > 0) {
-                        cart.saveVoucherIds([]);
+                    if (voucherIds.length > 0) {
+                        // Clear without triggering cart's updateSummary
+                        localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
                         window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
+                        // Call updateSummary again without vouchers to reflect the correct price
+                        updateSummary();
                     }
                 }
             } catch (err) {
