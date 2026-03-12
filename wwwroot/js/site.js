@@ -327,34 +327,69 @@ const Cart = {
     available.innerHTML = ''; ineligible.innerHTML = '';
     this._allVouchers.forEach(v => {
         const isEligible = subtotal >= (v.minOrderValue || 0);
-        const item = document.createElement('div');
-        item.className = `voucher-item ${isEligible ? '' : 'ineligible'}`;
-        let lbl = v.type === 'Percentage' ? `Giảm ${v.percent}%` : `Giảm ${(v.amount || 0).toLocaleString()}đ`;
-        if (v.type === 'FreeShipping') lbl = 'FreeShip (Tối đa ' + (v.amount || 0).toLocaleString() + 'đ)';
+        
+        let discountLabel = '';
+        let typeLabel = 'Discount';
+        let icon = 'bi-ticket-perforated';
 
-        item.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="fw-bold small text-brand-dark">${v.code}</div>
-                    <div class="extra-small text-brand-orange fw-bold">${lbl}</div>
+        if(v.type === 'Percentage') {
+            discountLabel = `${v.percent}%`;
+            typeLabel = 'Giảm giá';
+            icon = 'bi-percent';
+        } else if(v.type === 'FixedAmount') {
+            discountLabel = `${Math.round(v.amount/1000)}k`;
+            typeLabel = 'Giảm giá';
+            icon = 'bi-cash-stack';
+        } else if(v.type === 'FreeShipping') {
+            discountLabel = 'FREE';
+            typeLabel = 'Vận chuyển';
+            icon = 'bi-truck';
+        }
+
+        const itemWrap = document.createElement('div');
+        itemWrap.innerHTML = `
+            <div class="voucher-ticket ${isEligible ? '' : 'ineligible'}">
+                <div class="ticket-left">
+                    <i class="bi ${icon}"></i>
+                    <div class="ticket-percent">${discountLabel}</div>
+                    <div class="ticket-type">${typeLabel}</div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    ${isEligible ? `<button class="btn btn-brand-primary btn-sm extra-small py-1 px-2" onclick="cart.applyVoucherById(${v.id})">Áp dụng</button>` : ''}
-                    <i class="bi bi-info-circle cursor-pointer text-muted" onclick="cart.toggleCondition(this)"></i>
+                <div class="ticket-right">
+                    <div>
+                        <div class="ticket-code">${v.code}</div>
+                        <div class="v-condition-toggle" onclick="cart.toggleCondition(this)">
+                            Xem điều kiện <i class="bi bi-chevron-down extra-small"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        ${isEligible ? `<button class="ticket-btn-apply" onclick="cart.applyVoucherById(${v.id})">Áp dụng</button>` : `<div class="extra-small text-muted fst-italic">Chưa đủ đ/k</div>`}
+                    </div>
                 </div>
             </div>
-            <div class="voucher-condition-text">
-                • Điều kiện: Đơn tối thiếu ${(v.minOrderValue || 0).toLocaleString()}đ<br>
-                • HSD: ${v.expiresAtUtc ? new Date(v.expiresAtUtc).toLocaleDateString() : 'Không thời hạn'}
+            <div class="voucher-details-expand">
+                <div class="fw-bold mb-1">• Chi tiết ưu đãi:</div>
+                ${v.type === 'Percentage' ? `Giảm ${v.percent}% tổng đơn hàng.` : (v.type === 'FreeShipping' ? `Miễn phí vận chuyển (tối đa ${(v.amount || 0).toLocaleString()}đ).` : `Giảm ${(v.amount || 0).toLocaleString()}đ cho đơn hàng.`)}
+                <div class="mt-1">• Đơn tối thiểu: ${(v.minOrderValue || 0).toLocaleString()}đ</div>
+                <div>• Hạn dùng: ${v.expiresAtUtc ? new Date(v.expiresAtUtc).toLocaleDateString('vi-VN') : 'Không thời hạn'}</div>
             </div>`;
-        if (isEligible) available.appendChild(item);
-        else ineligible.appendChild(item);
+        
+        if (isEligible) available.appendChild(itemWrap);
+        else ineligible.appendChild(itemWrap);
     });
   },
 
   toggleCondition(el) {
-    const text = el.closest('.voucher-item').querySelector('.voucher-condition-text');
-    text.style.display = text.style.display === 'block' ? 'none' : 'block';
+    const ticket = el.closest('.voucher-ticket');
+    const panel = ticket.nextElementSibling;
+    const isShowing = panel.style.display === 'block';
+    
+    // Rotate icon
+    const icon = el.querySelector('.bi-chevron-down') || el.querySelector('.bi-chevron-up');
+    if(icon) {
+        icon.className = isShowing ? 'bi bi-chevron-down extra-small' : 'bi bi-chevron-up extra-small';
+    }
+
+    panel.style.display = isShowing ? 'none' : 'block';
   },
 
   applyVoucherById(id) {

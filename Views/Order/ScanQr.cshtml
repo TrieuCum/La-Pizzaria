@@ -382,9 +382,11 @@
 
             if (!res.ok) {
                 if (res.status === 400) {
-                    if (cart.getVoucherIds().length > 0) {
-                        cart.saveVoucherIds([]);
+                    if (voucherIds.length > 0) {
+                        localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
                         window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
+                        // Re-fetch preview without the invalid voucher to update the UI
+                        previewOrder();
                         return;
                     }
                 }
@@ -398,14 +400,34 @@
             // Auto-removal logic for QR page
             if (voucherIds.length > 0 && data.voucherDiscount === 0 && data.subtotal > 0) {
                 if (cart.getVoucherIds().length > 0) {
-                    cart.saveVoucherIds([]);
+                    localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
                     window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
+                    // Re-fetch preview without the invalid voucher to update the UI
+                    previewOrder();
                     return;
                 }
             }
 
             updateTotals(data.subtotal, data.voucherDiscount, data.total);
             document.getElementById('result-msg').innerHTML = '';
+            
+            // Render Voucher UI manually
+            const placeholder = document.getElementById('globalAppliedVouchersPlaceholder');
+            if (placeholder) {
+                placeholder.innerHTML = '';
+                const currentVIds = cart.getVoucherIds();
+                if (currentVIds.length > 0 && cart._allVouchers) {
+                   currentVIds.forEach((id, idx) => {
+                       const v = cart._allVouchers.find(x => x.id === id);
+                       if (!v) return;
+                       const b = document.createElement('div');
+                       b.className = 'badge bg-brand-orange-light text-brand-orange p-2 rounded d-flex align-items-center gap-2 border border-brand-orange';
+                       b.innerHTML = `<span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeVoucher(${idx}); previewOrder();"></i>`;
+                       placeholder.appendChild(b);
+                   });
+                }
+            }
+
         } catch (e) {
             console.error('Preview failed', e);
         }
