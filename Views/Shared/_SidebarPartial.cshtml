@@ -40,6 +40,9 @@
             <a asp-controller="Customer" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Customer" ? "active" : "")">
                 <i class="bi bi-chat-dots"></i> <span class="link-text">Khách hàng</span>
             </a>
+            <a asp-controller="OrderManagement" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "OrderManagement" ? "active" : "")">
+                <i class="bi bi-receipt"></i> <span class="link-text">Quản lý đơn hàng</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">
