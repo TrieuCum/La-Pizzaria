@@ -1,10 +1,12 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
 
 namespace LaPizzaria.Controllers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class IngredientController : Controller
     {
         private readonly ApplicationDbContext _db;

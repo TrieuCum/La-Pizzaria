@@ -74,6 +74,17 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Đảm bảo các role Admin, Staff, Shipper tồn tại (seed nếu chưa có)
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    foreach (var roleName in new[] { "Admin", "Staff", "Shipper", "Customer" })
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+    }
+}
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

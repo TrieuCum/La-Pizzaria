@@ -10,7 +10,7 @@ using LaPizzaria.Services;
 
 namespace LaPizzaria.Controllers
 {
-	[Authorize(Roles = "Admin")]
+	[Authorize(Roles = "Admin,Staff")]
 	public class VoucherController : Controller
 	{
 		private readonly ApplicationDbContext _db;

@@ -2,7 +2,7 @@
 @using LaPizzaria.Models
 @inject SignInManager<ApplicationUser> SignInManager
 
-@if (SignInManager.IsSignedIn(User) && User.IsInRole("Admin"))
+@if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("Staff")))
 {
     <aside class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-header">
@@ -10,7 +10,7 @@
                 <div class="sidebar-logo-icon">🍕</div>
                 <div class="sidebar-logo-text-group">
                     <h6 class="sidebar-title">Pizza Admin</h6>
-                    <span class="sidebar-subtitle">Quản trị viên</span>
+                    <span class="sidebar-subtitle">@(User.IsInRole("Admin") ? "Quản trị viên" : "Nhân viên")</span>
                 </div>
             </div>
             <button id="sidebarToggle" class="sidebar-toggle-btn">
@@ -28,9 +28,12 @@
             <a asp-controller="Table" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Table" ? "active" : "")">
                 <i class="bi bi-calendar-event"></i> <span class="link-text">Đặt Bàn</span>
             </a>
-            <a asp-controller="Employee" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" ? "active" : "")">
-                <i class="bi bi-people"></i> <span class="link-text">Nhân viên</span>
-            </a>
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-controller="Employee" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" ? "active" : "")">
+                    <i class="bi bi-people"></i> <span class="link-text">Nhân viên</span>
+                </a>
+            }
             <a asp-controller="Ingredient" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Ingredient" ? "active" : "")">
                 <i class="bi bi-egg-fried"></i> <span class="link-text">Nguyên liệu</span>
             </a>

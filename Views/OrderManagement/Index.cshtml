@@ -128,8 +128,9 @@
                     @foreach (var order in Model.Orders)
                     {
                         var user = order.User;
-                        var customerName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : user?.UserName ?? "—";
-                        if (string.IsNullOrEmpty(customerName)) { customerName = user?.Email ?? "—"; }
+                        var customerName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : null;
+                        if (string.IsNullOrEmpty(customerName)) { customerName = user?.UserName ?? user?.Email; }
+                        if (string.IsNullOrEmpty(customerName)) { customerName = "Khách vãng lai"; }
                         var customerPhone = user?.PhoneNumber ?? "—";
                         <tr>
                             <td><span class="ord-id">#ORD-@order.Id</span></td>
@@ -137,7 +138,7 @@
                                 <div>@customerName</div>
                                 <div class="small text-secondary">@customerPhone</div>
                             </td>
-                            <td>@(order.DeliveryAddress ?? "—")</td>
+                            <td>@(string.IsNullOrWhiteSpace(order.DeliveryAddress) ? "—" : order.DeliveryAddress)</td>
                             <td>@order.OrderDate.ToString("HH:mm, dd/MM")</td>
                             <td><strong>@order.TotalPrice.ToString("N0")₫</strong></td>
                             <td><span class="status-badge @StatusCss(order.OrderStatus)">@StatusLabel(order.OrderStatus)</span></td>

@@ -72,6 +72,7 @@ namespace LaPizzaria.Controllers
             var result = await _userManager.CreateAsync(user, model.Password);
             if (result.Succeeded)
             {
+                await _userManager.AddToRoleAsync(user, "Customer");
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 TempData["success"] = "Đăng ký thành công. Chào mừng đến LaPizzaria!";
                 return RedirectToAction("Index", "Home");
@@ -84,6 +85,7 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpGet]
+        [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> Manage()
         {
             var user = await _userManager.GetUserAsync(User);

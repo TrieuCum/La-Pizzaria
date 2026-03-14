@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace LaPizzaria.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Staff")]
     public sealed class CustomerController : Controller
     {
         private const int DefaultPageSize = 10;
@@ -25,59 +25,80 @@ namespace LaPizzaria.Controllers
         {
             if (page < 1) page = 1;
 
-            var query = _db.Customers.Include(c => c.User).AsQueryable();
+            var adminStaffRoleIds = await _db.Roles
+                .Where(r => r.NormalizedName == "ADMIN" || r.NormalizedName == "STAFF")
+                .Select(r => r.Id)
+                .ToListAsync();
+            var adminStaffUserIds = await _db.UserRoles
+                .Where(ur => adminStaffRoleIds.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            var query = _userManager.Users.AsQueryable();
+            query = query.Where(u => !adminStaffUserIds.Contains(u.Id));
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim().ToLower();
-                query = query.Where(c =>
-                    (c.User != null && (
-                        (c.User.FirstName != null && c.User.FirstName.ToLower().Contains(term)) ||
-                        (c.User.LastName != null && c.User.LastName.ToLower().Contains(term)) ||
-                        (c.User.UserName != null && c.User.UserName.ToLower().Contains(term)) ||
-                        (c.User.Email != null && c.User.Email.ToLower().Contains(term)) ||
-                        (c.User.PhoneNumber != null && c.User.PhoneNumber.Contains(term))
-                    )) ||
-                    (c.CustomerCode != null && c.CustomerCode.ToLower().Contains(term)));
+                query = query.Where(u =>
+                    (u.FirstName != null && u.FirstName.ToLower().Contains(term)) ||
+                    (u.LastName != null && u.LastName.ToLower().Contains(term)) ||
+                    (u.UserName != null && u.UserName.ToLower().Contains(term)) ||
+                    (u.Email != null && u.Email.ToLower().Contains(term)) ||
+                    (u.PhoneNumber != null && u.PhoneNumber.Contains(term)));
+            }
+
+            var customerUsers = await query.OrderBy(u => u.UserName).ToListAsync();
+            var userIds = customerUsers.Select(u => u.Id).ToList();
+
+            var customersByUser = await _db.Customers
+                .Where(c => userIds.Contains(c.UserId))
+                .ToDictionaryAsync(c => c.UserId);
+            var orderCountByUser = await _db.Orders
+                .Where(o => o.UserId != null && userIds.Contains(o.UserId))
+                .GroupBy(o => o.UserId)
+                .Select(g => new { UserId = g.Key!, Count = g.Count() })
+                .ToListAsync();
+
+            var list = new List<CustomerListItemViewModel>();
+            foreach (var u in customerUsers)
+            {
+                var cust = customersByUser.GetValueOrDefault(u.Id);
+                var status = cust?.Status ?? "Active";
+                var points = cust?.LoyaltyPoints ?? 0;
+                list.Add(new CustomerListItemViewModel
+                {
+                    UserId = u.Id,
+                    FullName = !string.IsNullOrWhiteSpace(u.FirstName) || !string.IsNullOrWhiteSpace(u.LastName)
+                        ? $"{u.FirstName} {u.LastName}".Trim()
+                        : u.UserName ?? u.Email ?? u.Id,
+                    Phone = u.PhoneNumber,
+                    Email = u.Email,
+                    Points = points,
+                    Status = status,
+                    OrderCount = orderCountByUser.FirstOrDefault(x => x.UserId == u.Id)?.Count ?? 0,
+                    CustomerId = cust?.Id
+                });
             }
 
             if (!string.IsNullOrWhiteSpace(statusFilter))
             {
                 if (statusFilter.Equals("Active", StringComparison.OrdinalIgnoreCase))
-                    query = query.Where(c => c.Status == null || c.Status == "Active" || c.LoyaltyPoints > 100);
+                    list = list.Where(c => c.Status == null || c.Status.Equals("Active", StringComparison.OrdinalIgnoreCase) || c.Points > 100).ToList();
                 else if (statusFilter.Equals("Locked", StringComparison.OrdinalIgnoreCase))
-                    query = query.Where(c => c.Status != null && !c.Status.Equals("Active", StringComparison.OrdinalIgnoreCase) && c.LoyaltyPoints <= 100);
+                    list = list.Where(c => c.Status != null && !c.Status.Equals("Active", StringComparison.OrdinalIgnoreCase) && c.Points <= 100).ToList();
             }
 
-            var totalCount = await query.CountAsync();
-            var customers = await query
-                .OrderBy(c => c.Id)
+            var totalCount = list.Count;
+            var paged = list
                 .Skip((page - 1) * DefaultPageSize)
                 .Take(DefaultPageSize)
-                .ToListAsync();
-
-            var userIds = customers.Select(c => c.UserId).Distinct().ToList();
-            var orderCountByUser = await _db.Orders
-                .Where(o => userIds.Contains(o.UserId ?? ""))
-                .GroupBy(o => o.UserId)
-                .Select(g => new { UserId = g.Key, Count = g.Count() })
-                .ToListAsync();
-
-            foreach (var c in customers)
-            {
-                var u = c.User;
-                c.FullName = !string.IsNullOrWhiteSpace(u?.FirstName) || !string.IsNullOrWhiteSpace(u?.LastName)
-                    ? $"{u?.FirstName ?? ""} {u?.LastName ?? ""}".Trim()
-                    : u?.UserName ?? c.CustomerCode ?? $"Khách #{c.Id}";
-                c.Phone = u?.PhoneNumber;
-                c.Email = u?.Email;
-                c.Points = c.LoyaltyPoints;
-                c.OrderCount = orderCountByUser.FirstOrDefault(x => x.UserId == c.UserId)?.Count ?? 0;
-            }
+                .ToList();
 
             var model = new CustomerIndexViewModel
             {
-                Customers = customers,
+                Customers = paged,
                 Search = search,
                 StatusFilter = statusFilter,
                 Page = page,
@@ -88,108 +109,82 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            var existingCustomerUserIds = await _db.Customers.Select(c => c.UserId).ToListAsync();
-            var users = await _userManager.Users
-                .Where(u => !existingCustomerUserIds.Contains(u.Id))
-                .OrderBy(u => u.UserName)
-                .Select(u => new { u.Id, Display = (u.FirstName + " " + u.LastName).Trim() != "" ? (u.FirstName + " " + u.LastName).Trim() : u.UserName ?? u.Email ?? u.Id })
-                .ToListAsync();
-            ViewBag.AvailableUsers = users;
-            return View(new CustomerFormViewModel());
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CustomerFormViewModel model)
-        {
-            var existingCustomerUserIds = await _db.Customers.Select(c => c.UserId).ToListAsync();
-            if (existingCustomerUserIds.Contains(model.UserId))
-            {
-                ModelState.AddModelError("UserId", "Tài khoản này đã là khách hàng.");
-            }
-
-            if (ModelState.IsValid)
-            {
-                var customer = new Customer
-                {
-                    UserId = model.UserId,
-                    CustomerCode = model.CustomerCode,
-                    LoyaltyPoints = model.LoyaltyPoints,
-                    Status = model.Status ?? "Active",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                _db.Customers.Add(customer);
-                await _db.SaveChangesAsync();
-                TempData["success"] = "Đã thêm khách hàng.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var users = await _userManager.Users
-                .Where(u => !existingCustomerUserIds.Contains(u.Id))
-                .OrderBy(u => u.UserName)
-                .Select(u => new { u.Id, Display = (u.FirstName + " " + u.LastName).Trim() != "" ? (u.FirstName + " " + u.LastName).Trim() : u.UserName ?? u.Email ?? u.Id })
-                .ToListAsync();
-            ViewBag.AvailableUsers = users;
-            return View(model);
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
-        public async Task<IActionResult> Edit(int id)
+        public async Task<IActionResult> Edit(string userId)
         {
-            var customer = await _db.Customers.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == id);
-            if (customer == null) return NotFound();
+            if (string.IsNullOrEmpty(userId)) return NotFound();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
 
-            var userDisplay = customer.User != null
-                ? ($"{customer.User.FirstName} {customer.User.LastName}".Trim() != "" ? $"{customer.User.FirstName} {customer.User.LastName}".Trim() : customer.User.UserName ?? customer.User.Email ?? customer.UserId)
-                : customer.UserId;
+            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
+            var userDisplay = !string.IsNullOrWhiteSpace(user.FirstName) || !string.IsNullOrWhiteSpace(user.LastName)
+                ? $"{user.FirstName} {user.LastName}".Trim()
+                : user.UserName ?? user.Email ?? userId;
 
             var model = new CustomerFormViewModel
             {
-                Id = customer.Id,
-                UserId = customer.UserId,
+                Id = customer?.Id,
+                UserId = userId,
                 UserDisplayName = userDisplay,
-                CustomerCode = customer.CustomerCode,
-                LoyaltyPoints = customer.LoyaltyPoints,
-                Status = customer.Status
+                CustomerCode = customer?.CustomerCode,
+                LoyaltyPoints = customer?.LoyaltyPoints ?? 0,
+                Status = customer?.Status ?? "Active"
             };
             return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, CustomerFormViewModel model)
+        public async Task<IActionResult> Edit(CustomerFormViewModel model)
         {
-            if (id != model.Id) return NotFound();
-            var customer = await _db.Customers.FindAsync(id);
-            if (customer == null) return NotFound();
+            var userId = model.UserId;
+            if (string.IsNullOrEmpty(userId)) return NotFound();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
 
             if (ModelState.IsValid)
             {
+                var customer = await _db.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
+                if (customer == null)
+                {
+                    customer = new Customer
+                    {
+                        UserId = userId,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _db.Customers.Add(customer);
+                }
                 customer.CustomerCode = model.CustomerCode;
                 customer.LoyaltyPoints = model.LoyaltyPoints;
-                customer.Status = model.Status;
+                customer.Status = model.Status ?? "Active";
                 customer.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
                 TempData["success"] = "Đã cập nhật khách hàng.";
                 return RedirectToAction(nameof(Index));
             }
 
-            model.UserDisplayName = customer.UserId;
+            model.UserDisplayName = user.UserName ?? user.Email ?? userId;
             return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(string userId)
         {
-            var customer = await _db.Customers.FindAsync(id);
-            if (customer == null) return NotFound();
-            _db.Customers.Remove(customer);
-            await _db.SaveChangesAsync();
-            TempData["success"] = "Đã xóa khách hàng.";
+            if (string.IsNullOrEmpty(userId)) return NotFound();
+            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
+            if (customer != null)
+            {
+                _db.Customers.Remove(customer);
+                await _db.SaveChangesAsync();
+            }
+            TempData["success"] = "Đã xóa hồ sơ khách hàng (tài khoản vẫn tồn tại).";
             return RedirectToAction(nameof(Index));
         }
     }

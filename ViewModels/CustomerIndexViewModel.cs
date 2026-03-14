@@ -2,7 +2,7 @@ namespace LaPizzaria.ViewModels
 {
     public class CustomerIndexViewModel
     {
-        public IEnumerable<LaPizzaria.Models.Customer> Customers { get; set; } = new List<LaPizzaria.Models.Customer>();
+        public IEnumerable<CustomerListItemViewModel> Customers { get; set; } = new List<CustomerListItemViewModel>();
         public string? Search { get; set; }
         public string? StatusFilter { get; set; }
         public int Page { get; set; } = 1;

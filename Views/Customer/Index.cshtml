@@ -381,12 +381,8 @@
     <header class="page-header">
         <div>
             <h1 class="page-title">Quản lý Khách hàng</h1>
-            <p class="page-subtitle">Xem và quản lý thông tin khách hàng thành viên</p>
+            <p class="page-subtitle">Tài khoản đăng ký (không phải Admin/Nhân viên) mặc định là khách hàng</p>
         </div>
-        <a asp-controller="Customer" asp-action="Create" class="btn-add-customer">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm khách hàng</span>
-        </a>
     </header>
 
     <div class="filter-section">
@@ -443,15 +439,15 @@
                                 <div class="cell-customer">
                                     <div class="avatar-circle">
                                         @{
-                                            var name = customer.FullName ?? customer.CustomerCode ?? "";
-                                            if (string.IsNullOrEmpty(name)) { name = "#" + customer.Id; }
+                                            var name = customer.FullName ?? "";
+                                            if (string.IsNullOrEmpty(name)) { name = customer.UserId; }
                                             var initials = name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
                                         }
                                         @initials
                                     </div>
                                     <div>
-                                        <div class="customer-name">@(customer.FullName ?? customer.CustomerCode ?? "Khách #" + customer.Id)</div>
-                                        <div class="customer-id">ID: #CUS-@customer.Id.ToString("D3")</div>
+                                        <div class="customer-name">@(customer.FullName ?? "Khách")</div>
+                                        <div class="customer-id">@(customer.CustomerId.HasValue ? "ID: #CUS-" + customer.CustomerId.Value.ToString("D3") : "Khách hàng")</div>
                                     </div>
                                 </div>
                             </td>
@@ -462,7 +458,7 @@
                                 </div>
                             </td>
                             <td>
-                                @if (string.IsNullOrEmpty(customer.Status) || customer.Status.Equals("Active", StringComparison.OrdinalIgnoreCase) || customer.LoyaltyPoints > 100)
+                                @if (string.IsNullOrEmpty(customer.Status) || customer.Status.Equals("Active", StringComparison.OrdinalIgnoreCase) || customer.Points > 100)
                                 {
                                     <span class="status-badge status-active">Hoạt động</span>
                                 }
@@ -475,10 +471,10 @@
                             <td class="points-cell">@customer.Points</td>
                             <td>
                                 <div class="action-btns">
-                                    <a asp-action="Edit" asp-route-id="@customer.Id" title="Sửa"><i class="bi bi-pencil"></i></a>
-                                    <form asp-action="Delete" asp-route-id="@customer.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa khách hàng này?');">
+                                    <a asp-action="Edit" asp-route-userId="@customer.UserId" title="Sửa"><i class="bi bi-pencil"></i></a>
+                                    <form asp-action="Delete" asp-route-userId="@customer.UserId" method="post" class="d-inline" onsubmit="return confirm('Xóa hồ sơ khách hàng (điểm, trạng thái)? Tài khoản vẫn giữ nguyên.');">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-delete" title="Xóa"><i class="bi bi-trash"></i></button>
+                                        <button type="submit" class="btn-delete" title="Xóa hồ sơ"><i class="bi bi-trash"></i></button>
                                     </form>
                                 </div>
                             </td>

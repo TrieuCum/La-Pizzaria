@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace LaPizzaria.Controllers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _db;

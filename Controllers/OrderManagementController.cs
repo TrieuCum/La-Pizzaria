@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LaPizzaria.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Staff")]
     public sealed class OrderManagementController : Controller
     {
         private const int DefaultPageSize = 10;

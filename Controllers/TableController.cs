@@ -6,9 +6,11 @@ using LaPizzaria.Data;
 using LaPizzaria.Models;
 using LaPizzaria.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LaPizzaria.Controllers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class TableController : Controller
     {
         private readonly ApplicationDbContext _db;
