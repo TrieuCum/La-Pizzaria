@@ -1,0 +1,203 @@
+/* Order history styling inspired by provided UI mock.
+   Uses cards and pills; avoids reliance on missing background images. */
+
+.lp-orders-page {
+  background: #f8f7f5;
+  padding: 24px 0 72px;
+}
+
+.lp-orders-wrap {
+  max-width: 1140px;
+}
+
+.lp-orders-head {
+  margin-bottom: 18px;
+}
+
+.lp-orders-head h1 {
+  font-family: "Work Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 900;
+  font-size: clamp(24px, 3.2vw, 30px);
+  color: #171717;
+  margin: 0;
+}
+
+.lp-orders-head p {
+  margin: 6px 0 0;
+  font-family: "Work Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #737373;
+  font-size: 16px;
+}
+
+.lp-tabs {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 18px 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-tabs a {
+  text-decoration: none;
+  font-family: "Work Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: #737373;
+}
+
+.lp-tabs a.is-active {
+  color: #f48c25;
+}
+
+.lp-order-list {
+  display: grid;
+  gap: 16px;
+}
+
+.lp-order-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.lp-order-inner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  padding: 18px;
+}
+
+@media (max-width: 768px) {
+  .lp-order-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lp-status-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.lp-pill {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-weight: 800;
+  font-size: 12px;
+  font-family: "Work Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.lp-pill.pending {
+  background: rgba(255, 237, 213, 1);
+  color: rgba(194, 65, 12, 1);
+}
+
+.lp-pill.completed {
+  background: rgba(220, 252, 231, 1);
+  color: rgba(21, 128, 61, 1);
+}
+
+.lp-pill.cancelled {
+  background: rgba(254, 226, 226, 1);
+  color: rgba(185, 28, 28, 1);
+}
+
+.lp-order-code {
+  color: #a3a3a3;
+  font-size: 14px;
+  font-family: "Work Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.lp-order-title {
+  margin-top: 10px;
+  font-weight: 900;
+  font-size: 18px;
+  color: #171717;
+  font-family: "Work Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.lp-meta {
+  margin-top: 10px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  color: #737373;
+  font-size: 14px;
+  font-family: "Work Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.lp-meta .item {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lp-thumb {
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(244,140,37,0.35), transparent 55%),
+    radial-gradient(circle at 70% 60%, rgba(244,140,37,0.22), transparent 60%),
+    linear-gradient(135deg, #fff7ed, #ffffff);
+  border: 1px solid rgba(0,0,0,0.06);
+  display: grid;
+  place-items: center;
+  color: #f48c25;
+  font-size: 28px;
+  flex: 0 0 auto;
+}
+
+.lp-actions-col {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.lp-btn {
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.lp-btn.primary {
+  background: #f48c25;
+  color: #ffffff;
+}
+
+.lp-btn.primary:hover {
+  filter: brightness(0.96);
+}
+
+.lp-btn.secondary {
+  background: #f5f5f5;
+  color: #404040;
+  border-color: rgba(0,0,0,0.06);
+}
+
+.lp-btn.secondary:hover {
+  background: #ededed;
+}
+
+.lp-btn.icon {
+  background: #ffffff;
+  color: #404040;
+  border-color: rgba(0,0,0,0.10);
+}
+
+.lp-btn.icon:hover {
+  background: #fafafa;
+}
+
