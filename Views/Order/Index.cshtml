@@ -1,11 +1,29 @@
-@model IEnumerable<LaPizzaria.Models.Order>
-
+@model LaPizzaria.ViewModels.OrderHistoryViewModel
+@using LaPizzaria.Models
 @{
     ViewData["Title"] = "Lịch sử đơn hàng";
-    var allCount = Model?.Count() ?? 0;
-    var deliveringCount = Model?.Count(o => o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled") ?? 0;
-    var completedCount = Model?.Count(o => o.OrderStatus == "Completed") ?? 0;
-    var cancelledCount = Model?.Count(o => o.OrderStatus == "Cancelled") ?? 0;
+    string StatusPillClass(Order o) => o.OrderStatus switch
+    {
+        "Delivering" or "Preparing" or "Ready" or "Confirmed" or "Pending" => "delivering",
+        "Completed" => "completed",
+        "Cancelled" => "cancelled",
+        _ => "delivering"
+    };
+    string StatusPillText(Order o) => o.OrderStatus switch
+    {
+        "Completed" => "HOÀN THÀNH",
+        "Cancelled" => "ĐÃ HỦY",
+        "Delivering" => "ĐANG GIAO",
+        _ => "ĐANG GIAO"
+    };
+    string OrderTitle(Order o)
+    {
+        var details = o.OrderDetails?.Where(d => d.Product != null).Take(3).ToList() ?? new List<OrderDetail>();
+        if (details.Count == 0) return "Đơn hàng";
+        var names = details.Select(d => d.Product!.Name).Where(n => !string.IsNullOrEmpty(n)).ToList();
+        if (names.Count == 0) return "Đơn hàng";
+        return names.Count == 1 ? names[0] : string.Join(" & ", names);
+    }
 }
 
 @section Styles {
@@ -14,87 +32,60 @@
 
 <div class="lp-orders-page">
     <div class="container lp-orders-wrap">
+        <nav class="lp-breadcrumb">
+            <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+            <span class="lp-sep">/</span>
+            <span>Lịch sử đơn hàng</span>
+        </nav>
+
         <div class="lp-orders-head">
             <h1>Lịch sử Đơn hàng</h1>
             <p>Theo dõi và quản lý tất cả đơn hàng pizza của bạn tại đây.</p>
         </div>
 
         <ul class="lp-tabs">
-            <li><a class="is-active" href="#">Tất cả (@allCount)</a></li>
-            <li><a href="#">Đang giao (@deliveringCount)</a></li>
-            <li><a href="#">Hoàn thành (@completedCount)</a></li>
-            <li><a href="#">Đã hủy (@cancelledCount)</a></li>
+            <li><a class="@(string.IsNullOrEmpty(Model.StatusFilter) ? "is-active" : "")" asp-action="Index" asp-route-statusFilter="">Tất cả (@Model.AllCount)</a></li>
+            <li><a class="@(Model.StatusFilter == "Delivering" ? "is-active" : "")" asp-action="Index" asp-route-statusFilter="Delivering">Đang giao (@Model.DeliveringCount)</a></li>
+            <li><a class="@(Model.StatusFilter == "Completed" ? "is-active" : "")" asp-action="Index" asp-route-statusFilter="Completed">Hoàn thành (@Model.CompletedCount)</a></li>
+            <li><a class="@(Model.StatusFilter == "Rated" ? "is-active" : "")" asp-action="Index" asp-route-statusFilter="Rated">Đánh giá (@Model.RatedCount)</a></li>
+            <li><a class="@(Model.StatusFilter == "Cancelled" ? "is-active" : "")" asp-action="Index" asp-route-statusFilter="Cancelled">Đã hủy (@Model.CancelledCount)</a></li>
         </ul>
 
         <div class="lp-order-list">
-            @if (Model != null && Model.Any())
+            @if (Model.Orders != null && Model.Orders.Any())
             {
-                foreach (var o in Model.OrderByDescending(x => x.OrderDate))
+                @foreach (var o in Model.Orders)
                 {
-                    var pillClass = o.OrderStatus switch
-                    {
-                        "Completed" => "completed",
-                        "Cancelled" => "cancelled",
-                        _ => "pending"
-                    };
-                    var statusText = o.OrderStatus switch
-                    {
-                        "Completed" => "Hoàn thành",
-                        "Cancelled" => "Đã hủy",
-                        _ => "Đang xử lý"
-                    };
-                    var itemsCount = o.OrderDetails?.Sum(d => d.Quantity) ?? 0;
-
                     <div class="lp-order-card">
                         <div class="lp-order-inner">
-                            <div>
+                            <div class="lp-order-info">
                                 <div class="lp-status-row">
-                                    <span class="lp-pill @pillClass">@statusText</span>
+                                    <span class="lp-pill @StatusPillClass(o)">@StatusPillText(o)</span>
                                     <span class="lp-order-code">#PZ-@o.Id</span>
                                 </div>
-                                <div class="lp-order-title">
-                                    Đơn hàng (@itemsCount món)
-                                </div>
+                                <div class="lp-order-title">@OrderTitle(o)</div>
                                 <div class="lp-meta">
-                                    <span class="item">
+                                    <span class="lp-meta-item">
                                         <i class="bi bi-clock"></i>
                                         @o.OrderDate.ToLocalTime().ToString("HH:mm - dd/MM/yyyy")
                                     </span>
-                                    <span class="item">
+                                    <span class="lp-meta-item">
                                         <i class="bi bi-currency-dollar"></i>
-                                        @o.TotalPrice.ToString("N0")đ
+                                        @o.TotalPrice.ToString("N0")₫
                                     </span>
                                 </div>
                             </div>
 
-                            <div class="d-flex gap-3 align-items-center justify-content-end flex-wrap">
-                                <div class="lp-thumb" title="Pizza">
-                                    <i class="bi bi-pie-chart-fill"></i>
-                                </div>
-                                <div class="lp-actions-col">
-                                    <a class="lp-btn primary" asp-action="SplitForm" asp-route-orderId="@o.Id">
-                                        <i class="bi bi-eye"></i>
-                                        Xem chi tiết
-                                    </a>
-
-                                    @if (o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled")
-                                    {
-                                        <form asp-action="Pay" method="post" class="d-inline">
-                                            <input type="hidden" name="orderId" value="@o.Id" />
-                                            <button class="lp-btn secondary" type="submit">
-                                                <i class="bi bi-cash-coin"></i>
-                                                Thanh toán
-                                            </button>
-                                        </form>
-                                    }
-
-                                    <form asp-action="Recalculate" method="post" class="d-inline">
-                                        <input type="hidden" name="orderId" value="@o.Id" />
-                                        <button class="lp-btn icon" type="submit" title="Tính lại tổng tiền">
-                                            <i class="bi bi-calculator"></i>
-                                        </button>
-                                    </form>
-                                </div>
+                            <div class="lp-actions-col">
+                                <a class="lp-btn primary" asp-action="Details" asp-route-id="@o.Id">Xem chi tiết</a>
+                                @if (o.OrderStatus == "Delivering" || o.OrderStatus == "Preparing" || o.OrderStatus == "Ready" || o.OrderStatus == "Confirmed" || o.OrderStatus == "Pending")
+                                {
+                                    <a class="lp-btn secondary" href="#">Theo dõi</a>
+                                }
+                                else if (o.OrderStatus == "Completed")
+                                {
+                                    <a class="lp-btn secondary" asp-controller="Menu" asp-action="Index">Mua lại</a>
+                                }
                             </div>
                         </div>
                     </div>
@@ -104,19 +95,40 @@
             {
                 <div class="lp-order-card">
                     <div class="lp-order-inner">
-                        <div>
+                        <div class="lp-order-info">
                             <div class="lp-order-title">Chưa có đơn hàng</div>
                             <div class="lp-meta">Bạn chưa có đơn nào để hiển thị.</div>
                         </div>
                         <div class="lp-actions-col">
-                            <a class="lp-btn primary" asp-controller="Menu" asp-action="Index">
-                                <i class="bi bi-bag"></i>
-                                Đặt món ngay
-                            </a>
+                            <a class="lp-btn primary" asp-controller="Menu" asp-action="Index">Đặt món ngay</a>
                         </div>
                     </div>
                 </div>
             }
         </div>
+
+        @if (Model.Orders != null && Model.Orders.Any() && Model.TotalPages > 1)
+        {
+            <nav class="lp-pagination" aria-label="Phân trang">
+                @if (Model.Page > 1)
+                {
+                    <a class="lp-page-arrow" asp-action="Index" asp-route-statusFilter="@Model.StatusFilter" asp-route-page="@(Model.Page - 1)" aria-label="Trang trước"><i class="bi bi-chevron-left"></i></a>
+                }
+                <div class="lp-page-nums">
+                    @for (var p = 1; p <= Math.Min(Model.TotalPages, 5); p++)
+                    {
+                        <a class="lp-page-num @(p == Model.Page ? "active" : "")" asp-action="Index" asp-route-statusFilter="@Model.StatusFilter" asp-route-page="@p">@p</a>
+                    }
+                    @if (Model.TotalPages > 5)
+                    {
+                        <span class="lp-page-ellipsis">...</span>
+                    }
+                </div>
+                @if (Model.Page < Model.TotalPages)
+                {
+                    <a class="lp-page-arrow" asp-action="Index" asp-route-statusFilter="@Model.StatusFilter" asp-route-page="@(Model.Page + 1)" aria-label="Trang sau"><i class="bi bi-chevron-right"></i></a>
+                }
+            </nav>
+        }
     </div>
 </div>

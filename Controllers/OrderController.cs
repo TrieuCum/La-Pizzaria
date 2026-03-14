@@ -7,6 +7,8 @@ using LaPizzaria.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using LaPizzaria.ViewModels;
 
 namespace LaPizzaria.Controllers
 {
@@ -17,20 +19,66 @@ namespace LaPizzaria.Controllers
         private readonly IQrService _qrService;
         private readonly IComboService _comboService;
         private readonly IVoucherService _voucherService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService)
+        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService, UserManager<ApplicationUser> userManager)
         {
             _db = db;
             _orderService = orderService;
             _qrService = qrService;
             _comboService = comboService;
             _voucherService = voucherService;
+            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? statusFilter, int page = 1)
         {
-            var orders = await _db.Orders.Include(o => o.OrderDetails).ToListAsync();
-            return View(orders);
+            if (page < 1) page = 1;
+            const int pageSize = 5;
+            var userId = _userManager.GetUserId(User);
+            var query = _db.Orders
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+                .AsQueryable();
+            if (!string.IsNullOrEmpty(userId))
+                query = query.Where(o => o.UserId == userId);
+
+            var all = await query.ToListAsync();
+            var allCount = all.Count;
+            var deliveringCount = all.Count(o => o.OrderStatus == "Delivering" || o.OrderStatus == "Preparing" || o.OrderStatus == "Ready" || o.OrderStatus == "Confirmed" || o.OrderStatus == "Pending");
+            var completedCount = all.Count(o => o.OrderStatus == "Completed");
+            var cancelledCount = all.Count(o => o.OrderStatus == "Cancelled");
+
+            if (!string.IsNullOrWhiteSpace(statusFilter))
+            {
+                if (statusFilter == "Delivering")
+                    query = query.Where(o => o.OrderStatus == "Delivering" || o.OrderStatus == "Preparing" || o.OrderStatus == "Ready" || o.OrderStatus == "Confirmed" || o.OrderStatus == "Pending");
+                else if (statusFilter == "Rated")
+                    query = query.Where(o => false);
+                else
+                    query = query.Where(o => o.OrderStatus == statusFilter);
+            }
+            var totalCount = await query.CountAsync();
+            var orders = await query
+                .OrderByDescending(o => o.OrderDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var model = new OrderHistoryViewModel
+            {
+                Orders = orders,
+                StatusFilter = statusFilter,
+                AllCount = allCount,
+                DeliveringCount = deliveringCount,
+                CompletedCount = completedCount,
+                RatedCount = 0,
+                CancelledCount = cancelledCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+            return View(model);
         }
 
         [HttpGet]
@@ -111,6 +159,20 @@ namespace LaPizzaria.Controllers
 
             var total = Math.Max(0, subtotal - voucherDiscount);
             return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = validatedVouchers });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var order = await _db.Orders
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+                .Include(o => o.User)
+                .Include(o => o.OrderVouchers!)
+                .ThenInclude(ov => ov.Voucher)
+                .FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) return NotFound();
+            return View(order);
         }
 
         [HttpGet]
