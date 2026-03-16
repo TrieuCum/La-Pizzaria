@@ -33,7 +33,7 @@
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Menu" ? "active" : "")" asp-controller="Menu" asp-action="Index">Món ăn</a></li>
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "VoucherCustomer" ? "active" : "")" asp-controller="VoucherCustomer" asp-action="Index">Khuyến mãi</a></li>
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Order" ? "active" : "")" asp-controller="Order" asp-action="Index">Đơn hàng của tôi</a></li>
-                            <li><a class="nav-item-link" href="#">Tích điểm</a></li>
+                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Loyalty" ? "active" : "")" asp-controller="Loyalty" asp-action="Index">Tích điểm</a></li>
                         </ul>
                         <div class="d-flex align-items-center gap-3">
                             <div class="search-container-v d-none d-xl-flex">

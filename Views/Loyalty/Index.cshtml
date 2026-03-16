@@ -1,0 +1,210 @@
+@{
+    ViewData["Title"] = "Tích điểm & Ưu đãi";
+    var points = (int)(ViewBag.Points ?? 0);
+    var tier = (string)(ViewBag.Tier ?? "Đồng");
+    var nextTierName = (string)(ViewBag.NextTierName ?? "Vàng");
+    var nextTierTarget = (int)(ViewBag.NextTierTarget ?? 1500);
+    var progress = Math.Clamp(points * 100 / Math.Max(1, nextTierTarget), 0, 100);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+    <link rel="stylesheet" href="~/css/loyalty.css" asp-append-version="true" />
+}
+
+<div class="lp-loyalty-page">
+    <div class="lp-loyalty-wrap">
+        <div class="lp-loyalty-header mb-3">
+            <h1>Tích điểm &amp; Ưu đãi</h1>
+            <p>Tích lũy điểm thưởng qua mỗi đơn hàng và đổi lấy những phần quà hấp dẫn.</p>
+        </div>
+
+        <div class="lp-loyalty-summary mb-4" style="--lp-progress:@progress%">
+            <div class="lp-loyalty-points">
+                <div class="lp-loyalty-points-label">Tổng điểm tích lũy</div>
+                <div class="lp-loyalty-points-value">
+                    <strong>@points.ToString("N0")</strong>
+                    <span class="fw-semibold">điểm</span>
+                </div>
+                <div class="lp-loyalty-tier">
+                    <span class="material-symbols-outlined lp-icon">stars</span>
+                    <span>Thành viên @tier</span>
+                </div>
+            </div>
+            <div class="lp-loyalty-progress">
+                <div class="lp-loyalty-progress-title">Tiến độ thăng hạng @nextTierName</div>
+                <div class="lp-loyalty-progress-sub">
+                    Bạn cần thêm <span class="fw-bold text-brand-orange">@Math.Max(0, nextTierTarget - points).ToString("N0") điểm</span> nữa để thăng hạng.
+                </div>
+                <div class="lp-loyalty-bar">
+                    <div class="lp-loyalty-bar-fill"></div>
+                </div>
+                <div class="lp-loyalty-bar-steps">
+                    <span>Bạc (500)</span>
+                    <span>@nextTierName (@nextTierTarget.ToString("N0"))</span>
+                </div>
+            </div>
+            <div class="lp-loyalty-progress-right">
+                <div class="lp-loyalty-progress-main">@points.ToString("N0")</div>
+                <div class="lp-loyalty-progress-subnum">/@nextTierTarget.ToString("N0")</div>
+            </div>
+        </div>
+
+        <div class="lp-loyalty-grid">
+            <div>
+                <div class="lp-card mb-3">
+                    <div class="lp-card-header">
+                        <div class="lp-card-title">
+                            <span class="material-symbols-outlined lp-icon">workspace_premium</span>
+                            <span>Hạng thành viên</span>
+                        </div>
+                    </div>
+                    <div class="lp-tier-grid">
+                        <div class="lp-tier-card @(tier == "Đồng" ? "current" : "")">
+                            @if (tier == "Đồng") { <div class="lp-tier-current-badge">Hiện tại</div> }
+                            <div class="lp-tier-name">Đồng</div>
+                            <div class="lp-tier-range">0 - 500 điểm</div>
+                            <div class="lp-tier-desc">Ưu đãi cơ bản cho khách mới.</div>
+                        </div>
+                        <div class="lp-tier-card @(tier == "Bạc" ? "current" : "")">
+                            @if (tier == "Bạc") { <div class="lp-tier-current-badge">Hiện tại</div> }
+                            <div class="lp-tier-name">Bạc</div>
+                            <div class="lp-tier-range">501 - 1.500 điểm</div>
+                            <div class="lp-tier-desc">Tích điểm x1.2, quà sinh nhật.</div>
+                        </div>
+                        <div class="lp-tier-card @(tier == "Vàng" ? "current" : "")">
+                            @if (tier == "Vàng") { <div class="lp-tier-current-badge">Hiện tại</div> }
+                            <div class="lp-tier-name">Vàng</div>
+                            <div class="lp-tier-range">1.501 - 3.000 điểm</div>
+                            <div class="lp-tier-desc">Tích điểm x1.5, freeship &lt; 5km.</div>
+                        </div>
+                        <div class="lp-tier-card">
+                            <div class="lp-tier-name">Kim Cương</div>
+                            <div class="lp-tier-range">3.000+ điểm</div>
+                            <div class="lp-tier-desc">Tích điểm x2, ưu đãi VIP.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lp-card">
+                    <div class="lp-card-header">
+                        <div class="lp-card-title">
+                            <span class="material-symbols-outlined lp-icon">redeem</span>
+                            <span>Đổi ưu đãi</span>
+                        </div>
+                        <a href="#" class="lp-card-link">Xem tất cả</a>
+                    </div>
+                    <div class="lp-redeem-grid">
+                        <div class="lp-redeem-card">
+                            <div class="lp-redeem-body">
+                                <div class="lp-redeem-title">Giảm 10% tổng hóa đơn</div>
+                                <div class="lp-redeem-desc">Áp dụng cho đơn từ 200.000đ, tối đa 50.000đ.</div>
+                            </div>
+                            <div class="lp-redeem-footer">
+                                <span class="lp-pill-points">500 điểm</span>
+                                <button class="lp-btn-small">Đổi ngay</button>
+                            </div>
+                        </div>
+                        <div class="lp-redeem-card">
+                            <div class="lp-redeem-body">
+                                <div class="lp-redeem-title">Tặng 1 Coca-Cola 1.5L</div>
+                                <div class="lp-redeem-desc">Nhận 1 chai Coca cho bất kỳ đơn hàng.</div>
+                            </div>
+                            <div class="lp-redeem-footer">
+                                <span class="lp-pill-points">200 điểm</span>
+                                <button class="lp-btn-small">Đổi ngay</button>
+                            </div>
+                        </div>
+                        <div class="lp-redeem-card">
+                            <div class="lp-redeem-body">
+                                <div class="lp-redeem-title">Freeship dưới 5km</div>
+                                <div class="lp-redeem-desc">Miễn phí giao hàng cho khoảng cách &lt; 5km.</div>
+                            </div>
+                            <div class="lp-redeem-footer">
+                                <span class="lp-pill-points">300 điểm</span>
+                                <button class="lp-btn-small">Đổi ngay</button>
+                            </div>
+                        </div>
+                        <div class="lp-redeem-card">
+                            <div class="lp-redeem-body">
+                                <div class="lp-redeem-title">Tặng Pizza size M</div>
+                                <div class="lp-redeem-desc">Miễn phí 1 pizza size M dòng Classic.</div>
+                            </div>
+                            <div class="lp-redeem-footer">
+                                <span class="lp-pill-points text-muted">2.000 điểm</span>
+                                <button class="lp-btn-small" disabled>Thiếu điểm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="lp-card">
+                    <div class="lp-card-header">
+                        <div class="lp-card-title">
+                            <span class="material-symbols-outlined lp-icon">history</span>
+                            <span>Lịch sử điểm</span>
+                        </div>
+                        <a href="#" class="lp-card-link">Xem thêm</a>
+                    </div>
+                    <table class="lp-history-table">
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="lp-history-title">Đơn hàng #8823</div>
+                                    <div class="lp-history-date">20/10/2023</div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="lp-history-change earn">+150</div>
+                                    <div class="lp-history-balance">1.250</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lp-history-title">Đổi voucher 10%</div>
+                                    <div class="lp-history-date">18/10/2023</div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="lp-history-change spend">-500</div>
+                                    <div class="lp-history-balance">1.100</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lp-history-title">Đơn hàng #7712</div>
+                                    <div class="lp-history-date">10/10/2023</div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="lp-history-change earn">+200</div>
+                                    <div class="lp-history-balance">1.600</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lp-history-title">Đánh giá món ăn</div>
+                                    <div class="lp-history-date">05/10/2023</div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="lp-history-change earn">+50</div>
+                                    <div class="lp-history-balance">1.400</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lp-history-title">Thăng hạng Bạc</div>
+                                    <div class="lp-history-date">01/10/2023</div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="lp-history-change">-</div>
+                                    <div class="lp-history-balance">1.350</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
