@@ -334,6 +334,102 @@
   color: #a3a3a3;
 }
 
+/* Voucher của tôi */
+.lp-voucher-card {
+  margin-top: 20px;
+}
+
+.lp-voucher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-voucher-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e0db;
+  background: #ffffff;
+}
+
+.lp-voucher-item-muted {
+  opacity: 0.7;
+}
+
+.lp-voucher-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lp-voucher-icon-green {
+  background: #ecfdf3;
+  color: #16a34a;
+}
+
+.lp-voucher-icon-gray {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.lp-voucher-icon-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.lp-voucher-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.lp-voucher-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #181411;
+}
+
+.lp-voucher-meta {
+  font-size: 11px;
+  color: #8a7560;
+  margin-top: 2px;
+}
+
+.lp-voucher-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.lp-voucher-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lp-voucher-badge-green {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.lp-voucher-badge-gray {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.lp-voucher-badge-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 .lp-history-table {
   width: 100%;
   border-collapse: collapse;
