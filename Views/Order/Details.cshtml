@@ -21,9 +21,17 @@
     if (Model.OrderStatus == "Ready" || Model.OrderStatus == "Delivering") step = 2;
     else if (Model.OrderStatus == "Completed" || Model.OrderStatus == "Cancelled") step = 3;
     var progressPercent = step == 1 ? 35 : step == 2 ? 70 : 100;
-    var userName = Model.User != null ? $"{Model.User.FirstName} {Model.User.LastName}".Trim() : "—";
-    if (string.IsNullOrEmpty(userName)) userName = Model.User?.UserName ?? "—";
-    var userPhone = Model.User?.PhoneNumber ?? "—";
+    var userName = "—";
+    var userPhone = "—";
+    var deliveryAddress = Model.DeliveryAddress;
+    if (Model.User != null)
+    {
+        userName = $"{Model.User.FirstName} {Model.User.LastName}".Trim();
+        if (string.IsNullOrWhiteSpace(userName)) userName = Model.User.UserName ?? Model.User.Email ?? "Khách hàng";
+        userPhone = !string.IsNullOrWhiteSpace(Model.User.PhoneNumber) ? Model.User.PhoneNumber : "—";
+        if (string.IsNullOrWhiteSpace(deliveryAddress) && !string.IsNullOrWhiteSpace(Model.User.Address)) deliveryAddress = Model.User.Address;
+    }
+    if (string.IsNullOrWhiteSpace(deliveryAddress)) deliveryAddress = "—";
 }
 
 @section Styles {
@@ -50,9 +58,9 @@
                 </div>
             </div>
             <div class="order-detail-head-btns">
-                <button type="button" class="order-detail-btn" onclick="window.print()">
+                <a asp-controller="Order" asp-action="PrintInvoice" asp-route-id="@Model.Id" target="_blank" class="order-detail-btn text-decoration-none">
                     <i class="bi bi-printer"></i> In hóa đơn
-                </button>
+                </a>
                 <a asp-controller="Menu" asp-action="Index" class="order-detail-btn primary">Đặt lại đơn này</a>
             </div>
         </div>
@@ -125,13 +133,13 @@
                         <h3 class="mb-0">Thông tin giao hàng</h3>
                     </div>
                     <div class="block">
-                        <div class="label">Người nhận</div>
+                        <div class="label">NGƯỜI NHẬN</div>
                         <div class="value">@userName</div>
                         <div class="value">@userPhone</div>
                     </div>
                     <div class="block">
-                        <div class="label">Địa chỉ</div>
-                        <div class="value">@(string.IsNullOrWhiteSpace(Model.DeliveryAddress) ? "—" : Model.DeliveryAddress)</div>
+                        <div class="label">ĐỊA CHỈ</div>
+                        <div class="value">@deliveryAddress</div>
                     </div>
                     @if (!string.IsNullOrWhiteSpace(Model.Notes))
                     {

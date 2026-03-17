@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using LaPizzaria.ViewModels;
+using LaPizzaria.Helpers;
+using Microsoft.Extensions.Configuration;
 
 namespace LaPizzaria.Controllers
 {
@@ -20,8 +22,9 @@ namespace LaPizzaria.Controllers
         private readonly IComboService _comboService;
         private readonly IVoucherService _voucherService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IConfiguration _config;
 
-        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService, UserManager<ApplicationUser> userManager)
+        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService, UserManager<ApplicationUser> userManager, IConfiguration config)
         {
             _db = db;
             _orderService = orderService;
@@ -29,6 +32,7 @@ namespace LaPizzaria.Controllers
             _comboService = comboService;
             _voucherService = voucherService;
             _userManager = userManager;
+            _config = config;
         }
 
         public async Task<IActionResult> Index(string? statusFilter, int page = 1)
@@ -173,6 +177,88 @@ namespace LaPizzaria.Controllers
                 .FirstOrDefaultAsync(o => o.Id == id);
             if (order == null) return NotFound();
             return View(order);
+        }
+
+        /// <summary>Trang in hóa đơn theo mẫu LP/26E (chỉ nội dung in, không layout).</summary>
+        [HttpGet]
+        public async Task<IActionResult> PrintInvoice(int id)
+        {
+            var order = await _db.Orders
+                .Include(o => o.OrderDetails!).ThenInclude(od => od.Product)
+                .Include(o => o.User)
+                .Include(o => o.OrderVouchers!).ThenInclude(ov => ov.Voucher)
+                .FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) return NotFound();
+
+            var subtotal = order.OrderDetails?.Sum(d => d.Subtotal) ?? 0;
+            var voucherDiscount = 0m;
+            if (order.OrderVouchers != null)
+            {
+                foreach (var ov in order.OrderVouchers.Take(5))
+                {
+                    var v = ov.Voucher;
+                    if (v != null && v.VoucherType == "Percentage")
+                        voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 0);
+                    else if (v != null && v.VoucherType == "FixedAmount")
+                        voucherDiscount += v.DiscountAmount;
+                }
+            }
+            var deliveryFee = 20000m;
+            var totalBeforeTax = subtotal + deliveryFee - voucherDiscount;
+            if (totalBeforeTax < 0) totalBeforeTax = 0;
+            var taxPercent = 10m;
+            var taxAmount = Math.Round(totalBeforeTax * (taxPercent / 100m), 0);
+            var grandTotal = totalBeforeTax + taxAmount;
+
+            var buyerName = "—";
+            var buyerPhone = "—";
+            var buyerAddress = order.DeliveryAddress ?? "—";
+            if (order.User != null)
+            {
+                buyerName = $"{order.User.FirstName} {order.User.LastName}".Trim();
+                if (string.IsNullOrWhiteSpace(buyerName)) buyerName = order.User.UserName ?? order.User.Email ?? "Khách hàng";
+                buyerPhone = order.User.PhoneNumber ?? "—";
+                if (string.IsNullOrWhiteSpace(buyerAddress) || buyerAddress == "—") buyerAddress = order.User.Address ?? "—";
+            }
+
+            var yearSuffix = DateTime.Now.ToString("yy");
+            var vm = new InvoicePrintViewModel
+            {
+                Order = order,
+                InvoiceSymbol = _config["Invoice:Symbol"] ?? "LP/26E",
+                InvoiceNumber = (order.Id).ToString("D6"),
+                IssueDate = order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                SellerName = _config["Invoice:SellerName"] ?? "Công ty TNHH LaPizzaria",
+                SellerTaxCode = _config["Invoice:SellerTaxCode"] ?? "0312345678",
+                SellerAddress = _config["Invoice:SellerAddress"] ?? "193 Đỗ Văn Thi, Phường, Biên Hòa, Đồng Nai",
+                SellerPhone = _config["Invoice:SellerPhone"] ?? "0901 234 567",
+                SellerEmail = _config["Invoice:SellerEmail"] ?? "support@lapizzaria.vn",
+                BuyerName = buyerName,
+                BuyerPhone = buyerPhone,
+                BuyerAddress = buyerAddress,
+                Subtotal = subtotal,
+                DeliveryFee = deliveryFee,
+                VoucherDiscount = voucherDiscount,
+                TotalBeforeTax = totalBeforeTax,
+                TaxPercent = taxPercent,
+                TaxAmount = taxAmount,
+                GrandTotal = grandTotal,
+                AmountInWords = NumberToWordsVietnamese.ToWords(grandTotal),
+                PaymentMethodDisplay = string.IsNullOrEmpty(order.PaymentMethod) ? "Chưa chọn" : order.PaymentMethod,
+                PaymentStatus = "Chưa thanh toán",
+                OrderCode = "PH" + order.Id,
+                OrderDateDisplay = order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                OrderStatusDisplay = order.OrderStatus ?? "Đang chuẩn bị",
+                Lines = order.OrderDetails?.Select((od, i) => new InvoicePrintLine
+                {
+                    Stt = i + 1,
+                    ProductName = od.Product?.Name ?? "Món #" + od.ProductId,
+                    Quantity = od.Quantity,
+                    UnitPrice = od.UnitPrice
+                }).ToList() ?? new List<InvoicePrintLine>()
+            };
+
+            return View(vm);
         }
 
         [HttpGet]

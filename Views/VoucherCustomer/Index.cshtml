@@ -1,6 +1,13 @@
+@model LaPizzaria.ViewModels.VoucherCustomerIndexViewModel
+@using LaPizzaria.Models
 @{
     ViewData["Title"] = "Ưu đãi & Khuyến mãi";
     Layout = "_Layout";
+    string SanitizeUrl(string? url) {
+        if (string.IsNullOrEmpty(url)) return "/images/v17_2002.png";
+        if (url.StartsWith("file:///", StringComparison.OrdinalIgnoreCase)) return "/images/" + System.IO.Path.GetFileName(url);
+        return url;
+    }
 }
 
 <style>
@@ -160,11 +167,79 @@
         align-items: center;
     }
 
+    .voucher-code-box.saved {
+        background: #fefce8;
+        border: 1px dashed #e2e8f0;
+    }
+
+    .voucher-code-box .voucher-code-label {
+        display: none;
+        font-weight: 700;
+        font-size: 12px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .voucher-code-box.saved .voucher-code-label {
+        display: inline;
+    }
+
+    .voucher-code-box.saved .voucher-code-text {
+        color: #F97316;
+    }
+
+    .voucher-code-box.saved .voucher-copy-btn {
+        display: none;
+    }
+
     .voucher-code-text {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         font-weight: 800;
         font-size: 16px;
         color: #0f172a;
+    }
+
+    .voucher-btn-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .voucher-btn-row .voucher-primary-btn {
+        margin-top: 0;
+        flex: 1;
+    }
+
+    .voucher-primary-btn.saved {
+        background: #334155;
+        color: #fff;
+        box-shadow: none;
+        cursor: default;
+    }
+
+    .voucher-primary-btn.saved:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .voucher-saved-check {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 12px;
+        background: #fefce8;
+        border: 1px dashed #e2e8f0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        color: #F97316;
+        font-size: 20px;
+    }
+
+    .voucher-saved-check.show {
+        display: flex;
     }
 
     .voucher-primary-btn,
@@ -282,6 +357,21 @@
         0% { text-shadow: 0 0 0 rgba(248, 113, 22, 0); }
         100% { text-shadow: 0 10px 30px rgba(248, 113, 22, 0.55); }
     }
+
+    .voucher-cat-pill {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    .voucher-cat-pill:hover { color: #F97316; border-color: #F97316; background: #fff7ed; }
+    .voucher-cat-pill.active { background: #F97316; color: #fff; border-color: #F97316; }
 </style>
 
 <section class="py-5" style="background-color:#f8f7f5;">
@@ -295,123 +385,53 @@
         </div>
 
         <div class="voucher-tabs">
-            <a href="#" class="voucher-tab active">Tất cả vouchers</a>
-            <a href="#" class="voucher-tab">Món ăn</a>
-            <a href="#" class="voucher-tab">Vận chuyển</a>
-            <a href="#" class="voucher-tab">Thành viên</a>
+            <a asp-action="Index" asp-route-tab="vouchers" class="voucher-tab @(Model.CurrentTab == "vouchers" ? "active" : "")">Tất cả vouchers</a>
+            <a asp-action="Index" asp-route-tab="monan" asp-route-category="All" class="voucher-tab @(Model.CurrentTab == "monan" ? "active" : "")">Món ăn</a>
+            <a asp-action="Index" asp-route-tab="vanchuyen" class="voucher-tab @(Model.CurrentTab == "vanchuyen" ? "active" : "")">Vận chuyển</a>
+            <a asp-action="Index" asp-route-tab="thanhvien" class="voucher-tab @(Model.CurrentTab == "thanhvien" ? "active" : "")">Thành viên</a>
         </div>
 
-        <div class="voucher-grid">
-            <div class="voucher-card">
-                <div class="voucher-card-banner">
-                    <img src="~/images/v17_2002.png" alt="Margherita Monday" />
-                    <span class="voucher-badge">50% OFF</span>
-                    <div class="voucher-title">Margherita Monday</div>
-                </div>
-                <div class="voucher-card-body">
-                    <div class="voucher-expiry">
-                        <i class="bi bi-clock"></i>
-                        Hết hạn: 15/12/2026
+        <div id="panel-vouchers" class="voucher-tab-panel" style="@(Model.CurrentTab == "vouchers" ? "" : "display:none;")">
+        <div class="voucher-grid" id="vouchers">
+            @if (Model.Vouchers != null && Model.Vouchers.Any())
+            {
+                var imgs = new[] { "v17_2002.png", "v17_2035.png", "v17_2068.png", "v17_2101.png", "v17_2134.png" };
+                var idx = 0;
+                @foreach (var v in Model.Vouchers)
+                {
+                    var imgSrc = imgs[idx % imgs.Length];
+                    idx++;
+                    var badge = v.VoucherType == "Percentage" ? $"{v.DiscountPercent}% OFF" : v.VoucherType == "FixedAmount" ? $"{v.DiscountAmount:N0}₫" : "FREESHIP";
+                    var isSaved = Model.SavedVoucherIds.Contains(v.Id);
+                    <div class="voucher-card" data-voucher-id="@v.Id">
+                        <div class="voucher-card-banner">
+                            <img src="~/images/@imgSrc" alt="@v.Name" />
+                            <span class="voucher-badge">@badge</span>
+                            <div class="voucher-title">@v.Name</div>
+                        </div>
+                        <div class="voucher-card-body">
+                            <div class="voucher-expiry">
+                                <i class="bi bi-clock"></i>
+                                @(v.ExpiresAtUtc.HasValue ? $"Hết hạn: {v.ExpiresAtUtc.Value:dd/MM/yyyy}" : "Không giới hạn")
+                            </div>
+                            <p class="voucher-desc">
+                                @if (v.VoucherType == "Percentage") { <text>Giảm @v.DiscountPercent% cho đơn hàng. Min @v.MinOrderValue.ToString("N0")₫.</text> }
+                                else if (v.VoucherType == "FixedAmount") { <text>Giảm @v.DiscountAmount.ToString("N0")₫. Min đơn @v.MinOrderValue.ToString("N0")₫.</text> }
+                                else { <text>Miễn phí vận chuyển.</text> }
+                            </p>
+                            <div class="voucher-code-box @(isSaved ? "saved" : "")">
+                                <span class="voucher-code-label">MÃ ƯU ĐÃI</span>
+                                <span class="voucher-code-text">@v.Code</span>
+                                <button type="button" class="btn btn-link p-0 text-secondary voucher-copy-btn" onclick="copyVoucher('@v.Code')"><i class="bi bi-clipboard"></i></button>
+                            </div>
+                            <div class="voucher-btn-row">
+                                <button type="button" class="voucher-primary-btn @(isSaved ? "saved" : "")" data-voucher-id="@v.Id" data-code="@v.Code" @(isSaved ? "disabled" : "") onclick="saveVoucherCode(this)">@(isSaved ? "Đã nhận mã" : "Lưu mã")</button>
+                                <span class="voucher-saved-check @(isSaved ? "show" : "")" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+                            </div>
+                        </div>
                     </div>
-                    <p class="voucher-desc">
-                        Giảm ngay 50% cho tất cả các loại bánh Margherita. Áp dụng cho cả ăn tại chỗ và mang về.
-                    </p>
-                    <div class="voucher-code-box">
-                        <span class="voucher-code-text">PIZZA50</span>
-                        <i class="bi bi-info-circle text-secondary"></i>
-                    </div>
-                    <button class="voucher-primary-btn">Lưu mã</button>
-                </div>
-            </div>
-
-            <div class="voucher-card">
-                <div class="voucher-card-banner">
-                    <img src="~/images/v17_2035.png" alt="Combo pizza tiệc tùng" />
-                    <span class="voucher-badge">$10 OFF</span>
-                    <div class="voucher-title">Combo pizza tiệc tùng</div>
-                </div>
-                <div class="voucher-card-body">
-                    <div class="voucher-expiry">
-                        <i class="bi bi-clock"></i>
-                        Hết hạn: 15/12/2026
-                    </div>
-                    <p class="voucher-desc">
-                        Giảm ngay 10$ cho combo party từ 3 bánh trở lên. Rất hợp cho buổi tụ tập cuối tuần.
-                    </p>
-                    <div class="voucher-code-box">
-                        <span class="voucher-code-text">COMBO10</span>
-                        <i class="bi bi-info-circle text-secondary"></i>
-                    </div>
-                    <button class="voucher-primary-btn">Lưu mã</button>
-                </div>
-            </div>
-
-            <div class="voucher-card">
-                <div class="voucher-card-banner">
-                    <img src="~/images/v17_2068.png" alt="Miễn phí bánh mì tỏi" />
-                    <span class="voucher-badge">FREE SIDE</span>
-                    <div class="voucher-title">Miễn phí bánh mì tỏi</div>
-                </div>
-                <div class="voucher-card-body">
-                    <div class="voucher-expiry">
-                        <i class="bi bi-clock"></i>
-                        Hết hạn: 15/12/2026
-                    </div>
-                    <p class="voucher-desc">
-                        Tặng kèm một phần bánh mì tỏi cho mọi đơn hàng pizza từ 2 bánh trở lên.
-                    </p>
-                    <div class="voucher-code-box">
-                        <span class="voucher-code-text">GARLICFREE</span>
-                        <i class="bi bi-check-circle-fill text-warning"></i>
-                    </div>
-                    <button class="voucher-secondary-btn">Đã nhận mã</button>
-                </div>
-            </div>
-
-            <div class="voucher-card">
-                <div class="voucher-card-banner">
-                    <img src="~/images/v17_2101.png" alt="Student Discount" />
-                    <span class="voucher-badge">25% OFF</span>
-                    <div class="voucher-title">Ưu đãi sinh viên</div>
-                </div>
-                <div class="voucher-card-body">
-                    <div class="voucher-expiry">
-                        <i class="bi bi-clock"></i>
-                        Hết hạn: 11/12/2026
-                    </div>
-                    <p class="voucher-desc">
-                        Giảm 25% cho sinh viên khi xuất trình thẻ. Áp dụng tối đa 1 đơn/ngày.
-                    </p>
-                    <div class="voucher-code-box">
-                        <span class="voucher-code-text">STUDY25</span>
-                        <i class="bi bi-info-circle text-secondary"></i>
-                    </div>
-                    <button class="voucher-secondary-btn">Hết lượt</button>
-                </div>
-            </div>
-
-            <div class="voucher-card">
-                <div class="voucher-card-banner">
-                    <img src="~/images/v17_2134.png" alt="Freeship Extra" />
-                    <span class="voucher-badge">FREESHIP</span>
-                    <div class="voucher-title">Freeship Extra</div>
-                </div>
-                <div class="voucher-card-body">
-                    <div class="voucher-expiry">
-                        <i class="bi bi-clock"></i>
-                        Hết hạn: 15/12/2026
-                    </div>
-                    <p class="voucher-desc">
-                        Miễn phí vận chuyển cho đơn hàng từ 200.000đ, tối đa 30.000đ phí giao hàng.
-                    </p>
-                    <div class="voucher-code-box">
-                        <span class="voucher-code-text">DELIVERY0</span>
-                        <i class="bi bi-info-circle text-secondary"></i>
-                    </div>
-                    <button class="voucher-primary-btn">Lưu mã</button>
-                </div>
-            </div>
-
+                }
+            }
             <div class="voucher-empty-card">
                 <i class="bi bi-plus-circle mb-2" style="font-size:36px;"></i>
                 <h5 class="fw-bold text-dark mb-1">Đang cập nhật thêm!</h5>
@@ -419,6 +439,144 @@
                     Chúng tôi bổ sung các ưu đãi mới vào mỗi sáng Thứ Ba hàng tuần.
                 </p>
             </div>
+        </div>
+        </div>
+
+        <!-- Tab Món ăn: bộ lọc theo loại món, khi bấm vào món thì hiện các món thuộc loại đó -->
+        <div id="panel-monan" class="voucher-tab-panel" style="@(Model.CurrentTab == "monan" ? "" : "display:none;")">
+        <div class="mt-4">
+            <h2 class="voucher-hero-title mb-3">Món ăn đang ưu đãi</h2>
+            <p class="voucher-hero-subtitle mb-4">Chọn loại món để xem các món tương ứng.</p>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                @foreach (var cat in Model.CategoryFilters)
+                {
+                    <a asp-action="Index" asp-route-tab="monan" asp-route-category="@cat.Value"
+                       class="voucher-cat-pill @(Model.CurrentCategory == cat.Value ? "active" : "")">@cat.Label</a>
+                }
+            </div>
+            <div class="row g-4">
+                @if (Model.CurrentCategory == "Combo" || Model.CurrentCategory == "All")
+                {
+                    @foreach (var c in Model.Combos)
+                    {
+                        var firstImg = c.Items?.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl;
+                        var thumb = SanitizeUrl(!string.IsNullOrEmpty(c.ImageUrl) ? c.ImageUrl : firstImg);
+                        var orig = c.Items?.Where(i => i.Product != null).Sum(i => i.Product!.Price * Math.Max(1, i.MinQuantity)) ?? 0;
+                        var finalPrice = orig - c.DiscountAmount;
+                        if (c.DiscountPercent.HasValue && c.DiscountPercent > 0) finalPrice = finalPrice * (1 - c.DiscountPercent.Value / 100m);
+                        <div class="col-md-6 col-lg-4">
+                            <div class="voucher-card h-100">
+                                <div class="voucher-card-banner" style="height:140px;">
+                                    <img src="@thumb" alt="@c.Name" style="object-fit:cover;width:100%;height:100%;" onerror="this.src='/images/v17_2035.png'" />
+                                    <span class="voucher-badge">COMBO</span>
+                                    <div class="voucher-title">@c.Name</div>
+                                </div>
+                                <div class="voucher-card-body">
+                                    <p class="voucher-desc">@(c.Description ?? string.Join(", ", c.Items?.Select(i => i.Product?.Name) ?? Array.Empty<string>()))</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <span class="fw-bold text-danger">@finalPrice.ToString("N0")₫</span>
+                                        <button type="button" class="voucher-primary-btn py-2 px-3 small" onclick="cart.add({ id: @c.Id, name: '@c.Name.Replace("'","\\'")', price: @finalPrice, imageUrl: '@thumb', type: 'combo' }); typeof window.showToast === 'function' && window.showToast('Đã thêm combo vào giỏ', 'success');">Thêm vào giỏ</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                @if (Model.CurrentCategory != "Combo")
+                {
+                    @foreach (var p in Model.Products)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="voucher-card h-100">
+                                <div class="voucher-card-banner" style="height:140px;">
+                                    <img src="@SanitizeUrl(p.ImageUrl)" alt="@p.Name" style="object-fit:cover;width:100%;height:100%;" onerror="this.src='/images/v17_2002.png'" />
+                                    <span class="voucher-badge">@p.Category</span>
+                                    <div class="voucher-title">@p.Name</div>
+                                </div>
+                                <div class="voucher-card-body">
+                                    <p class="voucher-desc">@(p.Description ?? "Món ngon từ La Pizzaria.")</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <span class="fw-bold text-danger">@p.Price.ToString("N0")₫</span>
+                                        <button type="button" class="voucher-primary-btn py-2 px-3 small" onclick="cart.add({ id: @p.Id, name: '@p.Name.Replace("'","\\'")', price: @p.Price, imageUrl: '@SanitizeUrl(p.ImageUrl)', type: 'product' }); typeof window.showToast === 'function' && window.showToast('Đã thêm vào giỏ', 'success');">Thêm vào giỏ</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                @if (!Model.Products.Any() && (Model.CurrentCategory != "Combo" || !Model.Combos.Any()) && Model.CurrentCategory != "All")
+                {
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">Chưa có món nào thuộc loại này.</p>
+                    </div>
+                }
+                @if (Model.CurrentCategory == "All" && !Model.Products.Any() && !Model.Combos.Any())
+                {
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">Chưa có món nào. Hãy quay lại sau.</p>
+                    </div>
+                }
+            </div>
+        </div>
+        </div>
+
+        <!-- Tab Vận chuyển: voucher freeship -->
+        <div id="panel-vanchuyen" class="voucher-tab-panel" style="@(Model.CurrentTab == "vanchuyen" ? "" : "display:none;")">
+        <div class="voucher-grid mt-4">
+            @{
+                var freeshipVouchers = (Model.Vouchers ?? new List<Voucher>()).Where(v => v.VoucherType == "FreeShipping").ToList();
+            }
+            @if (freeshipVouchers.Any())
+            {
+                var imgs = new[] { "v17_2134.png", "v17_2035.png" };
+                var i = 0;
+                @foreach (var v in freeshipVouchers)
+                {
+                    var isSavedFreeship = Model.SavedVoucherIds.Contains(v.Id);
+                    <div class="voucher-card" data-voucher-id="@v.Id">
+                        <div class="voucher-card-banner">
+                            <img src="~/images/@imgs[i % 2]" alt="@v.Name" />
+                            <span class="voucher-badge">FREESHIP</span>
+                            <div class="voucher-title">@v.Name</div>
+                        </div>
+                        <div class="voucher-card-body">
+                            <div class="voucher-expiry"><i class="bi bi-clock"></i> @(v.ExpiresAtUtc.HasValue ? $"Hết hạn: {v.ExpiresAtUtc.Value:dd/MM/yyyy}" : "Không giới hạn")</div>
+                            <p class="voucher-desc">@v.Name — Miễn phí vận chuyển.</p>
+                            <div class="voucher-code-box @(isSavedFreeship ? "saved" : "")">
+                                <span class="voucher-code-label">MÃ ƯU ĐÃI</span>
+                                <span class="voucher-code-text">@v.Code</span>
+                                <button type="button" class="btn btn-link p-0 text-secondary voucher-copy-btn" onclick="copyVoucher('@v.Code')"><i class="bi bi-clipboard"></i></button>
+                            </div>
+                            <div class="voucher-btn-row">
+                                <button type="button" class="voucher-primary-btn @(isSavedFreeship ? "saved" : "")" data-voucher-id="@v.Id" data-code="@v.Code" @(isSavedFreeship ? "disabled" : "") onclick="saveVoucherCode(this)">@(isSavedFreeship ? "Đã nhận mã" : "Lưu mã")</button>
+                                <span class="voucher-saved-check @(isSavedFreeship ? "show" : "")" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    i++;
+                }
+            }
+            else
+            {
+                <div class="voucher-empty-card" style="grid-column: 1 / -1;">
+                    <i class="bi bi-truck mb-2" style="font-size:36px;"></i>
+                    <h5 class="fw-bold text-dark mb-1">Ưu đãi vận chuyển</h5>
+                    <p class="text-muted mb-0 text-center" style="max-width:320px;">Hiện chưa có mã miễn phí ship. Theo dõi trang để nhận thông báo khi có ưu đãi mới.</p>
+                </div>
+            }
+        </div>
+        </div>
+
+        <!-- Tab Thành viên -->
+        <div id="panel-thanhvien" class="voucher-tab-panel" style="@(Model.CurrentTab == "thanhvien" ? "" : "display:none;")">
+        <div class="voucher-empty-card mt-4" style="min-height:200px;">
+            <i class="bi bi-person-badge mb-2" style="font-size:36px; color:#F97316;"></i>
+            <h5 class="fw-bold text-dark mb-1">Ưu đãi thành viên</h5>
+            <p class="text-muted mb-0 text-center" style="max-width:320px;">Đăng nhập để xem ưu đãi dành riêng cho thành viên và tích điểm khi mua hàng.</p>
+            <a asp-controller="Account" asp-action="Login" class="btn mt-3 voucher-primary-btn" style="width:auto;padding:10px 24px;">Đăng nhập</a>
+        </div>
         </div>
 
         <div class="voucher-footer-widgets">
@@ -450,4 +608,74 @@
         </div>
     </div>
 </section>
+
+@Html.AntiForgeryToken()
+<script>
+    var voucherPageIsAuthenticated = @(Model.IsAuthenticated ? "true" : "false");
+    var voucherLoginUrl = '@Url.Action("Login", "Account")';
+
+    function copyVoucher(code) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(function () {
+                if (typeof window.showToast === 'function') window.showToast('Đã copy mã: ' + code, 'success');
+                else alert('Đã copy mã: ' + code);
+            });
+        } else {
+            var ta = document.createElement('textarea'); ta.value = code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+            if (typeof window.showToast === 'function') window.showToast('Đã copy mã: ' + code, 'success');
+            else alert('Đã copy mã: ' + code);
+        }
+    }
+
+    function setVoucherCardSaved(card) {
+        if (!card) return;
+        var codeBox = card.querySelector('.voucher-code-box');
+        var primaryBtn = card.querySelector('.voucher-btn-row .voucher-primary-btn');
+        var checkEl = card.querySelector('.voucher-saved-check');
+        if (codeBox) codeBox.classList.add('saved');
+        if (primaryBtn) {
+            primaryBtn.classList.add('saved');
+            primaryBtn.textContent = 'Đã nhận mã';
+            primaryBtn.disabled = true;
+            primaryBtn.onclick = null;
+        }
+        if (checkEl) checkEl.classList.add('show');
+    }
+
+    function saveVoucherCode(btn) {
+        var voucherId = parseInt(btn.getAttribute('data-voucher-id'), 10);
+        var code = btn.getAttribute('data-code') || '';
+        if (!voucherPageIsAuthenticated) {
+            if (typeof window.showToast === 'function') window.showToast('Vui lòng đăng nhập để lưu mã vào tài khoản.', 'warning');
+            else alert('Vui lòng đăng nhập để lưu mã vào tài khoản.');
+            setTimeout(function() { window.location.href = voucherLoginUrl + '?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search); }, 1500);
+            return;
+        }
+        var token = document.querySelector('input[name="__RequestVerificationToken"]');
+        var tokenValue = token ? token.value : '';
+        var formData = new FormData();
+        formData.append('voucherId', voucherId);
+        formData.append('__RequestVerificationToken', tokenValue);
+        fetch('@Url.Action("SaveVoucher", "VoucherCustomer")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                copyVoucher(code);
+                if (typeof window.showToast === 'function') window.showToast(data.message || 'Đã lưu mã vào tài khoản.', 'success');
+                var card = btn.closest('.voucher-card');
+                setVoucherCardSaved(card);
+            } else {
+                if (typeof window.showToast === 'function') window.showToast(data.message || 'Không thể lưu mã.', 'error');
+                else alert(data.message || 'Không thể lưu mã.');
+            }
+        })
+        .catch(function() {
+            if (typeof window.showToast === 'function') window.showToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error');
+            else alert('Có lỗi xảy ra. Vui lòng thử lại.');
+        });
+    }
+</script>
 

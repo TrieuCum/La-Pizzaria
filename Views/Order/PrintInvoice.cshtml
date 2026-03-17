@@ -1,0 +1,133 @@
+@model LaPizzaria.ViewModels.InvoicePrintViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Hóa đơn " + Model.OrderCode;
+    var culture = new System.Globalization.CultureInfo("vi-VN");
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hóa đơn @Model.OrderCode</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 13px; line-height: 1.4; color: #000; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff; }
+        .no-print { margin-bottom: 16px; }
+        @@media print {
+            body { padding: 0; }
+            .no-print { display: none !important; }
+        }
+        .invoice { white-space: pre-wrap; }
+        .line { border-bottom: 1px solid #ccc; margin: 8px 0; }
+        .sep { margin: 4px 0; }
+        table.inv-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+        table.inv-table th, table.inv-table td { border: 1px solid #333; padding: 6px 8px; text-align: left; }
+        table.inv-table th { font-weight: bold; }
+        table.inv-table .num { text-align: right; }
+        .text-right { text-align: right; }
+        .bold { font-weight: bold; }
+        .mt-1 { margin-top: 8px; }
+        .mb-0 { margin-bottom: 0; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button type="button" onclick="window.print()" style="padding: 8px 16px; cursor: pointer; background: #f97316; color: #fff; border: none; border-radius: 6px;">🖨️ In hóa đơn</button>
+        <a href="javascript:window.close()" style="margin-left: 10px;">Đóng</a>
+    </div>
+
+    <div class="invoice">
+Ký hiệu hóa đơn: @Model.InvoiceSymbol
+Số hóa đơn: @Model.InvoiceNumber
+Ngày lập: @Model.IssueDate
+
+------------------------------------------------------------
+THÔNG TIN NGƯỜI BÁN
+Tên đơn vị: @Model.SellerName
+Mã số thuế: @Model.SellerTaxCode
+Địa chỉ: @Model.SellerAddress
+Điện thoại: @Model.SellerPhone
+Email: @Model.SellerEmail
+
+------------------------------------------------------------
+THÔNG TIN NGƯỜI MUA
+Tên khách hàng: @Model.BuyerName
+Điện thoại: @Model.BuyerPhone
+Địa chỉ: @Model.BuyerAddress
+Mã số thuế (nếu có): ___________________
+
+------------------------------------------------------------
+CHI TIẾT HÀNG HÓA / DỊCH VỤ
+    </div>
+
+    <table class="inv-table">
+        <thead>
+            <tr>
+                <th style="width:40px;">STT</th>
+                <th>Tên hàng hóa</th>
+                <th style="width:50px;" class="num">SL</th>
+                <th style="width:100px;" class="num">Đơn giá</th>
+                <th style="width:110px;" class="num">Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Model.Lines)
+            {
+                <tr>
+                    <td class="num">@line.Stt</td>
+                    <td>@line.ProductName</td>
+                    <td class="num">@line.Quantity</td>
+                    <td class="num">@line.UnitPrice.ToString("N0", culture)đ</td>
+                    <td class="num">@line.Total.ToString("N0", culture)đ</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="invoice">
+------------------------------------------------------------
+    </div>
+    <table class="inv-table" style="border: none;">
+        <tr style="border: none;"><td style="border: none;">Tạm tính:</td><td class="num text-right" style="border: none; width: 120px;">@Model.Subtotal.ToString("N0", culture)đ</td></tr>
+        <tr style="border: none;"><td style="border: none;">Phí giao hàng:</td><td class="num text-right" style="border: none;">@Model.DeliveryFee.ToString("N0", culture)đ</td></tr>
+        <tr style="border: none;"><td style="border: none;">Giảm giá / Voucher:</td><td class="num text-right" style="border: none;">@Model.VoucherDiscount.ToString("N0", culture)đ</td></tr>
+        <tr style="border: none;"><td style="border: none;">Tổng tiền trước thuế:</td><td class="num text-right bold" style="border: none;">@Model.TotalBeforeTax.ToString("N0", culture)đ</td></tr>
+        <tr style="border: none;"><td style="border: none;">Thuế GTGT (@Model.TaxPercent%):</td><td class="num text-right" style="border: none;">@Model.TaxAmount.ToString("N0", culture)đ</td></tr>
+        <tr style="border: none;"><td style="border: none;" class="bold">TỔNG THANH TOÁN:</td><td class="num text-right bold" style="border: none;">@Model.GrandTotal.ToString("N0", culture)đ</td></tr>
+    </table>
+    <div class="invoice">
+(Bằng chữ: @Model.AmountInWords)
+
+------------------------------------------------------------
+PHƯƠNG THỨC THANH TOÁN
+@{
+    var pm = Model.PaymentMethodDisplay ?? "";
+    var isCod = string.IsNullOrEmpty(Model.Order.PaymentMethod) || pm.Contains("Tiền mặt") || pm.Contains("COD") || pm.Contains("Chưa chọn");
+    var isTransfer = pm.Contains("Chuyển khoản");
+    var isWallet = pm.Contains("Ví");
+}
+@(isCod ? "☑" : "☐") Tiền mặt (COD)
+@(isTransfer ? "☑" : "☐") Chuyển khoản
+@(isWallet ? "☑" : "☐") Ví điện tử
+
+Trạng thái thanh toán: @Model.PaymentStatus
+
+------------------------------------------------------------
+THÔNG TIN ĐƠN HÀNG
+Mã đơn hàng: @Model.OrderCode
+Thời gian đặt: @Model.OrderDateDisplay
+Trạng thái: @Model.OrderStatusDisplay
+
+------------------------------------------------------------
+Người mua hàng                Người bán hàng
+(Ký và ghi rõ họ tên)         (Ký, đóng dấu)
+
+        ____________              ____________
+
+------------------------------------------------------------
+Ghi chú:
+Hóa đơn này được xuất từ hệ thống LaPizzaria.
+    </div>
+</body>
+</html>

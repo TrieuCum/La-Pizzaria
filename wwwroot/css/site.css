@@ -224,6 +224,41 @@ body {
   outline: none;
 }
 
+.search-form-nav .search-container-v { min-width: 220px; max-width: 280px; }
+.search-form-nav .search-container-v:focus-within { background: #fff; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25); }
+
+.navbar-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 1050;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.navbar-search-dropdown a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #181411;
+  text-decoration: none;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+.navbar-search-dropdown a:last-child { border-bottom: none; }
+.navbar-search-dropdown a:hover { background: #f8f7f5; }
+.navbar-search-dropdown a img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+.navbar-search-dropdown .search-sugg-name { flex: 1; font-weight: 600; }
+.navbar-search-dropdown .search-sugg-price { color: var(--brand-orange); font-weight: 700; }
+.navbar-search-dropdown .search-sugg-all { justify-content: center; color: var(--brand-orange); font-weight: 700; }
+
 /* Buttons */
 .btn-brand-primary {
   background-color: var(--brand-orange);

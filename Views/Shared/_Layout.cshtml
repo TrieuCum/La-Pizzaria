@@ -36,10 +36,14 @@
                             <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Loyalty" ? "active" : "")" asp-controller="Loyalty" asp-action="Index">Tích điểm</a></li>
                         </ul>
                         <div class="d-flex align-items-center gap-3">
-                            <div class="search-container-v d-none d-xl-flex">
-                                <i class="bi bi-search" style="color: #94a3b8;"></i>
-                                <input type="text" class="search-input-v" placeholder="Tìm kiếm pizza của bạn...">
-                            </div>
+                            <form asp-controller="Menu" asp-action="Index" method="get" class="d-none d-xl-flex search-form-nav" role="search">
+                                <div class="search-container-v position-relative" id="navbar-search-wrapper">
+                                    <i class="bi bi-search" style="color: #94a3b8;"></i>
+                                    <input type="text" name="search" id="navbar-search-input" class="search-input-v" placeholder="Tìm kiếm pizza, món ăn, combo..." value="@Context.Request.Query["search"]" autocomplete="off" aria-label="Tìm kiếm món ăn">
+                                    <div id="navbar-search-dropdown" class="navbar-search-dropdown" style="display: none;"></div>
+                                </div>
+                                <button type="submit" class="btn btn-brand-primary ms-2 py-2 px-3 small d-none">Tìm</button>
+                            </form>
                             <partial name="_LoginPartial" />
                             <a href="#" style="position: relative; font-size: 22px; color: #4b5563;" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" id="cart-nav-link">
                                 <i class="bi bi-cart3"></i>
@@ -192,6 +196,50 @@
             const error = '@(TempData["error"] ?? string.Empty)';
             if (success) window.showToast && window.showToast(success, 'success');
             if (error) window.showToast && window.showToast(error, 'error');
+        })();
+
+        // Thanh tìm kiếm: gợi ý + dropdown
+        (function(){
+            var searchInput = document.getElementById('navbar-search-input');
+            var dropdown = document.getElementById('navbar-search-dropdown');
+            var wrapper = document.getElementById('navbar-search-wrapper');
+            if (!searchInput || !dropdown || !wrapper) return;
+            var debounceTimer = null;
+            function hideDropdown() { dropdown.style.display = 'none'; }
+            function showDropdown(html) {
+                dropdown.innerHTML = html;
+                dropdown.style.display = 'block';
+            }
+            searchInput.addEventListener('input', function(){
+                var q = (this.value || '').trim();
+                clearTimeout(debounceTimer);
+                if (q.length < 2) { hideDropdown(); return; }
+                debounceTimer = setTimeout(function(){
+                    fetch('/Menu/SearchSuggestions?q=' + encodeURIComponent(q) + '&limit=6')
+                        .then(function(r){ return r.json(); })
+                        .then(function(items){
+                            if (!items || items.length === 0) {
+                                showDropdown('<a href="/Menu?search=' + encodeURIComponent(q) + '" class="search-sugg-all">Xem tất cả kết quả</a>');
+                                return;
+                            }
+                            var html = '';
+                            items.forEach(function(item){
+                                var url = item.type === 'product' ? '/Menu/ProductDetails/' + item.id : '/Menu/ComboDetails/' + item.id;
+                                var img = (item.imageUrl || '/images/v17_1114.png').replace(/^file:\/\/\//, '/images/');
+                                var price = item.price != null ? (item.price / 1).toLocaleString('vi-VN') + '₫' : '';
+                                html += '<a href="' + url + '"><img src="' + img + '" alt="" onerror="this.src=\'/images/v17_1114.png\'"><span class="search-sugg-name">' + (item.name || '') + '</span><span class="search-sugg-price">' + price + '</span></a>';
+                            });
+                            html += '<a href="/Menu?search=' + encodeURIComponent(q) + '" class="search-sugg-all">Xem tất cả kết quả</a>';
+                            showDropdown(html);
+                        })
+                        .catch(function(){ hideDropdown(); });
+                }, 250);
+            });
+            searchInput.addEventListener('blur', function(){ setTimeout(hideDropdown, 180); });
+            searchInput.addEventListener('focus', function(){
+                var q = (this.value || '').trim();
+                if (q.length >= 2 && dropdown.innerHTML) dropdown.style.display = 'block';
+            });
         })();
     </script>
     @await RenderSectionAsync("Scripts", required: false)

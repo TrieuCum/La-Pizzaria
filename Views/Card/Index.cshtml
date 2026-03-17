@@ -68,6 +68,16 @@
                         </div>
 
                         <div id="shipInputs">
+                            @if (ViewBag.UserName != null || ViewBag.UserPhone != null)
+                            {
+                                <div class="mb-3 p-2 bg-brand-bg rounded-3 extra-small">
+                                    <span class="text-brand-gray">Người nhận:</span> <strong id="displayRecipientName">@ViewBag.UserName</strong>
+                                    @if (!string.IsNullOrWhiteSpace(ViewBag.UserPhone?.ToString()))
+                                    {
+                                        <span class="text-brand-gray"> · </span><span id="displayRecipientPhone">@ViewBag.UserPhone</span>
+                                    }
+                                </div>
+                            }
                             <div class="mb-3">
                                 <label class="form-label extra-small fw-bold text-brand-gray">Địa chỉ giao hàng</label>
                                 <div class="input-group">
@@ -275,7 +285,19 @@
         let travelDistance = -1; // -1 means not calculated
         let searchTimeout = null;
 
+        @* Thông tin khách đăng nhập để pre-fill và gửi kèm đơn hàng *@
+        window.checkoutUser = {
+            userId: @Html.Raw(ViewBag.CurrentUserId != null ? "\"" + ViewBag.CurrentUserId.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"" : "null"),
+            name: @Html.Raw(ViewBag.UserName != null ? "\"" + ViewBag.UserName.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ") + "\"" : "null"),
+            phone: @Html.Raw(ViewBag.UserPhone != null ? "\"" + ViewBag.UserPhone.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"" : "null"),
+            address: @Html.Raw(ViewBag.UserAddress != null ? "\"" + ViewBag.UserAddress.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ") + "\"" : "null")
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
+            if (window.checkoutUser && window.checkoutUser.address) {
+                document.getElementById('shipAddress').value = window.checkoutUser.address;
+                selectedAddress = window.checkoutUser.address;
+            }
             renderList();
             loadSuggestions();
             updateSummary();
@@ -696,7 +718,9 @@
                 voucherIds: cart.getVoucherIds(),
                 tableCode: deliveryType === 'dine' ? document.getElementById('tableCode').value : 'SHIPPING',
                 latitude: currentLat,
-                longitude: currentLng
+                longitude: currentLng,
+                userId: window.checkoutUser && window.checkoutUser.userId ? window.checkoutUser.userId : null,
+                deliveryAddress: deliveryType === 'ship' ? (document.getElementById('shipAddress').value || '').trim() : null
             };
 
             if (deliveryType === 'ship') {
