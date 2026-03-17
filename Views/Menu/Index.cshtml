@@ -1,9 +1,10 @@
 @model LaPizzaria.ViewModels.MenuViewModel
 @{
-    ViewData["Title"] = "Thực đơn";
+    ViewData["Title"] = string.IsNullOrEmpty(Model.Search) ? "Thực đơn" : "Tìm kiếm: " + Model.Search;
     var curCat = ViewBag.CurrentCategory as string;
     var isAll = curCat == "All";
     var expanded = (bool)(ViewBag.Expanded ?? false);
+    var search = Model.Search;
 
     var pizzas = Model.Products.Where(p => p.Category == "Pizza").ToList();
     var drinks = Model.Products.Where(p => p.Category == "Drink").ToList();
@@ -25,15 +26,23 @@
         <div class="d-flex justify-content-between align-items-end mb-5">
             <div>
                 <h1 class="fw-black text-brand-dark mb-1">
-                    @if (isAll) { <span>Thực đơn</span> }
+                    @if (!string.IsNullOrEmpty(search)) { <span>Kết quả tìm kiếm: «@search»</span> }
+                    else if (isAll) { <span>Thực đơn</span> }
                     else { <span>Các món @curCat</span> }
                 </h1>
-                <p class="text-brand-gray mb-0">Thưởng thức hương vị pizza truyền thống nướng củi.</p>
+                <p class="text-brand-gray mb-0">
+                    @if (!string.IsNullOrEmpty(search)) {
+                        <span>@(Model.Products.Count() + Model.Combos.Count()) kết quả. </span>
+                        <a asp-action="Index" asp-route-category="@curCat" class="text-brand-orange fw-bold">Xóa tìm kiếm</a>
+                    } else {
+                        <span>Thưởng thức hương vị pizza truyền thống nướng củi.</span>
+                    }
+                </p>
             </div>
             <div class="d-flex gap-3">
-                <button class="btn btn-white shadow-sm border-0 rounded-3 px-4 py-2 fw-bold extra-small d-flex align-items-center gap-2 transition-all hover-scale" onclick="window.location.href='?category=All'">
+                <a asp-action="Index" asp-route-category="All" asp-route-search="@search" class="btn btn-white shadow-sm border-0 rounded-3 px-4 py-2 fw-bold extra-small d-flex align-items-center gap-2 transition-all hover-scale text-decoration-none">
                     <i class="bi bi-justify-left text-brand-dark"></i> Phổ biến
-                </button>
+                </a>
                 <button class="btn btn-white shadow-sm border-0 rounded-3 px-4 py-2 fw-bold extra-small d-flex align-items-center gap-2 transition-all hover-scale" onclick="toggleFilters()">
                     <i class="bi bi-filter text-brand-dark"></i> Bộ lọc
                 </button>
@@ -43,15 +52,23 @@
         <!-- Category Tabs -->
         <div id="filterSection" class="mb-5 animate-fade-in">
             <div class="d-flex gap-3 overflow-auto pb-2 scrollbar-hide">
-                <a asp-action="Index" asp-route-category="All" class="cat-pill @(curCat == "All" ? "active" : "")">Tất cả</a>
-                <a asp-action="Index" asp-route-category="Pizza" class="cat-pill @(curCat == "Pizza" ? "active" : "")">Pizza</a>
-                <a asp-action="Index" asp-route-category="Drink" class="cat-pill @(curCat == "Drink" ? "active" : "")">Đồ uống</a>
-                <a asp-action="Index" asp-route-category="Side Dish" class="cat-pill @(curCat == "Side Dish" ? "active" : "")">Món ăn kèm</a>
-                <a asp-action="Index" asp-route-category="Combo" class="cat-pill @(curCat == "Combo" ? "active" : "")">Combo</a>
+                <a asp-action="Index" asp-route-category="All" asp-route-search="@search" class="cat-pill @(curCat == "All" ? "active" : "")">Tất cả</a>
+                <a asp-action="Index" asp-route-category="Pizza" asp-route-search="@search" class="cat-pill @(curCat == "Pizza" ? "active" : "")">Pizza</a>
+                <a asp-action="Index" asp-route-category="Drink" asp-route-search="@search" class="cat-pill @(curCat == "Drink" ? "active" : "")">Đồ uống</a>
+                <a asp-action="Index" asp-route-category="Side Dish" asp-route-search="@search" class="cat-pill @(curCat == "Side Dish" ? "active" : "")">Món ăn kèm</a>
+                <a asp-action="Index" asp-route-category="Combo" asp-route-search="@search" class="cat-pill @(curCat == "Combo" ? "active" : "")">Combo</a>
             </div>
         </div>
 
-        @if (isAll)
+        @if (!string.IsNullOrEmpty(search) && !Model.Products.Any() && !Model.Combos.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-search fs-1 text-brand-gray"></i>
+                <p class="fw-bold text-brand-dark mt-3">Không tìm thấy món nào phù hợp «@search»</p>
+                <p class="text-brand-gray small">Thử từ khóa khác hoặc <a asp-action="Index" class="text-brand-orange fw-bold">xem toàn bộ thực đơn</a>.</p>
+            </div>
+        }
+        else if (isAll)
         {
             <!-- SECTION: Always Visible (First 6 Pizzas) -->
             <div class="section-group mb-5">
@@ -157,7 +174,7 @@
             }
             
             <div class="text-center py-4">
-                <a asp-action="Index" asp-route-category="All" class="btn btn-outline-brand rounded-pill px-5 py-3 fw-bold border-2 transition-all text-decoration-none d-inline-block">
+                <a asp-action="Index" asp-route-category="All" asp-route-search="@search" class="btn btn-outline-brand rounded-pill px-5 py-3 fw-bold border-2 transition-all text-decoration-none d-inline-block">
                     Quay lại thực đơn chính
                 </a>
             </div>
@@ -216,6 +233,7 @@
         overflow: hidden;
     }
     .hover-up:hover { transform: translateY(-12px); box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
+    .hover-orange:hover { color: var(--brand-orange) !important; }
 
     .card-badge {
         position: absolute;

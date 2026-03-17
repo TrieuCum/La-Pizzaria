@@ -1,0 +1,72 @@
+@model LaPizzaria.Models.Product
+@{
+    ViewData["Title"] = Model.Name;
+    Layout = "_Layout";
+    string Img(string? u) => string.IsNullOrEmpty(u) ? "/images/v17_1114.png" : u;
+}
+
+<div class="menu-page bg-brand-bg min-vh-100 font-work-sans py-4">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb breadcrumb-custom">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Menu" asp-action="Index">Thực đơn</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+            </ol>
+        </nav>
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="bg-white rounded-4 overflow-hidden shadow-sm border-0" style="border-radius: 24px !important;">
+                    <div class="ratio ratio-1x1">
+                        <img src="@Img(Model.ImageUrl)" class="object-fit-cover w-100 h-100" alt="@Model.Name" onerror="this.src='/images/v17_1114.png';" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="bg-white rounded-4 p-4 p-lg-5 shadow-sm">
+                    <span class="badge bg-brand-orange text-white mb-2">@Model.Category</span>
+                    <h1 class="fw-black text-brand-dark mb-3">@Model.Name</h1>
+                    <p class="text-brand-gray mb-4">
+                        @(Model.Description ?? "Hương vị tuyệt vời từ những nguyên liệu tươi ngon nhất.")
+                    </p>
+                    @if (Model.ProductToppings?.Any() == true)
+                    {
+                        <p class="extra-small text-brand-gray mb-2 fw-bold">Topping có thể chọn:</p>
+                        <ul class="list-unstyled extra-small text-brand-gray mb-4">
+                            @foreach (var pt in Model.ProductToppings.Where(pt => pt.Topping != null))
+                            {
+                                <li><i class="bi bi-plus-circle me-1 text-brand-orange"></i> @pt.Topping!.Name — @pt.Topping.Price.ToString("N0")₫</li>
+                            }
+                        </ul>
+                    }
+                    <div class="d-flex align-items-center gap-4 flex-wrap">
+                        <span class="fw-black fs-3 text-brand-orange">@Model.Price.ToString("N0")₫</span>
+                        <button type="button" class="btn btn-brand-primary btn-lg px-4 py-3 rounded-3 fw-bold"
+                                onclick="cart.add({ id: @Model.Id, name: '@Model.Name.Replace("'", "\\'")', price: @Model.Price, imageUrl: '@Img(Model.ImageUrl)', type: 'product' }); typeof window.showToast === 'function' && window.showToast('Đã thêm @Model.Name vào giỏ', 'success');">
+                            <i class="bi bi-cart-plus me-2"></i> Thêm vào giỏ
+                        </button>
+                    </div>
+                    <div class="mt-4 pt-3 border-top">
+                        <a asp-controller="Menu" asp-action="Index" class="btn btn-outline-secondary rounded-3">← Quay lại thực đơn</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .menu-page { --brand-orange: #f48c25; --brand-bg: #f8f7f5; --brand-dark: #181411; --brand-gray: #6b7280; }
+    .bg-brand-bg { background-color: var(--brand-bg); }
+    .text-brand-dark { color: var(--brand-dark); }
+    .text-brand-gray { color: var(--brand-gray); }
+    .text-brand-orange { color: var(--brand-orange); }
+    .fw-black { font-weight: 900; }
+    .extra-small { font-size: 0.8rem; }
+    .breadcrumb-custom { font-size: 0.85rem; font-weight: 500; }
+    .breadcrumb-custom a { color: var(--brand-gray); text-decoration: none; }
+    .breadcrumb-custom .active { color: var(--brand-dark); font-weight: 600; }
+    .btn-brand-primary { background: var(--brand-orange); color: #fff; border: none; }
+    .btn-brand-primary:hover { background: #e07a1f; color: #fff; }
+</style>

@@ -18,6 +18,7 @@ namespace LaPizzaria.Models
 
         // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
+        public ICollection<UserSavedVoucher> UserSavedVouchers { get; set; } = new List<UserSavedVoucher>();
     }
 }
 

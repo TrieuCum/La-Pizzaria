@@ -1,4 +1,4 @@
-﻿@model LaPizzaria.ViewModels.HomeIndexViewModel
+@model LaPizzaria.ViewModels.HomeIndexViewModel
 @{ ViewData["Title"] = "Trang Chính"; }
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,7 +27,7 @@
                     </p>
                     <div class="d-flex flex-wrap gap-3 mb-5">
                         <a asp-controller="Order" asp-action="ScanQr" class="btn btn-brand-primary btn-lg px-4 fs-6">Đặt hàng ngay</a>
-                        <a asp-controller="Product" asp-action="Index" class="btn btn-brand-outline btn-lg px-4 fs-6">Xem thực đơn</a>
+                        <a asp-controller="Menu" asp-action="Index" class="btn btn-brand-outline btn-lg px-4 fs-6">Xem thực đơn</a>
                     </div>
                     <div class="d-flex align-items-center gap-4">
                         <div class="avatar-group d-flex align-items-center">
@@ -117,7 +117,7 @@
         <section class="featured-section py-5">
             <div class="d-flex justify-content-between align-items-end mb-5 border-bottom pb-3">
                 <h2 class="fw-black font-work-sans m-0">Pizza nổi bật</h2>
-                <a asp-controller="Product" asp-action="Index" class="text-brand-orange text-decoration-none fw-bold small hover-underline">Xem tất cả thực đơn <i class="bi bi-arrow-right ms-1"></i></a>
+                <a asp-controller="Menu" asp-action="Index" class="text-brand-orange text-decoration-none fw-bold small hover-underline">Xem tất cả thực đơn <i class="bi bi-arrow-right ms-1"></i></a>
             </div>
             <div class="marquee-slider-container">
                 <button class="slider-nav slider-nav-prev" onclick="pizzaSlider.prev()"><i class="bi bi-chevron-left"></i></button>

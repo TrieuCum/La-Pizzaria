@@ -1,0 +1,83 @@
+@model LaPizzaria.Models.Combo
+@{
+    ViewData["Title"] = Model.Name;
+    Layout = "_Layout";
+    string Img(string? u) => string.IsNullOrEmpty(u) ? "/images/v17_1114.png" : u;
+    var originalPrice = Model.Items?.Where(i => i.Product != null).Sum(i => i.Product!.Price * Math.Max(1, i.MinQuantity)) ?? 0m;
+    var finalPrice = originalPrice - Model.DiscountAmount;
+    if (Model.DiscountPercent.HasValue && Model.DiscountPercent > 0) { finalPrice = finalPrice * (1 - Model.DiscountPercent.Value / 100m); }
+    if (finalPrice < 0) { finalPrice = 0; }
+}
+
+<div class="menu-page bg-brand-bg min-vh-100 font-work-sans py-4">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb breadcrumb-custom">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Menu" asp-action="Index">Thực đơn</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+            </ol>
+        </nav>
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="bg-white rounded-4 overflow-hidden shadow-sm border-0" style="border-radius: 24px !important;">
+                    <div class="ratio ratio-1x1">
+                        @{
+                            var thumb = !string.IsNullOrEmpty(Model.ImageUrl) ? Model.ImageUrl : Model.Items?.FirstOrDefault(i => i.Product != null && !string.IsNullOrEmpty(i.Product.ImageUrl))?.Product?.ImageUrl;
+                        }
+                        <img src="@Img(thumb)" class="object-fit-cover w-100 h-100" alt="@Model.Name" onerror="this.src='/images/v17_1114.png';" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="bg-white rounded-4 p-4 p-lg-5 shadow-sm">
+                    <span class="badge bg-danger mb-2">COMBO</span>
+                    <h1 class="fw-black text-brand-dark mb-3">@Model.Name</h1>
+                    <p class="text-brand-gray mb-4">
+                        @(Model.Description ?? string.Join(", ", Model.Items?.Select(i => i.Product?.Name) ?? Array.Empty<string>()))
+                    </p>
+                    <p class="extra-small fw-bold text-brand-dark mb-2">Gồm các món:</p>
+                    <ul class="list-unstyled extra-small text-brand-gray mb-4">
+                        @if (Model.Items != null)
+                        {
+                            @foreach (var item in Model.Items.Where(i => i.Product != null))
+                            {
+                                <li><i class="bi bi-check2 me-2 text-brand-orange"></i> @item.Product!.Name × @Math.Max(1, item.MinQuantity) — @((item.Product.Price * Math.Max(1, item.MinQuantity)).ToString("N0"))₫</li>
+                            }
+                        }
+                    </ul>
+                    <div class="mb-2">
+                        @if (originalPrice > finalPrice)
+                        {
+                            <span class="text-decoration-line-through text-brand-gray me-2">@originalPrice.ToString("N0")₫</span>
+                        }
+                        <span class="fw-black fs-3 text-brand-orange">@finalPrice.ToString("N0")₫</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 flex-wrap mt-3">
+                        <button type="button" class="btn btn-brand-primary btn-lg px-4 py-3 rounded-3 fw-bold"
+                                onclick="cart.add({ id: @Model.Id, name: '@Model.Name.Replace("'", "\\'")', price: @finalPrice, imageUrl: '@Img(Model.ImageUrl)', type: 'combo' }); typeof window.showToast === 'function' && window.showToast('Đã thêm combo vào giỏ', 'success');">
+                            <i class="bi bi-cart-plus me-2"></i> Thêm vào giỏ
+                        </button>
+                        <a asp-controller="Menu" asp-action="Index" class="btn btn-outline-secondary rounded-3">← Quay lại thực đơn</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .menu-page { --brand-orange: #f48c25; --brand-bg: #f8f7f5; --brand-dark: #181411; --brand-gray: #6b7280; }
+    .bg-brand-bg { background-color: var(--brand-bg); }
+    .text-brand-dark { color: var(--brand-dark); }
+    .text-brand-gray { color: var(--brand-gray); }
+    .text-brand-orange { color: var(--brand-orange); }
+    .fw-black { font-weight: 900; }
+    .extra-small { font-size: 0.8rem; }
+    .breadcrumb-custom { font-size: 0.85rem; font-weight: 500; }
+    .breadcrumb-custom a { color: var(--brand-gray); text-decoration: none; }
+    .breadcrumb-custom .active { color: var(--brand-dark); font-weight: 600; }
+    .btn-brand-primary { background: var(--brand-orange); color: #fff; border: none; }
+    .btn-brand-primary:hover { background: #e07a1f; color: #fff; }
+</style>

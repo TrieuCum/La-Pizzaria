@@ -31,18 +31,27 @@ namespace LaPizzaria.Services
                 throw new System.InvalidOperationException("Đang hết nguyên liệu");
             }
 
+            string? finalAddress = deliveryAddress;
+            ApplicationUser? userEntity = null;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                userEntity = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (userEntity != null && string.IsNullOrWhiteSpace(finalAddress) && !string.IsNullOrWhiteSpace(userEntity.Address))
+                    finalAddress = userEntity.Address;
+            }
+
             var order = new Order
             {
                 OrderStatus = "Pending",
                 OrderDetails = itemList,
-                DeliveryAddress = deliveryAddress,
+                DeliveryAddress = finalAddress,
                 Latitude = latitude,
                 Longitude = longitude
             };
             if (!string.IsNullOrEmpty(userId))
             {
                 order.UserId = userId;
-                order.User = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                order.User = userEntity;
             }
             _db.Orders.Add(order);
             await _db.SaveChangesAsync();
