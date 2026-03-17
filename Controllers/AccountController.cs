@@ -17,8 +17,16 @@ namespace LaPizzaria.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
+        public async Task<IActionResult> Login()
         {
+            // Đã đăng nhập (cookie còn) → chuyển đúng trang theo role
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null && await _userManager.IsInRoleAsync(user, "Shipper"))
+                    return RedirectToAction("Index", "Shipper");
+                return RedirectToAction("Index", "Home");
+            }
             return View(new LoginViewModel());
         }
 
@@ -34,6 +42,12 @@ namespace LaPizzaria.Controllers
             var result = await _signInManager.PasswordSignInAsync(model.EmailOrUserName, model.Password, model.RememberMe, lockoutOnFailure: true);
             if (result.Succeeded)
             {
+                var user = await _userManager.FindByNameAsync(model.EmailOrUserName) ?? await _userManager.FindByEmailAsync(model.EmailOrUserName);
+                if (user != null && await _userManager.IsInRoleAsync(user, "Shipper"))
+                {
+                    TempData["success"] = "Đăng nhập thành công. Chào shipper.";
+                    return RedirectToAction("Index", "Shipper");
+                }
                 TempData["success"] = "Đăng nhập thành công. Bạn có thể bắt đầu đặt món.";
                 return RedirectToAction("Index", "Home");
             }
@@ -151,6 +165,16 @@ namespace LaPizzaria.Controllers
 
             TempData["success"] = "Cập nhật tài khoản thành công.";
             return RedirectToAction(nameof(Manage));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout(string returnUrl = null)
+        {
+            await _signInManager.SignOutAsync();
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+            return RedirectToAction("Login");
         }
     }
 }

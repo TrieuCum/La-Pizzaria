@@ -1,7 +1,11 @@
 @model LaPizzaria.ViewModels.ManageAccountViewModel
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<LaPizzaria.Models.ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "Hồ sơ cá nhân";
+    var user = await UserManager.GetUserAsync(User);
+    var isShipper = user != null && await UserManager.IsInRoleAsync(user, "Shipper");
 }
 
 <div class="profile-container">
@@ -30,23 +34,39 @@
                                 Thông tin tài khoản
                             </a>
                         </li>
-                        <li class="profile-nav-item">
-                            <a asp-controller="Order" asp-action="Index" class="profile-nav-link">
-                                Lịch sử đơn hàng
-                            </a>
-                        </li>
-                        <li class="profile-nav-item">
-                            <a href="#" class="profile-nav-link">
-                                Đánh giá của tôi
-                            </a>
-                        </li>
-                        <li class="profile-nav-item">
-                            <a href="#" class="profile-nav-link">
-                                Món yêu thích
-                            </a>
-                        </li>
+                        @if (isShipper)
+                        {
+                            <li class="profile-nav-item">
+                                <a asp-controller="Shipper" asp-action="Index" class="profile-nav-link">
+                                    Lịch sử giao hàng
+                                </a>
+                            </li>
+                            <li class="profile-nav-item">
+                                <a href="#" class="profile-nav-link">
+                                    Đánh giá đơn giao của khách hàng
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="profile-nav-item">
+                                <a asp-controller="Order" asp-action="Index" class="profile-nav-link">
+                                    Lịch sử đơn hàng
+                                </a>
+                            </li>
+                            <li class="profile-nav-item">
+                                <a href="#" class="profile-nav-link">
+                                    Đánh giá của tôi
+                                </a>
+                            </li>
+                            <li class="profile-nav-item">
+                                <a href="#" class="profile-nav-link">
+                                    Món yêu thích
+                                </a>
+                            </li>
+                        }
                         <li class="profile-nav-item mt-4">
-                            <form id="logoutForm" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                            <form asp-controller="Account" asp-action="Logout" method="post">
                                 <button type="submit" class="profile-nav-link logout border-0 bg-transparent w-100 text-start">
                                     Đăng xuất
                                 </button>

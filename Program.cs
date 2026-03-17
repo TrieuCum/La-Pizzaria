@@ -85,6 +85,36 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Seed tài khoản Shipper để đăng nhập trang shipper (nếu chưa có)
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    const string shipperEmail = "shipper@lapizzaria.com";
+    var shipper = await userManager.FindByEmailAsync(shipperEmail);
+    if (shipper == null)
+    {
+        shipper = new ApplicationUser
+        {
+            UserName = shipperEmail,
+            Email = shipperEmail,
+            FirstName = "Shipper",
+            LastName = "La Pizzaria",
+            EmailConfirmed = true,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        var result = await userManager.CreateAsync(shipper, "Shipper@123");
+        if (result.Succeeded && await roleManager.RoleExistsAsync("Shipper"))
+            await userManager.AddToRoleAsync(shipper, "Shipper");
+    }
+    else if (!await userManager.IsInRoleAsync(shipper, "Shipper") && await roleManager.RoleExistsAsync("Shipper"))
+    {
+        await userManager.AddToRoleAsync(shipper, "Shipper");
+    }
+}
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
