@@ -11,7 +11,7 @@
             <h1 class="page-title">Quản lý nhân viên</h1>
             <p class="page-subtitle">Quản lý thông tin và quyền hạn nhân viên</p>
         </div>
-        <button class="btn-add-employee" onclick="alert('Chức năng đang phát triển')">
+        <button class="btn-add-employee" type="button" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
             <i class="bi bi-plus-circle"></i>
             Thêm nhân viên
         </button>
@@ -78,6 +78,72 @@
                 }
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Modal Thêm nhân viên -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="Employee" asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addEmployeeModalLabel">Thêm nhân viên mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Họ và tên</label>
+                            <input name="fullName" class="form-control" placeholder="Nguyễn Văn A" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input name="email" type="email" class="form-control" placeholder="email@lapizzaria.com" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Số điện thoại</label>
+                            <input name="phoneNumber" class="form-control" placeholder="Số điện thoại" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ngày sinh</label>
+                            <input name="birthday" type="date" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Giới tính</label>
+                            <select name="gender" class="form-select">
+                                <option value="">Không xác định</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Vai trò</label>
+                            <select name="role" class="form-select" required>
+                                <option value="">-- Chọn vai trò --</option>
+                                <option value="Staff">Nhân viên</option>
+                                <option value="Shipper">Shipper</option>
+                                <option value="Admin">Quản trị viên</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Địa chỉ</label>
+                            <textarea name="address" rows="2" class="form-control" placeholder="Địa chỉ nhân viên"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">
+                                Mật khẩu mặc định cho nhân viên mới là <strong>Employee@123</strong>. Vui lòng hướng dẫn nhân viên đổi mật khẩu sau khi đăng nhập.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu nhân viên</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

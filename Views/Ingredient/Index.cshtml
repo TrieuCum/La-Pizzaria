@@ -301,11 +301,11 @@
     
     .pagination-buttons {
         display: flex;
-        gap: 8px;
+        gap: 12px;
     }
     
     .page-btn {
-        width: 31px;
+        min-width: 31px;
         height: 29px;
         border-radius: 6px;
         border: none;
@@ -352,7 +352,8 @@
             <div class="tab-buttons">
                 <button class="tab-btn active" data-filter="all">Tất cả</button>
                 <button class="tab-btn" data-filter="safe">An toàn</button>
-                <button class="tab-btn" data-filter="warning">Sắp hết</button>
+                <button class="tab-btn" data-filter="warning">Trung bình</button>
+                <button class="tab-btn" data-filter="danger">Sắp hết</button>
             </div>
         </div>
 
@@ -371,10 +372,10 @@
                 <tbody id="ingredientTableBody">
                 @foreach (var ing in Model)
                 {
-                    var stockStatus = ing.StockQuantity >= ing.ReorderLevel ? "safe" : 
-                                     ing.StockQuantity >= (ing.ReorderLevel * 0.5m) ? "warning" : "danger";
-                    var statusText = ing.StockQuantity >= ing.ReorderLevel ? "An toàn" : 
-                                    ing.StockQuantity >= (ing.ReorderLevel * 0.5m) ? "Cảnh báo" : "Sắp hết";
+                    var stockStatus = ing.StockQuantity > 50 ? "safe" :
+                                      ing.StockQuantity > 20 ? "warning" : "danger";
+                    var statusText = ing.StockQuantity > 50 ? "An toàn" :
+                                     ing.StockQuantity > 20 ? "Trung bình" : "Sắp hết";
                     
                     <tr class="ingredient-row" data-name="@ing.Name.ToLower()" data-status="@stockStatus">
                         <td>
@@ -387,7 +388,7 @@
                             </div>
                         </td>
                         <td>
-                            <span class="unit-text">@ing.Unit</span>
+                            <span class="unit-text">kg</span>
                         </td>
                         <td>
                             <span class="stock-number">@ing.StockQuantity.ToString("N1")</span>
@@ -418,13 +419,7 @@
             <!-- Pagination -->
             <div class="pagination-footer">
                 <div>Hiển thị <span id="visibleCount">@Model.Count()</span> trong tổng số <span id="totalCount">@Model.Count()</span> nguyên liệu</div>
-                <div class="pagination-buttons">
-                    <button class="page-btn">Trước</button>
-                    <button class="page-btn active">1</button>
-                    <button class="page-btn">2</button>
-                    <button class="page-btn">3</button>
-                    <button class="page-btn">Sau</button>
-                </div>
+                <div class="pagination-buttons"></div>
             </div>
         </div>
     </div>
@@ -437,31 +432,94 @@
     const totalCount = document.getElementById('totalCount');
     const visibleCount = document.getElementById('visibleCount');
     const tabButtons = document.querySelectorAll('.tab-btn');
+    const paginationContainer = document.querySelector('.pagination-buttons');
     
     let currentFilter = 'all';
+    let currentPage = 1;
+    const pageSize = 8;
+    let lastFilteredRows = [];
     
     function updateTable() {
-        let count = 0;
+        const filtered = [];
+        const searchTerm = searchInput.value.toLowerCase();
+
         rows.forEach(row => {
             const name = row.getAttribute('data-name');
             const status = row.getAttribute('data-status');
-            const searchTerm = searchInput.value.toLowerCase();
             
             const matchesSearch = name.includes(searchTerm);
             const matchesFilter = currentFilter === 'all' || 
                                  (currentFilter === 'safe' && status === 'safe') ||
-                                 (currentFilter === 'warning' && status !== 'safe');
+                                 (currentFilter === 'warning' && status === 'warning') ||
+                                 (currentFilter === 'danger' && status === 'danger');
             
             if (matchesSearch && matchesFilter) {
-                row.style.display = '';
-                count++;
-            } else {
-                row.style.display = 'none';
+                filtered.push(row);
             }
         });
-        visibleCount.textContent = count;
+
+        lastFilteredRows = filtered;
+        applyPagination();
     }
     
+    function buildPagination(totalVisible) {
+        const totalPages = Math.max(1, Math.ceil(totalVisible / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        paginationContainer.innerHTML = '';
+
+        const createBtn = (text, page, isActive = false) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'page-btn' + (isActive ? ' active' : '');
+            btn.textContent = text;
+            btn.dataset.page = page;
+            btn.addEventListener('click', handlePageClick);
+            paginationContainer.appendChild(btn);
+        };
+
+        createBtn('Trước', 'prev', false);
+        for (let i = 1; i <= totalPages; i++) {
+            createBtn(i.toString(), i.toString(), i === currentPage);
+        }
+        createBtn('Sau', 'next', false);
+    }
+
+    function handlePageClick(e) {
+        const page = e.target.dataset.page;
+        const totalVisible = lastFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalVisible / pageSize));
+
+        if (page === 'prev') {
+            if (currentPage > 1) currentPage--;
+        } else if (page === 'next') {
+            if (currentPage < totalPages) currentPage++;
+        } else {
+            currentPage = parseInt(page);
+        }
+
+        applyPagination();
+    }
+
+    function applyPagination() {
+        const totalVisible = lastFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalVisible / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        rows.forEach(r => r.style.display = 'none');
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        lastFilteredRows.forEach((row, index) => {
+            if (index >= start && index < end) {
+                row.style.display = '';
+            }
+        });
+
+        visibleCount.textContent = totalVisible;
+        buildPagination(totalVisible);
+    }
+
     searchInput.addEventListener('input', updateTable);
     
     tabButtons.forEach(btn => {
@@ -469,7 +527,12 @@
             tabButtons.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             currentFilter = this.getAttribute('data-filter');
+            currentPage = 1;
             updateTable();
         });
     });
+
+    // Khởi tạo lần đầu
+    lastFilteredRows = Array.from(rows);
+    applyPagination();
 </script>
