@@ -374,8 +374,9 @@
                 {
                     var stockStatus = ing.StockQuantity > 50 ? "safe" :
                                       ing.StockQuantity > 20 ? "warning" : "danger";
-                    var statusText = ing.StockQuantity > 50 ? "An toàn" :
-                                     ing.StockQuantity > 20 ? "Trung bình" : "Sắp hết";
+                    var statusText = ing.StockQuantity <= 0 ? "Đã hết" :
+                                     ing.StockQuantity <= 20 ? "Sắp hết" :
+                                     ing.StockQuantity <= 50 ? "Trung bình" : "An toàn";
                     
                     <tr class="ingredient-row" data-name="@ing.Name.ToLower()" data-status="@stockStatus">
                         <td>

@@ -343,10 +343,11 @@
                     {
                         var row = mapping.FirstOrDefault(m => m.IngredientId == ing.Id);
                         var currentQty = row?.QuantityPerUnit ?? 0;
-                        var stockStatus = ing.StockQuantity >= ing.ReorderLevel ? "safe" : 
-                                         ing.StockQuantity >= (ing.ReorderLevel * 0.5m) ? "warning" : "danger";
-                        var statusText = ing.StockQuantity >= ing.ReorderLevel ? "An toàn" : 
-                                        ing.StockQuantity >= (ing.ReorderLevel * 0.5m) ? "Cảnh báo" : "Sắp hết";
+                        var stockStatus = ing.StockQuantity > 50 ? "safe" :
+                                          ing.StockQuantity > 20 ? "warning" : "danger";
+                        var statusText = ing.StockQuantity <= 0 ? "Đã hết" :
+                                         ing.StockQuantity <= 20 ? "Sắp hết" :
+                                         ing.StockQuantity <= 50 ? "Trung bình" : "An toàn";
                         
                         <tr class="ingredient-row" data-name="@ing.Name.ToLower()">
                             <td>

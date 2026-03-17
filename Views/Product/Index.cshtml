@@ -49,7 +49,9 @@
     
     .v17_2643 { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
     .sd-green { background: rgba(34,197,94,1); box-shadow: 0 0 8px rgba(34,197,94,0.4); }
-    .sd-gray { background: rgba(156,163,175,1); }
+    .sd-orange { background: rgba(249,115,22,1); box-shadow: 0 0 8px rgba(249,115,22,0.4); }
+    .sd-red { background: rgba(239,68,68,1); box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+    .sd-gray { background: rgba(148,163,184,1); box-shadow: 0 0 8px rgba(148,163,184,0.4); }
 
     /* Stats Section */
     .v17_2716 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px; }
@@ -112,6 +114,7 @@
             <tbody id="tableBody">
                 @{
                     var outIds = Model.OutOfStockIds ?? new List<int>();
+                    var statusMap = Model.ProductStockStatus ?? new Dictionary<int, string>();
                     var pizzaCount = Model.Products.Count(p => p.Category == "Pizza" && p.IsActive && !outIds.Contains(p.Id));
                     var comboCount = Model.Combos.Count(c => c.IsActive);
                     var outCount = outIds.Count;
@@ -121,6 +124,13 @@
                 @foreach (var p in Model.Products)
                 {
                     var isOut = outIds.Contains(p.Id);
+                    var stockStatus = statusMap.ContainsKey(p.Id) ? statusMap[p.Id] : "safe";
+                    var statusText = stockStatus == "out" ? "Đã hết" :
+                                     stockStatus == "danger" ? "Sắp hết" :
+                                     stockStatus == "warning" ? "Trung bình" : "An toàn";
+                    var dotClass = stockStatus == "out" ? "sd-gray" :
+                                   stockStatus == "danger" ? "sd-red" :
+                                   stockStatus == "warning" ? "sd-orange" : "sd-green";
                     var bcClass = p.Category == "Pizza" ? "v17_2675" : (p.Category == "Side Dish" ? "v17_2657" : "v17_2639");
                     
                     <tr data-cat="@p.Category" data-name="@p.Name">
@@ -137,8 +147,8 @@
                         <td><span style="font-weight: 800; color: #1e293b;">@p.Price.ToString("N0")₫</span></td>
                         <td>
                             <div style="display: flex; align-items: center;">
-                                <span class="v17_2643 @(isOut ? "sd-gray" : "sd-green")"></span>
-                                <span style="font-weight: 600; color: #374151;">@(isOut ? "Hết hàng" : "Còn hàng")</span>
+                                <span class="v17_2643 @dotClass"></span>
+                                <span style="font-weight: 600; color: #374151;">@statusText</span>
                             </div>
                         </td>
                         <td class="text-end">
