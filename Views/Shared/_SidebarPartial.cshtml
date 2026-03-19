@@ -10,7 +10,7 @@
                 <div class="sidebar-logo-icon">🍕</div>
                 <div class="sidebar-logo-text-group">
                     <h6 class="sidebar-title">Pizza Admin</h6>
-                    <span class="sidebar-subtitle">@(User.IsInRole("Admin") ? "Quản trị viên" : "Nhân viên")</span>
+                    <span class="sidebar-subtitle">Cổng thông tin quản lý</span>
                 </div>
             </div>
             <button id="sidebarToggle" class="sidebar-toggle-btn">
@@ -19,7 +19,7 @@
         </div>
 
         <nav class="sidebar-menu">
-            <a asp-controller="Statistics" asp-action="Daily" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Statistics" ? "active" : "")">
+            <a asp-controller="Statistics" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Statistics" ? "active" : "")">
                 <i class="bi bi-grid"></i> <span class="link-text">Thống Kê</span>
             </a>
             <a asp-controller="Product" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Product" ? "active" : "")">

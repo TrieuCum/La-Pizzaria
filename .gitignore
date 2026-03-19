@@ -44,6 +44,7 @@ project.fragment.lock.json
 artifacts/
 
 # Environment files
+appsettings.json
 appsettings.Development.json
 .env
 .env.*

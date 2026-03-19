@@ -987,3 +987,210 @@ body.has-sidebar.sidebar-collapsed .content-wrapper {
 }
 .extra-small { font-size: 0.75rem; }
 .cursor-pointer { cursor: pointer; }
+
+/* ============================================
+   DASHBOARD / STATISTICS REDESIGN
+   ============================================ */
+.dashboard-container {
+    padding: 24px;
+    background: #F8FAFC;
+    min-height: 100vh;
+}
+
+.dashboard-title {
+    font-weight: 700;
+    font-size: 28px;
+    color: #0F172A;
+    margin: 0;
+}
+
+.search-box-dashboard {
+    position: relative;
+    width: 300px;
+}
+
+.search-box-dashboard i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94A3B8;
+}
+
+.search-input-dashboard {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.search-input-dashboard:focus {
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+}
+
+/* Stat Cards */
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+}
+
+.stat-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.icon-revenue { background: #FFF7ED; color: #F97316; }
+.icon-orders { background: #EFF6FF; color: #3B82F6; }
+.icon-vouchers { background: #F5F3FF; color: #8B5CF6; }
+
+.stat-percentage {
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 20px;
+}
+
+.stat-percentage.pos { background: #DCFCE7; color: #15803D; }
+.stat-percentage.neut { background: #F1F5F9; color: #64748B; }
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #94A3B8;
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-weight: 800;
+    font-size: 24px;
+    color: #0F172A;
+    margin: 0;
+}
+
+/* Section Cards */
+.section-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    font-weight: 700;
+    font-size: 18px;
+    color: #0F172A;
+    margin: 0;
+}
+
+.btn-filter {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    padding: 6px 16px;
+}
+
+.btn-filter.active {
+    background: white;
+    color: #0F172A;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.btn-view-all {
+    color: var(--brand-orange);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+/* Table Dashboard */
+.table-dashboard {
+    margin: 0;
+}
+
+.table-dashboard thead th {
+    background: #F8FAFC;
+    border: none;
+    color: #94A3B8;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 12px 16px;
+}
+
+.table-dashboard tbody td {
+    padding: 16px;
+    vertical-align: middle;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 14px;
+}
+
+.order-id { font-weight: 700; color: var(--brand-orange); }
+.customer-info { display: flex; align-items: center; gap: 10px; }
+.customer-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #E0F2FE;
+    color: #0284C7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+}
+.customer-name { font-weight: 600; color: #0F172A; }
+.total-amount { font-weight: 700; color: #0F172A; }
+.items-summary { color: #64748B; font-size: 13px; }
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-pending { background: #FEF3C7; color: #B45309; }
+.status-completed, .status-delivered, .status-đã-giao { background: #DCFCE7; color: #15803D; }
+.status-preparing, .status-chuẩn-bị { background: #FFE4E6; color: #E11D48; }
+.status-shipping, .status-đang-trên-đường { background: #E0F2FE; color: #0284C7; }
+.status-cancelled, .status-đã-hủy { background: #F1F5F9; color: #64748B; }
+
+.btn-action {
+    background: none;
+    border: none;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.btn-action:hover { color: #0F172A; }
