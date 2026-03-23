@@ -30,7 +30,7 @@
                 Xem chi tiết
             </a>
             <button class="btn btn-brand-primary w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2"
-                    onclick="cart.add({ id: @Model.Id, name: '@Model.Name', price: @Model.Price, imageUrl: '@Model.ImageUrl', type: 'product' }); window.showToast('Đã thêm @Model.Name vào giỏ', 'success');">
+                    onclick="cart.add({ id: @Model.Id, name: '@Model.Name.Replace("'", "\\'")', basePrice: @Model.Price, imageUrl: '@Model.ImageUrl', type: 'product' }, 'M'); window.showToast('Đã thêm @Model.Name vào giỏ', 'success');">
                 <i class="bi bi-cart-plus fs-5"></i> Thêm vào giỏ
             </button>
         </div>

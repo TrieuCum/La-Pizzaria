@@ -171,6 +171,19 @@ namespace LaPizzaria.Data
                 .WithMany()
                 .HasForeignKey(c => c.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // OrderDetail relationships
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(od => od.Product)
+                .WithMany(p => p.OrderDetails)
+                .HasForeignKey(od => od.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(od => od.Product2)
+                .WithMany()
+                .HasForeignKey(od => od.ProductId2)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

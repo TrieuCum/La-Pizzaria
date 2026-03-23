@@ -1,4 +1,4 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
 // Write your JavaScript code.
@@ -126,22 +126,31 @@ const Cart = {
     this.updateSummary();
   },
 
-  add(product) {
-    // product: { id, name, price, imageUrl, type }
+  add(product, size = 'M') {
+    // product: { id, name, price, imageUrl, type, id2 }
     const items = this.get();
-    const existing = items.find(i => i.id === product.id && i.type === product.type);
+    const existing = items.find(i => i.id === product.id && i.type === product.type && i.id2 === product.id2 && (i.size || 'M') === size);
     const sanitizedUrl = window.sanitizeImageUrl(product.imageUrl);
 
     if (existing) {
       existing.quantity = (existing.quantity || 1) + 1;
     } else {
+      // Calculate modifier for initial price
+      let modifier = 0;
+      if (size === 'S') modifier = -30000;
+      else if (size === 'L') modifier = 50000;
+
       items.push({
         id: product.id,
+        id2: product.id2 || null,
         name: product.name,
-        price: product.price,
+        basePrice: product.basePrice || product.price, // Store the size M price
+        price: (product.basePrice || product.price) + modifier,
         imageUrl: sanitizedUrl,
+        imageUrl2: product.imageUrl2 ? window.sanitizeImageUrl(product.imageUrl2) : null,
         type: product.type || 'product',
-        quantity: 1
+        quantity: 1,
+        size: size
       });
     }
 
@@ -159,15 +168,57 @@ const Cart = {
     }
   },
 
-  remove(id, type = 'product') {
+  addMix(p1, p2, size = 'M') {
+    const avgBasePrice = (p1.price + p2.price) / 2;
+    const mixName = `Mix: ${p1.name} / ${p2.name}`;
+    const mixProduct = {
+        id: p1.id,
+        id2: p2.id,
+        name: mixName,
+        basePrice: avgBasePrice,
+        price: avgBasePrice, // add() will handle modifier
+        imageUrl: '/images/mix-default.png',
+        imageUrl2: p2.imageUrl,
+        type: 'product'
+    };
+    this.add(mixProduct, size);
+  },
+
+  updateSize(id, type, newSize, id2 = null, oldSize = 'M') {
+    const items = this.get();
+    // Find item by ID/Type/Size combo
+    const item = items.find(i => i.id === id && i.type === type && i.id2 === id2 && (i.size || 'M') === oldSize);
+    
+    if (item && item.size !== newSize) {
+        // Check if an item with the new size already exists - if so, merge them
+        const existingNewSize = items.find(i => i.id === id && i.type === type && i.id2 === id2 && (i.size || 'M') === newSize);
+        
+        if (existingNewSize) {
+            existingNewSize.quantity += item.quantity;
+            items.splice(items.indexOf(item), 1);
+        } else {
+            // Update item in place
+            item.size = newSize;
+            let modifier = 0;
+            if (newSize === 'S') modifier = -30000;
+            else if (newSize === 'L') modifier = 50000;
+            
+            item.price = (item.basePrice || item.price) + modifier;
+        }
+        
+        this.save(items);
+    }
+  },
+
+  remove(id, type = 'product', id2 = null, size = 'M') {
     let items = this.get();
-    items = items.filter(i => !(i.id === id && i.type === type));
+    items = items.filter(i => !(i.id === id && i.type === type && i.id2 === id2 && (i.size || 'M') === size));
     this.save(items);
   },
 
-  updateQuantity(id, type, quantity) {
+  updateQuantity(id, type, quantity, id2 = null, size = 'M') {
     const items = this.get();
-    const item = items.find(i => i.id === id && i.type === type);
+    const item = items.find(i => i.id === id && i.type === type && i.id2 === id2 && (i.size || 'M') === size);
     if (item) {
       item.quantity = Math.max(1, parseInt(quantity) || 1);
       this.save(items);
@@ -212,19 +263,28 @@ const Cart = {
     // Items list
     container.innerHTML = items.map(item => `
         <div class="d-flex gap-3 mb-3 pb-3 border-bottom align-items-center">
-            <div class="rounded-pill overflow-hidden bg-brand-bg flex-shrink-0" style="width: 60px; height: 60px;">
-                <img src="${window.sanitizeImageUrl(item.imageUrl)}" class="w-100 h-100 object-fit-cover" alt="${item.name}">
+            <div class="rounded-pill overflow-hidden bg-light flex-shrink-0 border" style="width: 60px; height: 60px;">
+                <img src="${window.sanitizeImageUrl((item.id2 || (item.name && item.name.startsWith('Mix:'))) ? '/images/mix-default.png' : item.imageUrl)}" class="w-100 h-100 object-fit-cover" alt="${item.name}">
             </div>
             <div class="flex-grow-1 min-w-0">
                 <h6 class="mb-0 fw-bold text-truncate">${item.name}</h6>
-                <div class="text-brand-orange fw-black small">${item.price.toLocaleString()}₫</div>
+                <div class="d-flex align-items-center gap-2">
+                    <select class="form-select form-select-sm py-0 px-1 border-0 bg-light extra-small fw-bold" 
+                            style="width: auto; cursor: pointer;"
+                            onchange="cart.updateSize(${item.id}, '${item.type}', this.value, ${item.id2 || 'null'}, '${item.size || 'M'}')">
+                        <option value="S" ${item.size === 'S' ? 'selected' : ''}>Size S</option>
+                        <option value="M" ${item.size === 'M' || !item.size ? 'selected' : ''}>Size M</option>
+                        <option value="L" ${item.size === 'L' ? 'selected' : ''}>Size L</option>
+                    </select>
+                    <div class="text-brand-orange fw-black small">${item.price.toLocaleString()}₫</div>
+                </div>
                 <div class="d-flex align-items-center gap-2 mt-2">
-                    <button class="btn btn-sm btn-light p-0 rounded-circle" style="width: 24px; height: 24px;" onclick="cart.updateQuantity(${item.id}, '${item.type}', ${item.quantity - 1})">-</button>
+                    <button class="btn btn-sm btn-light p-0 rounded-circle" style="width: 24px; height: 24px;" onclick="cart.updateQuantity(${item.id}, '${item.type}', ${item.quantity - 1}, ${item.id2 || 'null'}, '${item.size || 'M'}')">-</button>
                     <span class="small fw-bold">${item.quantity}</span>
-                    <button class="btn btn-sm btn-light p-0 rounded-circle" style="width: 24px; height: 24px;" onclick="cart.updateQuantity(${item.id}, '${item.type}', ${item.quantity + 1})">+</button>
+                    <button class="btn btn-sm btn-light p-0 rounded-circle" style="width: 24px; height: 24px;" onclick="cart.updateQuantity(${item.id}, '${item.type}', ${item.quantity + 1}, ${item.id2 || 'null'}, '${item.size || 'M'}')">+</button>
                 </div>
             </div>
-            <button class="btn btn-sm text-brand-red p-0" onclick="cart.remove(${item.id}, '${item.type}')">
+            <button class="btn btn-sm text-brand-red p-0" onclick="cart.remove(${item.id}, '${item.type}', ${item.id2 || 'null'}, '${item.size || 'M'}')">
                 <i class="bi bi-trash"></i>
             </button>
         </div>
@@ -257,7 +317,7 @@ const Cart = {
   },
 
   async updateSummary() {
-    const items = this.get().map(i => ({ productId: i.id, quantity: i.quantity, unitPrice: i.price }));
+    const items = this.get().map(i => ({ productId: i.id, productId2: i.id2, quantity: i.quantity, unitPrice: i.price, size: i.size || 'M' }));
     const voucherIds = this.getVoucherIds();
     
     if (items.length === 0) {

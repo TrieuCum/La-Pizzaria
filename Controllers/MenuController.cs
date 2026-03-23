@@ -109,5 +109,15 @@ namespace LaPizzaria.Controllers
                 return NotFound();
             return View(combo);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> MixPizza(int? id1)
+        {
+            var pizzas = await _db.Products
+                .Where(p => p.Category == "Pizza" && p.IsActive)
+                .ToListAsync();
+            ViewBag.SelectedId1 = id1;
+            return View(pizzas);
+        }
     }
 }

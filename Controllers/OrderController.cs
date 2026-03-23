@@ -105,19 +105,41 @@ namespace LaPizzaria.Controllers
         public async Task<IActionResult> Preview([FromBody] QrOrderRequest req)
         {
             var items = req.Items ?? new List<QrOrderItem>();
-            var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+            var productIds = items.Select(i => i.ProductId).Concat(items.Where(i => i.ProductId2.HasValue).Select(i => i.ProductId2!.Value)).Distinct().ToList();
             var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
 
             var details = new List<OrderDetail>();
             foreach (var it in items)
             {
-                if (!products.TryGetValue(it.ProductId, out var p) && it.UnitPrice == null)
+                if (!products.TryGetValue(it.ProductId, out var p1) && it.UnitPrice == null)
                 {
-                    // Unknown product and no explicit price; skip
                     continue;
                 }
-                var price = it.UnitPrice ?? (products.TryGetValue(it.ProductId, out var prod) ? prod.Price : 0m);
-                details.Add(new OrderDetail { ProductId = it.ProductId, Quantity = it.Quantity, UnitPrice = price, Subtotal = price * it.Quantity });
+                
+                decimal price = 0;
+                if (it.UnitPrice != null)
+                {
+                    price = it.UnitPrice.Value;
+                }
+                else if (p1 != null)
+                {
+                    decimal p1Price = p1.Price;
+                    // Apply size modifier
+                    decimal modifier = 0;
+                    if (it.Size == "S") modifier = -30000;
+                    else if (it.Size == "L") modifier = 50000;
+
+                    decimal finalUnitPrice = p1Price + modifier;
+
+                    if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
+                    {
+                        decimal p2Price = p2.Price + modifier;
+                        finalUnitPrice = (finalUnitPrice + p2Price) / 2;
+                    }
+                    price = finalUnitPrice;
+                }
+                
+                details.Add(new OrderDetail { ProductId = it.ProductId, ProductId2 = it.ProductId2, Quantity = it.Quantity, UnitPrice = price, Subtotal = price * it.Quantity, Size = it.Size });
             }
 
             var subtotal = details.Sum(d => d.Subtotal);
@@ -171,6 +193,8 @@ namespace LaPizzaria.Controllers
             var order = await _db.Orders
                 .Include(o => o.OrderDetails!)
                 .ThenInclude(od => od.Product)
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product2)
                 .Include(o => o.User)
                 .Include(o => o.OrderVouchers!)
                 .ThenInclude(ov => ov.Voucher)
@@ -185,6 +209,7 @@ namespace LaPizzaria.Controllers
         {
             var order = await _db.Orders
                 .Include(o => o.OrderDetails!).ThenInclude(od => od.Product)
+                .Include(o => o.OrderDetails!).ThenInclude(od => od.Product2)
                 .Include(o => o.User)
                 .Include(o => o.OrderVouchers!).ThenInclude(ov => ov.Voucher)
                 .FirstOrDefaultAsync(o => o.Id == id);
@@ -249,12 +274,24 @@ namespace LaPizzaria.Controllers
                 OrderCode = "PH" + order.Id,
                 OrderDateDisplay = order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
                 OrderStatusDisplay = order.OrderStatus ?? "Đang chuẩn bị",
-                Lines = order.OrderDetails?.Select((od, i) => new InvoicePrintLine
-                {
-                    Stt = i + 1,
-                    ProductName = od.Product?.Name ?? "Món #" + od.ProductId,
-                    Quantity = od.Quantity,
-                    UnitPrice = od.UnitPrice
+                Lines = order.OrderDetails?.Select((od, i) => {
+                    var name = od.Product?.Name ?? "Món #" + od.ProductId;
+                    if (od.ProductId2.HasValue && od.Product2 != null)
+                    {
+                        name = $"Mix: {od.Product?.Name} / {od.Product2.Name}";
+                    }
+                    if (!string.IsNullOrEmpty(od.Size))
+                    {
+                        name += $" (Size {od.Size})";
+                    }
+
+                    return new InvoicePrintLine
+                    {
+                        Stt = i + 1,
+                        ProductName = name,
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice
+                    };
                 }).ToList() ?? new List<InvoicePrintLine>()
             };
 
@@ -314,13 +351,40 @@ namespace LaPizzaria.Controllers
         {
             try
             {
-                var details = req.Items.Select(i => new OrderDetail
+                var details = new List<OrderDetail>();
+                foreach (var item in req.Items)
                 {
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice,
-                    Subtotal = i.UnitPrice * i.Quantity
-                }).ToList();
+                    var p1 = await _db.Products.FindAsync(item.ProductId);
+                    if (p1 == null) continue;
+
+                    decimal p1Price = p1.Price;
+                    // Apply size modifier
+                    decimal modifier = 0;
+                    if (item.Size == "S") modifier = -30000;
+                    else if (item.Size == "L") modifier = 50000;
+
+                    decimal finalUnitPrice = p1Price + modifier;
+
+                    if (item.ProductId2.HasValue)
+                    {
+                        var p2 = await _db.Products.FindAsync(item.ProductId2.Value);
+                        if (p2 != null)
+                        {
+                            decimal p2Price = p2.Price + modifier;
+                            finalUnitPrice = (finalUnitPrice + p2Price) / 2;
+                        }
+                    }
+
+                    details.Add(new OrderDetail
+                    {
+                        ProductId = item.ProductId,
+                        ProductId2 = item.ProductId2,
+                        Quantity = item.Quantity,
+                        UnitPrice = finalUnitPrice,
+                        Subtotal = finalUnitPrice * item.Quantity,
+                        Size = item.Size
+                    });
+                }
 
                 var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>(), req.DeliveryAddress, req.Latitude, req.Longitude);
                 // Attach up to 2 vouchers if provided and valid
@@ -420,17 +484,37 @@ namespace LaPizzaria.Controllers
                 if (req.Items != null)
                 {
                     var productIds = req.Items.Select(i => i.ProductId).Distinct().ToList();
-                    var priceMap = await _db.Products.Where(p => productIds.Contains(p.Id))
-                        .ToDictionaryAsync(p => p.Id, p => p.Price);
+                    var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+
                     foreach (var it in req.Items)
                     {
-                        decimal price = it.UnitPrice ?? (priceMap.TryGetValue(it.ProductId, out var p) ? p : 0m);
+                        decimal price = it.UnitPrice ?? 0m; // Default to 0 if UnitPrice is null
+                        if (it.UnitPrice == null && products.TryGetValue(it.ProductId, out var p1))
+                        {
+                            decimal p1Price = p1.Price;
+                            // Apply size modifier
+                            decimal modifier = 0;
+                            if (it.Size == "S") modifier = -30000;
+                            else if (it.Size == "L") modifier = 50000;
+
+                            decimal finalUnitPrice = p1Price + modifier;
+
+                            if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
+                            {
+                                decimal p2Price = p2.Price + modifier;
+                                finalUnitPrice = (finalUnitPrice + p2Price) / 2;
+                            }
+                            price = finalUnitPrice;
+                        }
+
                         details.Add(new OrderDetail
                         {
                             ProductId = it.ProductId,
+                            ProductId2 = it.ProductId2,
                             Quantity = it.Quantity,
                             UnitPrice = price,
-                            Subtotal = price * it.Quantity
+                            Subtotal = price * it.Quantity,
+                            Size = it.Size
                         });
                     }
                 }
@@ -477,8 +561,10 @@ namespace LaPizzaria.Controllers
     public class ItemDto
     {
         public int ProductId { get; set; }
+        public int? ProductId2 { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
+        public string? Size { get; set; }
     }
 
     public class QrOrderRequest
@@ -495,9 +581,9 @@ namespace LaPizzaria.Controllers
     public class QrOrderItem
     {
         public int ProductId { get; set; }
+        public int? ProductId2 { get; set; }
         public int Quantity { get; set; }
         public decimal? UnitPrice { get; set; }
+        public string? Size { get; set; }
     }
 }
-
-

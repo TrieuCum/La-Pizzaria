@@ -40,12 +40,45 @@
                             }
                         </ul>
                     }
-                    <div class="d-flex align-items-center gap-4 flex-wrap">
-                        <span class="fw-black fs-3 text-brand-orange">@Model.Price.ToString("N0")₫</span>
-                        <button type="button" class="btn btn-brand-primary btn-lg px-4 py-3 rounded-3 fw-bold"
-                                onclick="cart.add({ id: @Model.Id, name: '@Model.Name.Replace("'", "\\'")', price: @Model.Price, imageUrl: '@Img(Model.ImageUrl)', type: 'product' }); typeof window.showToast === 'function' && window.showToast('Đã thêm @Model.Name vào giỏ', 'success');">
+                    @if (Model.Category == "Pizza")
+                    {
+                        <div class="size-selection-box mb-4">
+                            <label class="fw-bold small text-brand-gray mb-2 d-block">CHỌN KÍCH CỠ:</label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="pizza-size" id="size-s" value="S" onchange="updateProductPrice('S')">
+                                    <label class="btn btn-outline-brand w-100 p-2 border-2 d-flex flex-column align-items-center" for="size-s">
+                                        <span class="small fw-bold">Size S</span>
+                                        <span class="extra-small opacity-75">20cm (-30k)</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="pizza-size" id="size-m" value="M" checked onchange="updateProductPrice('M')">
+                                    <label class="btn btn-outline-brand w-100 p-2 border-2 d-flex flex-column align-items-center" for="size-m">
+                                        <span class="small fw-bold">Size M</span>
+                                        <span class="extra-small opacity-75">25cm (Gốc)</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="pizza-size" id="size-l" value="L" onchange="updateProductPrice('L')">
+                                    <label class="btn btn-outline-brand w-100 p-2 border-2 d-flex flex-column align-items-center" for="size-l">
+                                        <span class="small fw-bold">Size L</span>
+                                        <span class="extra-small opacity-75">30cm (+50k)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <span class="fw-black fs-3 text-brand-orange" id="display-price">@Model.Price.ToString("N0")₫</span>
+                        <button type="button" class="btn btn-brand-primary btn-lg px-4 py-3 rounded-4 fw-bold shadow-sm"
+                                onclick="addToCartWithSize()">
                             <i class="bi bi-cart-plus me-2"></i> Thêm vào giỏ
                         </button>
+                        <a asp-controller="Menu" asp-action="MixPizza" asp-route-id1="@Model.Id" class="btn btn-outline-brand btn-lg px-4 py-3 rounded-4 fw-bold">
+                            <i class="bi bi-intersect me-2"></i> Ghép 2 nửa
+                        </a>
                     </div>
                     <div class="mt-4 pt-3 border-top">
                         <a asp-controller="Menu" asp-action="Index" class="btn btn-outline-secondary rounded-3">← Quay lại thực đơn</a>
@@ -69,4 +102,47 @@
     .breadcrumb-custom .active { color: var(--brand-dark); font-weight: 600; }
     .btn-brand-primary { background: var(--brand-orange); color: #fff; border: none; }
     .btn-brand-primary:hover { background: #e07a1f; color: #fff; }
+
+    /* Size selector styling */
+    .btn-outline-brand { border-color: var(--brand-orange); color: var(--brand-orange); }
+    .btn-outline-brand:hover { background: var(--brand-orange); color: #fff; }
+    .btn-check:checked + .btn-outline-brand { background: var(--brand-orange); color: #fff; border-color: var(--brand-orange); box-shadow: 0 4px 12px rgba(244, 140, 37, 0.2); }
+    .border-2 { border-width: 2px !important; }
 </style>
+
+<script>
+    let currentBasePrice = @Model.Price;
+    let selectedSize = 'M';
+
+    function updateProductPrice(size) {
+        selectedSize = size;
+        let modifier = 0;
+        if (size === 'S') modifier = -30000;
+        else if (size === 'L') modifier = 50000;
+
+        const finalPrice = currentBasePrice + modifier;
+        document.getElementById('display-price').innerText = new Intl.NumberFormat('vi-VN').format(finalPrice) + '₫';
+    }
+
+    function addToCartWithSize() {
+        let modifier = 0;
+        if (selectedSize === 'S') modifier = -30000;
+        else if (selectedSize === 'L') modifier = 50000;
+        
+        const finalPrice = @Model.Price + modifier;
+
+        if (window.cart) {
+            window.cart.add({
+                id: @Model.Id,
+                name: '@Model.Name.Replace("'", "\\'")',
+                basePrice: @Model.Price,
+                imageUrl: '@Img(Model.ImageUrl)',
+                type: 'product'
+            }, selectedSize);
+            
+            if (typeof window.showToast === 'function') {
+                window.showToast(`Đã thêm @Model.Name (Size ${selectedSize}) vào giỏ`, 'success');
+            }
+        }
+    }
+</script>

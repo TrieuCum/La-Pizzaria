@@ -102,16 +102,28 @@
                             @foreach (var d in Model.OrderDetails)
                             {
                                 <div class="order-detail-item">
-                                    @if (!string.IsNullOrEmpty(d.Product?.ImageUrl))
-                                    {
-                                        <img class="order-detail-item-img" src="@d.Product.ImageUrl" alt="@d.Product.Name" />
+                                    @{
+                                        var isMix = d.ProductId2.HasValue && d.Product2 != null;
+                                        var displayImg = isMix ? "/images/mix-default.png" : (d.Product?.ImageUrl ?? "/images/v17_1114.png");
                                     }
-                                    else
-                                    {
-                                        <div class="order-detail-item-img d-flex align-items-center justify-content-center bg-light text-secondary"><i class="bi bi-image fs-4"></i></div>
-                                    }
+                                    <div class="order-detail-item-img position-relative overflow-hidden border">
+                                        <img src="@displayImg" class="w-100 h-100 object-fit-cover" alt="@(isMix ? "Pizza Mix" : (d.Product?.Name ?? "Product"))" />
+                                    </div>
                                     <div class="order-detail-item-info">
-                                        <div class="order-detail-item-name">@(d.Product?.Name ?? "Món #" + d.ProductId)</div>
+                                        @{
+                                            var itemName = d.Product?.Name ?? "Món #" + d.ProductId;
+                                            if (d.ProductId2.HasValue && d.Product2 != null)
+                                            {
+                                                itemName = $"Mix: {d.Product?.Name} / {d.Product2.Name}";
+                                            }
+                                        }
+                                        <div class="order-detail-item-name d-flex align-items-center gap-2">
+                                            @itemName
+                                            @if (!string.IsNullOrEmpty(d.Size))
+                                            {
+                                                <span class="badge bg-light text-dark border extra-small fw-bold">Size @d.Size</span>
+                                            }
+                                        </div>
                                         <div class="order-detail-item-notes">@(d.Product?.Description != null && d.Product.Description.Length > 60 ? d.Product.Description.Substring(0, 60) + "…" : d.Product?.Description)</div>
                                     </div>
                                     <div class="order-detail-item-right">

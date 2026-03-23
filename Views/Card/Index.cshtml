@@ -549,41 +549,55 @@
                 return;
             }
 
-            container.innerHTML = items.map(item => `
+            container.innerHTML = items.map(item => {
+                const isMix = item.id2 || (item.name && item.name.startsWith('Mix:'));
+                const displayImg = isMix ? '/images/mix-default.png' : item.imageUrl;
+                const size = item.size || 'M';
+                
+                return `
                 <div class="cart-item-card p-3 d-flex align-items-center gap-4">
-                    <div class="cart-img-wrap overflow-hidden">
-                        <img src="${window.sanitizeImageUrl(item.imageUrl)}" class="w-100 h-100 object-fit-cover">
+                    <div class="cart-img-wrap overflow-hidden border">
+                        <img src="${window.sanitizeImageUrl(displayImg)}" class="w-100 h-100 object-fit-cover">
                     </div>
                     <div class="flex-grow-1">
                         <h6 class="fw-black mb-1 text-brand-dark">${item.name}</h6>
-                        <div class="text-brand-gray extra-small mb-2">Cỡ lớn | Thêm phô mai đế mỏng</div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                             <select class="form-select form-select-sm py-0 px-1 border-0 bg-light extra-small fw-bold text-brand-orange" 
+                                     style="width: auto; cursor: pointer; height: 24px;"
+                                     onchange="cart.updateSize(${item.id}, '${item.type}', this.value, ${item.id2 || 'null'}, '${size}'); renderList(); updateSummary();">
+                                 <option value="S" ${size === 'S' ? 'selected' : ''}>Size S</option>
+                                 <option value="M" ${size === 'M' ? 'selected' : ''}>Size M</option>
+                                 <option value="L" ${size === 'L' ? 'selected' : ''}>Size L</option>
+                             </select>
+                             <div class="text-brand-gray extra-small">${isMix ? 'Pizza ghép 2 nửa' : (item.type === 'product' && item.name.toLowerCase().includes('pizza') ? 'Đế truyền thống' : '')}</div>
+                        </div>
                         <div class="price-val fw-black text-brand-orange">${(item.price).toLocaleString()}đ</div>
                     </div>
                     <div class="d-flex flex-column align-items-end gap-2">
                         <div class="qty-control-minimal">
-                            <button class="btn-qty-min" onclick="changeQty(${item.id}, '${item.type}', -1)">&minus;</button>
+                            <button class="btn-qty-min" onclick="changeQty(${item.id}, '${item.type}', -1, ${item.id2 || 'null'}, '${size}')">&minus;</button>
                             <span class="qty-value">${item.quantity}</span>
-                            <button class="btn-qty-min" onclick="changeQty(${item.id}, '${item.type}', 1)">&plus;</button>
+                            <button class="btn-qty-min" onclick="changeQty(${item.id}, '${item.type}', 1, ${item.id2 || 'null'}, '${size}')">&plus;</button>
                         </div>
-                        <a href="javascript:void(0)" class="small-btn" onclick="removeItem(${item.id}, '${item.type}')">Xóa món</a>
+                        <a href="javascript:void(0)" class="small-btn" onclick="removeItem(${item.id}, '${item.type}', ${item.id2 || 'null'}, '${size}')">Xóa món</a>
                     </div>
                 </div>
-            `).join('');
+            `;}).join('');
         }
 
-        function changeQty(id, type, delta) {
+        function changeQty(id, type, delta, id2 = null, size = 'M') {
             const items = cart.get();
-            const item = items.find(i => i.id === id && i.type === type);
+            const item = items.find(i => i.id === id && i.type === type && (i.id2 || null) === (id2 || null) && (i.size || 'M') === size);
             if (item) {
                 const newQty = Math.max(1, item.quantity + delta);
-                cart.updateQuantity(id, type, newQty);
+                cart.updateQuantity(id, type, newQty, id2, size);
                 renderList();
                 updateSummary();
             }
         }
 
-        function removeItem(id, type) {
-            cart.remove(id, type);
+        function removeItem(id, type, id2 = null, size = 'M') {
+            cart.remove(id, type, id2, size);
             renderList();
             updateSummary();
         }
@@ -598,7 +612,7 @@
         }
 
         async function updateSummary() {
-            const items = cart.get().map(i => ({ productId: i.id, quantity: i.quantity, unitPrice: i.price }));
+            const items = cart.get().map(i => ({ productId: i.id, productId2: i.id2, quantity: i.quantity, unitPrice: i.price, size: i.size || 'M' }));
             const voucherIds = cart.getVoucherIds();
             
             document.getElementById('count-summary').textContent = cart.count();
@@ -714,7 +728,7 @@
             if (items.length === 0) return window.showToast('Giỏ hàng trống!', 'warning');
 
             const payload = {
-                items: items.map(i => ({ productId: i.id, quantity: i.quantity, unitPrice: i.price })),
+                items: items.map(i => ({ productId: i.id, productId2: i.id2, quantity: i.quantity, unitPrice: i.price, size: i.size || 'M' })),
                 voucherIds: cart.getVoucherIds(),
                 tableCode: deliveryType === 'dine' ? document.getElementById('tableCode').value : 'SHIPPING',
                 latitude: currentLat,

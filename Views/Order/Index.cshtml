@@ -20,7 +20,14 @@
     {
         var details = o.OrderDetails?.Where(d => d.Product != null).Take(3).ToList() ?? new List<OrderDetail>();
         if (details.Count == 0) return "Đơn hàng";
-        var names = details.Select(d => d.Product!.Name).Where(n => !string.IsNullOrEmpty(n)).ToList();
+        var names = details.Select(d => {
+            string n = "";
+            if (d.ProductId2.HasValue && d.Product2 != null) n = $"Mix: {d.Product?.Name} / {d.Product2.Name}";
+            else n = d.Product?.Name ?? "";
+            
+            if (!string.IsNullOrEmpty(d.Size)) n += $" ({d.Size})";
+            return n;
+        }).Where(n => !string.IsNullOrEmpty(n)).ToList();
         if (names.Count == 0) return "Đơn hàng";
         return names.Count == 1 ? names[0] : string.Join(" & ", names);
     }
