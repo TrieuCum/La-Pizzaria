@@ -384,6 +384,17 @@ const Cart = {
     const ineligible = document.getElementById('globalListIneligible');
     if (!available || !ineligible) return;
 
+    const formatPercent = (p) => {
+      const num = Number(p);
+      if (!Number.isFinite(num)) return '';
+
+      const roundedInt = Math.round(num);
+      if (Math.abs(num - roundedInt) < 1e-9) return String(roundedInt); // 20.00 -> 20
+
+      // Trim any trailing zeros from non-integers like 12.5000 -> 12.5
+      return String(num).replace(/(\.\d*?[1-9])0+$/, '$1');
+    };
+
     available.innerHTML = ''; ineligible.innerHTML = '';
     this._allVouchers.forEach(v => {
         const isEligible = subtotal >= (v.minOrderValue || 0);
@@ -393,7 +404,8 @@ const Cart = {
         let icon = 'bi-ticket-perforated';
 
         if(v.type === 'Percentage') {
-            discountLabel = `${v.percent}%`;
+            const percentText = formatPercent(v.percent);
+            discountLabel = `${percentText}%`;
             typeLabel = 'Giảm giá';
             icon = 'bi-percent';
         } else if(v.type === 'FixedAmount') {
@@ -428,7 +440,7 @@ const Cart = {
             </div>
             <div class="voucher-details-expand">
                 <div class="fw-bold mb-1">• Chi tiết ưu đãi:</div>
-                ${v.type === 'Percentage' ? `Giảm ${v.percent}% tổng đơn hàng.` : (v.type === 'FreeShipping' ? `Miễn phí vận chuyển (tối đa ${(v.amount || 0).toLocaleString()}đ).` : `Giảm ${(v.amount || 0).toLocaleString()}đ cho đơn hàng.`)}
+                ${v.type === 'Percentage' ? `Giảm ${formatPercent(v.percent)}% tổng đơn hàng.` : (v.type === 'FreeShipping' ? `Miễn phí vận chuyển (tối đa ${(v.amount || 0).toLocaleString()}đ).` : `Giảm ${(v.amount || 0).toLocaleString()}đ cho đơn hàng.`)}
                 <div class="mt-1">• Đơn tối thiểu: ${(v.minOrderValue || 0).toLocaleString()}đ</div>
                 <div>• Hạn dùng: ${v.expiresAtUtc ? new Date(v.expiresAtUtc).toLocaleDateString('vi-VN') : 'Không thời hạn'}</div>
             </div>`;

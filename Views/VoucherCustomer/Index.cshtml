@@ -8,6 +8,9 @@
         if (url.StartsWith("file:///", StringComparison.OrdinalIgnoreCase)) return "/images/" + System.IO.Path.GetFileName(url);
         return url;
     }
+
+    // Format percent without trailing ".00" (e.g. 20.00 -> 20, 12.50 -> 12.5)
+    string FormatPercent(decimal p) => p.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 }
 
 <style>
@@ -401,7 +404,7 @@
                 {
                     var imgSrc = imgs[idx % imgs.Length];
                     idx++;
-                    var badge = v.VoucherType == "Percentage" ? $"{v.DiscountPercent}% OFF" : v.VoucherType == "FixedAmount" ? $"{v.DiscountAmount:N0}₫" : "FREESHIP";
+                    var badge = v.VoucherType == "Percentage" ? $"{FormatPercent(v.DiscountPercent)}% OFF" : v.VoucherType == "FixedAmount" ? $"{v.DiscountAmount:N0}₫" : "FREESHIP";
                     var isSaved = Model.SavedVoucherIds.Contains(v.Id);
                     <div class="voucher-card" data-voucher-id="@v.Id">
                         <div class="voucher-card-banner">
@@ -415,7 +418,7 @@
                                 @(v.ExpiresAtUtc.HasValue ? $"Hết hạn: {v.ExpiresAtUtc.Value:dd/MM/yyyy}" : "Không giới hạn")
                             </div>
                             <p class="voucher-desc">
-                                @if (v.VoucherType == "Percentage") { <text>Giảm @v.DiscountPercent% cho đơn hàng. Min @v.MinOrderValue.ToString("N0")₫.</text> }
+                                @if (v.VoucherType == "Percentage") { <text>Giảm @FormatPercent(v.DiscountPercent)% cho đơn hàng. Min @v.MinOrderValue.ToString("N0")₫.</text> }
                                 else if (v.VoucherType == "FixedAmount") { <text>Giảm @v.DiscountAmount.ToString("N0")₫. Min đơn @v.MinOrderValue.ToString("N0")₫.</text> }
                                 else { <text>Miễn phí vận chuyển.</text> }
                             </p>

@@ -320,7 +320,7 @@
                             <td>
                                 @if (v.VoucherType == "Percentage")
                                 {
-                                    <span>Giảm @v.DiscountPercent%</span>
+                                    <span>Giảm @v.DiscountPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%</span>
                                 }
                                 else if (v.VoucherType == "FixedAmount")
                                 {
