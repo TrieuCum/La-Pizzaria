@@ -244,6 +244,23 @@
         }
         .shipper-profile-link:hover { background: #FDF2E9; color: #E67E22; }
         .shipper-profile-link img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #E67E22; }
+
+        .btn-detail-outline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            border: 1px solid #E67E22;
+            color: #E67E22;
+            background: transparent;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn-detail-outline:hover { background: #FDF2E9; color: #cf7119; }
     </style>
 </head>
 <body class="bg-white">
@@ -280,6 +297,9 @@
                 </iframe>
             </div>
             <div class="order-detail">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                    <a asp-controller="Order" asp-action="Detail" asp-route-id="ORD-7829" class="btn-detail-outline">Xem chi tiết</a>
+                </div>
                 <div class="order-meta">
                     <div>
                         <span class="order-id">MÃ ĐƠN #7829</span>
@@ -317,22 +337,24 @@
         </div>
 
         <div class="new-order-item">
-            <div>
+            <div style="flex: 1; min-width: 0;">
                 <div style="font-weight: 800; font-size: 16px; color: #2C3E50;">#7832 - Pizza Phô mai & Rau củ</div>
                 <div style="font-size: 13px; color: #7F8C8D; margin-top: 6px;">
                     📍 456 Võ Văn Kiệt, Q.1 | 📏 1.2 km | 🕒 12 phút chuẩn bị | <span style="color: #E67E22; font-weight: 700;">Ship: 25.000đ</span>
                 </div>
             </div>
+            <a asp-controller="Order" asp-action="Detail" asp-route-id="ORD-7832" class="btn-detail-outline">Xem chi tiết</a>
             <button class="btn-accept">Chấp nhận</button>
         </div>
 
         <div class="new-order-item">
-            <div>
+            <div style="flex: 1; min-width: 0;">
                 <div style="font-weight: 800; font-size: 16px; color: #2C3E50;">#7835 - Pizza Gà BBQ</div>
                 <div style="font-size: 13px; color: #7F8C8D; margin-top: 6px;">
                     📍 789 Trần Hưng Đạo, Q.5 | 📏 3.5 km | ✨ Sẵn sàng | <span style="color: #E67E22; font-weight: 700;">Ship: 35.000đ</span>
                 </div>
             </div>
+            <a asp-controller="Order" asp-action="Detail" asp-route-id="ORD-7835" class="btn-detail-outline">Xem chi tiết</a>
             <button class="btn-accept">Chấp nhận</button>
         </div>
 

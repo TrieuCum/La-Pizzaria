@@ -85,6 +85,16 @@ namespace LaPizzaria.Controllers
             return View(model);
         }
 
+        /// <summary>Chi tiết đơn giao hàng (shipper) — dữ liệu mock trong view.</summary>
+        [HttpGet]
+        [Authorize(Roles = "Shipper")]
+        public IActionResult Detail(string? id)
+        {
+            ViewData["Title"] = "Chi tiết đơn hàng";
+            ViewBag.OrderCode = string.IsNullOrWhiteSpace(id) ? "ORD-2024" : id;
+            return View();
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult ScanQr()
