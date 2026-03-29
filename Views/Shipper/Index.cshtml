@@ -8,6 +8,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css?family=Work+Sans:400,500,600,700,800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#f48c25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221910",
+                        "surface-dark": "#2c2219",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+        .material-symbols-outlined.fill { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
+    </style>
     <title>Lapizzaria Shipper - Dashboard</title>
     <style>
         body {
@@ -15,72 +36,6 @@
             padding: 0;
             font-family: 'Work Sans', sans-serif;
             background-color: #FFFFFF;
-        }
-
-        /* --- NAVBAR TRÊN --- */
-        .v419_2 {
-            width: 100%;
-            height: 80px;
-            background: #FFFFFF;
-            border-bottom: 1px solid #F0F0F0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 50px;
-            box-sizing: border-box;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .v419_4 {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-        }
-
-        .v419_5 {
-            font-size: 22px;
-            font-weight: 800;
-            color: #000000;
-        }
-
-        .v419_6 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #E67E22;
-        }
-
-        .v419_8 {
-            display: flex;
-            gap: 25px;
-            align-items: center;
-        }
-
-        .v419_9, .v419_10, .v419_11 {
-            font-size: 14px;
-            font-weight: 500;
-            color: #2C3E50;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .v419_9 {
-            font-weight: 700;
-            color: #000;
-        }
-
-        .v419_13 {
-            background: #27AE60;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: none;
         }
 
         /* --- CONTAINER --- */
@@ -291,33 +246,9 @@
         .shipper-profile-link img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #E67E22; }
     </style>
 </head>
-<body>
+<body class="bg-white">
 
-    <div class="v419_2">
-        <div class="v419_4">
-            <span class="v419_5">Lapizzaria</span>
-            <span class="v419_6">Giao hàng</span>
-        </div>
-
-        <div class="v419_8">
-            <a asp-controller="Shipper" asp-action="Index" class="v419_9">Trang chủ</a>
-            <a asp-controller="Shipper" asp-action="Index" class="v419_10">Lịch sử giao hàng</a>
-            <a href="#" class="v419_11">Thu nhập</a>
-
-            <button class="v419_13">
-                <div style="width: 8px; height: 8px; background: #fff; border-radius: 50%;"></div>
-                <span>Đang làm việc</span>
-            </button>
-
-            <div style="display: flex; gap: 15px; align-items: center; border-left: 1px solid #EEE; padding-left: 20px;">
-                <span style="font-size: 20px; color: #95A5A6; cursor: pointer;">🔔</span>
-                <a asp-controller="Account" asp-action="Manage" class="shipper-profile-link">
-                    <img src="https://ui-avatars.com/api/?name=Shipper&background=E67E22&color=fff" alt="Avatar" />
-                    <span>Hồ sơ</span>
-                </a>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_ShipperTopNav")
 
     <div class="container">
         <div class="stats-row">

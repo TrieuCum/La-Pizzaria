@@ -8,7 +8,19 @@ namespace LaPizzaria.Controllers
     {
         public IActionResult Index()
         {
-         
+            ViewData["ShipperNav"] = "Index";
+            return View();
+        }
+
+        public IActionResult History()
+        {
+            ViewData["ShipperNav"] = "History";
+            return View();
+        }
+
+        public IActionResult Income()
+        {
+            ViewData["ShipperNav"] = "Income";
             return View();
         }
     }
