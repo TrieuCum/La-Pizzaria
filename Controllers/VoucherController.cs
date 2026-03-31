@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
 using LaPizzaria.Services;
+using Microsoft.AspNetCore.Identity;
 
 namespace LaPizzaria.Controllers
 {
@@ -15,9 +16,10 @@ namespace LaPizzaria.Controllers
 	{
 		private readonly ApplicationDbContext _db;
 		private readonly IVoucherService _svc;
-		public VoucherController(ApplicationDbContext db, IVoucherService svc)
+		private readonly UserManager<ApplicationUser> _userManager;
+		public VoucherController(ApplicationDbContext db, IVoucherService svc, UserManager<ApplicationUser> userManager)
 		{
-			_db = db; _svc = svc;
+			_db = db; _svc = svc; _userManager = userManager;
 		}
 
 		public async Task<IActionResult> Index(string? search, string? status, int page = 1, int pageSize = 10)
@@ -120,7 +122,13 @@ namespace LaPizzaria.Controllers
 		public async Task<IActionResult> ApiList()
 		{
 			var now = DateTime.UtcNow;
-			var list = (await _svc.ListActiveAsync()).Select(v => new {
+            var userId = _userManager.GetUserId(User);
+            var vouchers = await _svc.ListActiveAsync();
+            vouchers = (!string.IsNullOrEmpty(userId))
+                ? vouchers.Where(v => v.TargetUserId == null || v.TargetUserId == userId).ToList()
+                : vouchers.Where(v => v.TargetUserId == null).ToList();
+
+			var list = vouchers.Select(v => new {
 				id = v.Id,
 				code = v.Code,
 				name = v.Name,
