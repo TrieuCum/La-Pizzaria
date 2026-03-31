@@ -9,6 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700;900&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Shipper"))
+    {
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+        <script src="https://cdn.tailwindcss.com"></script>
+    }
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/LaPizzaria.styles.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
@@ -18,44 +23,48 @@
 
     <div class="content-wrapper">
         <header>
-            <nav class="navbar navbar-expand-lg brand-navbar sticky-top">
-                <div class="container">
-                    <a class="navbar-brand d-flex align-items-center me-4" asp-area="" asp-controller="Home" asp-action="Index">
-                        <span class="brand-logo-icon me-2">🍕</span>
-                        <span class="brand-logo-text">LaPizzaria</span>
-                    </a>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <div class="collapse navbar-collapse" id="mainNavbar">
-                        <ul class="header-center-nav mx-auto mb-2 mb-lg-0">
-                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
-                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Menu" ? "active" : "")" asp-controller="Menu" asp-action="Index">Món ăn</a></li>
-                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "VoucherCustomer" ? "active" : "")" asp-controller="VoucherCustomer" asp-action="Index">Khuyến mãi</a></li>
-                            @if (User.Identity?.IsAuthenticated == true)
-                            {
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Shipper"))
+            {
+                @await Html.PartialAsync("~/Views/Shipper/_ShipperTopNav.cshtml")
+            }
+            else
+            {
+                <nav class="navbar navbar-expand-lg brand-navbar sticky-top">
+                    <div class="container">
+                        <a class="navbar-brand d-flex align-items-center me-4" asp-area="" asp-controller="Home" asp-action="Index">
+                            <span class="brand-logo-icon me-2">🍕</span>
+                            <span class="brand-logo-text">LaPizzaria</span>
+                        </a>
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div class="collapse navbar-collapse" id="mainNavbar">
+                            <ul class="header-center-nav mx-auto mb-2 mb-lg-0">
+                                <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                                <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Menu" ? "active" : "")" asp-controller="Menu" asp-action="Index">Món ăn</a></li>
+                                <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "VoucherCustomer" ? "active" : "")" asp-controller="VoucherCustomer" asp-action="Index">Khuyến mãi</a></li>
                                 <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Order" ? "active" : "")" asp-controller="Order" asp-action="Index">Đơn hàng của tôi</a></li>
-                            }
-                            <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Loyalty" ? "active" : "")" asp-controller="Loyalty" asp-action="Index">Tích điểm</a></li>
-                        </ul>
-                        <div class="d-flex align-items-center gap-3">
-                            <form asp-controller="Menu" asp-action="Index" method="get" class="d-none d-xl-flex search-form-nav" role="search">
-                                <div class="search-container-v position-relative" id="navbar-search-wrapper">
-                                    <i class="bi bi-search" style="color: #94a3b8;"></i>
-                                    <input type="text" name="search" id="navbar-search-input" class="search-input-v" placeholder="Tìm kiếm pizza, món ăn, combo..." value="@Context.Request.Query["search"]" autocomplete="off" aria-label="Tìm kiếm món ăn">
-                                    <div id="navbar-search-dropdown" class="navbar-search-dropdown" style="display: none;"></div>
-                                </div>
-                                <button type="submit" class="btn btn-brand-primary ms-2 py-2 px-3 small d-none">Tìm</button>
-                            </form>
-                            <partial name="_LoginPartial" />
-                            <a href="#" style="position: relative; font-size: 22px; color: #4b5563;" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" id="cart-nav-link">
-                                <i class="bi bi-cart3"></i>
-                                <span id="cart-count" class="badge-cart-v" style="display: none; padding-left: 5px;">0</span>
-                            </a>
+                                <li><a class="nav-item-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Loyalty" ? "active" : "")" asp-controller="Loyalty" asp-action="Index">Tích điểm</a></li>
+                            </ul>
+                            <div class="d-flex align-items-center gap-3">
+                                <form asp-controller="Menu" asp-action="Index" method="get" class="d-none d-xl-flex search-form-nav" role="search">
+                                    <div class="search-container-v position-relative" id="navbar-search-wrapper">
+                                        <i class="bi bi-search" style="color: #94a3b8;"></i>
+                                        <input type="text" name="search" id="navbar-search-input" class="search-input-v" placeholder="Tìm kiếm pizza, món ăn, combo..." value="@Context.Request.Query["search"]" autocomplete="off" aria-label="Tìm kiếm món ăn">
+                                        <div id="navbar-search-dropdown" class="navbar-search-dropdown" style="display: none;"></div>
+                                    </div>
+                                    <button type="submit" class="btn btn-brand-primary ms-2 py-2 px-3 small d-none">Tìm</button>
+                                </form>
+                                <partial name="_LoginPartial" />
+                                <a href="#" style="position: relative; font-size: 22px; color: #4b5563;" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" id="cart-nav-link">
+                                    <i class="bi bi-cart3"></i>
+                                    <span id="cart-count" class="badge-cart-v" style="display: none; padding-left: 5px;">0</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            }
         </header>
 
         <div class="flex-grow-1">

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using LaPizzaria.ViewModels;
 using LaPizzaria.Helpers;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LaPizzaria.Controllers
 {
@@ -23,8 +24,11 @@ namespace LaPizzaria.Controllers
         private readonly IVoucherService _voucherService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _config;
+        private readonly IMemoryCache _memoryCache;
+        private readonly IMomoService _momoService;
+        private readonly IOrderPlacementService _orderPlacement;
 
-        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService, UserManager<ApplicationUser> userManager, IConfiguration config)
+        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService, UserManager<ApplicationUser> userManager, IConfiguration config, IMemoryCache memoryCache, IMomoService momoService, IOrderPlacementService orderPlacement)
         {
             _db = db;
             _orderService = orderService;
@@ -33,6 +37,9 @@ namespace LaPizzaria.Controllers
             _voucherService = voucherService;
             _userManager = userManager;
             _config = config;
+            _memoryCache = memoryCache;
+            _momoService = momoService;
+            _orderPlacement = orderPlacement;
         }
 
         public async Task<IActionResult> Index(string? statusFilter, int page = 1)
@@ -490,70 +497,56 @@ namespace LaPizzaria.Controllers
         {
             try
             {
-                var details = new List<OrderDetail>();
-                if (req.Items != null)
-                {
-                    var productIds = req.Items.Select(i => i.ProductId).Distinct().ToList();
-                    var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
-
-                    foreach (var it in req.Items)
-                    {
-                        decimal price = it.UnitPrice ?? 0m; // Default to 0 if UnitPrice is null
-                        if (it.UnitPrice == null && products.TryGetValue(it.ProductId, out var p1))
-                        {
-                            decimal p1Price = p1.Price;
-                            // Apply size modifier
-                            decimal modifier = 0;
-                            if (it.Size == "S") modifier = -30000;
-                            else if (it.Size == "L") modifier = 50000;
-
-                            decimal finalUnitPrice = p1Price + modifier;
-
-                            if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
-                            {
-                                decimal p2Price = p2.Price + modifier;
-                                finalUnitPrice = (finalUnitPrice + p2Price) / 2;
-                            }
-                            price = finalUnitPrice;
-                        }
-
-                        details.Add(new OrderDetail
-                        {
-                            ProductId = it.ProductId,
-                            ProductId2 = it.ProductId2,
-                            Quantity = it.Quantity,
-                            UnitPrice = price,
-                            Subtotal = price * it.Quantity,
-                            Size = it.Size
-                        });
-                    }
-                }
-                var tableIds = new List<int>();
-                if (!string.IsNullOrWhiteSpace(req.TableCode))
-                {
-                    var t = await _db.Tables.FirstOrDefaultAsync(x => x.Code == req.TableCode);
-                    if (t != null) tableIds.Add(t.Id);
-                }
-                var order = await _orderService.CreateOrderAsync(req.UserId, details, tableIds, req.DeliveryAddress, req.Latitude, req.Longitude);
-                if (req.VoucherIds != null && req.VoucherIds.Count > 0)
-                {
-                    foreach (var vid in req.VoucherIds.Take(2))
-                    {
-                        var v = await _voucherService.GetByIdAsync(vid);
-                        if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
-                        {
-                            _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
-                            v.UsedCount += 1;
-                        }
-                    }
-                    await _db.SaveChangesAsync();
-                }
-                return Ok(new { orderId = order.Id });
+                var orderId = await _orderPlacement.PlaceQrOrderAsync(req, "Cash");
+                return Ok(new { orderId });
             }
             catch (System.InvalidOperationException ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
+        }
+
+        /// <summary>Chuẩn bị thanh toán MoMo: lưu giỏ tạm, trả về payUrl (không tạo đơn).</summary>
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> PrepareMoMoPayment([FromBody] QrOrderRequest req, CancellationToken cancellationToken)
+        {
+            var deliveryType = string.IsNullOrWhiteSpace(req.DeliveryType) ? "ship" : req.DeliveryType;
+            if (string.Equals(deliveryType, "ship", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(req.DeliveryAddress))
+                    return BadRequest(new { error = "Vui lòng nhập địa chỉ giao hàng." });
+                if (req.TravelDistanceMeters.HasValue && req.TravelDistanceMeters.Value < 0)
+                    return BadRequest(new { error = "Địa chỉ nằm ngoài phạm vi giao hàng." });
+            }
+
+            var outcome = await _orderPlacement.ComputeTotalsAsync(req);
+            if (!outcome.Success || outcome.Totals == null)
+                return BadRequest(new { error = outcome.Error ?? "Không tính được tổng tiền." });
+
+            var pendingId = Guid.NewGuid();
+            var cacheKey = $"momo_pending_{pendingId}";
+            _memoryCache.Set(cacheKey, new PendingCheckoutState
+            {
+                Request = req,
+                ExpectedAmountVnd = outcome.Totals.AmountVnd
+            }, TimeSpan.FromMinutes(30));
+
+            var apiResult = await _momoService.CreatePaymentAsync(new OrderInfoModel
+            {
+                OrderId = pendingId.ToString("N")[..12],
+                Name = "Thanh toan don hang LaPizzaria",
+                Amount = outcome.Totals.GrandTotal,
+                ExtraData = pendingId.ToString()
+            }, cancellationToken);
+
+            if (apiResult == null || apiResult.ResultCode != 0 || string.IsNullOrWhiteSpace(apiResult.PayUrl))
+            {
+                _memoryCache.Remove(cacheKey);
+                return BadRequest(new { error = apiResult?.Message ?? "Không tạo được giao dịch MoMo. Kiểm tra cấu hình." });
+            }
+
+            return Ok(new { payUrl = apiResult.PayUrl });
         }
     }
 
@@ -574,26 +567,6 @@ namespace LaPizzaria.Controllers
         public int? ProductId2 { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
-        public string? Size { get; set; }
-    }
-
-    public class QrOrderRequest
-    {
-        public string? TableCode { get; set; }
-        public string? DeliveryAddress { get; set; }
-        public string? UserId { get; set; }
-        public List<QrOrderItem>? Items { get; set; }
-        public List<int>? VoucherIds { get; set; }
-        public double? Latitude { get; set; }
-        public double? Longitude { get; set; }
-    }
-
-    public class QrOrderItem
-    {
-        public int ProductId { get; set; }
-        public int? ProductId2 { get; set; }
-        public int Quantity { get; set; }
-        public decimal? UnitPrice { get; set; }
         public string? Size { get; set; }
     }
 }

@@ -1,154 +1,158 @@
+@model LaPizzaria.ViewModels.ShipperIncomeViewModel
 @{
-    Layout = "_Layout";
-    ViewData["Title"] = "Dashboard Thu nhập";
-}
+    Layout = null;
+    string FormatCurrency(decimal amount) => $"{amount:N0}đ";
+    string RelativeDate(DateTime dateTimeUtc)
+    {
+        var localDate = dateTimeUtc.ToLocalTime().Date;
+        var today = DateTime.Now.Date;
+        if (localDate == today) return "Hôm nay";
+        if (localDate == today.AddDays(-1)) return "Hôm qua";
+        return localDate.ToString("dd/MM/yyyy");
+    }
 
-@section Styles {
+    var chartSteps = new[] { 500000m, 1000000m, 2000000m, 3000000m, 5000000m }
+        .Where(x => x <= Model.MaxChartValue)
+        .DefaultIfEmpty(500000m)
+        .OrderByDescending(x => x)
+        .ToList();
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shipper - Thu nhập</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#f48c25",
-                        "background-light": "#f8f7f5",
-                        "background-dark": "#221910",
-                    },
-                    fontFamily: {
-                        display: ["Work Sans", "sans-serif"],
-                    },
-                    borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", full: "9999px" },
-                },
-            },
-        };
-    </script>
     <style>
-        .material-symbols-outlined {
-            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
-        }
-        .income-page ::-webkit-scrollbar { width: 8px; height: 8px; }
-        .income-page ::-webkit-scrollbar-track { background: transparent; }
-        .income-page ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .income-page ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body { font-family: 'Work Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
     </style>
-}
-
-<div class="income-page bg-background-light font-display text-[#181411] dark:bg-background-dark dark:text-white">
+</head>
+<body class="bg-[#f8f7f5]">
+    @await Html.PartialAsync("_ShipperTopNav")
     <div class="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-6 md:px-8">
         <!-- Page heading & actions -->
         <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div class="flex flex-col gap-1">
-                <h1 class="text-3xl font-black leading-tight tracking-tight text-[#181411] dark:text-white md:text-4xl">Dashboard Thu nhập</h1>
-                <p class="text-base font-normal text-[#8a7560] dark:text-[#b09b85]">Quản lý doanh thu và rút tiền nhanh chóng</p>
+                <h1 class="text-3xl font-black leading-tight tracking-tight text-[#181411] md:text-4xl">Dashboard Thu nhập</h1>
+                <p class="text-base font-normal text-[#8a7560]">Quản lý doanh thu và rút tiền nhanh chóng</p>
             </div>
             <div class="flex flex-wrap gap-3">
-                <button type="button" class="flex h-10 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-4 text-sm font-bold text-[#181411] shadow-sm transition-colors hover:bg-gray-50 dark:border-[#3d3126] dark:bg-surface-dark dark:text-white dark:hover:bg-[#362b22]">
+                <a asp-controller="Shipper"
+                   asp-action="MonthlySummary"
+                   asp-route-month="@DateTime.Now.Month"
+                   asp-route-year="@DateTime.Now.Year"
+                   class="flex h-10 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-4 text-sm font-bold text-black shadow-sm transition-colors hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white">
                     <span class="material-symbols-outlined mr-2 text-lg">calendar_today</span>
                     Tháng này
-                </button>
-                <button type="button" class="flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#e07b1a]">
+                </a>
+                <a asp-controller="Shipper"
+                   asp-action="Withdraw"
+                   class="flex h-10 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-6 text-sm font-bold text-black shadow-sm transition-colors hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white">
                     <span class="material-symbols-outlined mr-2 text-lg">payments</span>
-                    Rút tiền ngay
-                </button>
+                    Rút tiền
+                </a>
             </div>
         </div>
 
         <!-- Stats -->
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div class="flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-[#3d3126] dark:bg-[#2c2219]">
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
                 <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Hôm nay</p>
-                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary">today</span>
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Hôm nay</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">today</span>
                 </div>
-                <p class="text-3xl font-bold leading-tight text-[#181411] dark:text-white">550.000đ</p>
-                <div class="flex w-fit items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-sm font-medium text-[#07880e] dark:bg-green-900/30 dark:text-green-400">
-                    <span class="material-symbols-outlined text-base">trending_up</span>
-                    <span>+12% vs hôm qua</span>
-                </div>
+                <p class="text-3xl font-bold leading-tight text-[#181411] group-hover:text-white">@FormatCurrency(Model.IncomeToday)</p>
             </div>
-            <div class="flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-[#3d3126] dark:bg-[#2c2219]">
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
                 <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Tuần này</p>
-                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary">date_range</span>
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Tuần này</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">date_range</span>
                 </div>
-                <p class="text-3xl font-bold leading-tight text-[#181411] dark:text-white">3.200.000đ</p>
-                <div class="flex w-fit items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-sm font-medium text-[#07880e] dark:bg-green-900/30 dark:text-green-400">
-                    <span class="material-symbols-outlined text-base">trending_up</span>
-                    <span>+5% vs tuần trước</span>
-                </div>
+                <p class="text-3xl font-bold leading-tight text-[#181411] group-hover:text-white">@FormatCurrency(Model.IncomeThisWeek)</p>
             </div>
-            <div class="flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-[#3d3126] dark:bg-[#2c2219]">
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
                 <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Tháng này</p>
-                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary">calendar_month</span>
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Tháng này</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">calendar_month</span>
                 </div>
-                <p class="text-3xl font-bold leading-tight text-primary">12.500.000đ</p>
-                <div class="flex w-fit items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-sm font-medium text-[#07880e] dark:bg-green-900/30 dark:text-green-400">
-                    <span class="material-symbols-outlined text-base">trending_up</span>
-                    <span>+8% vs tháng trước</span>
-                </div>
+                <p class="text-3xl font-bold leading-tight text-primary group-hover:text-white">@FormatCurrency(Model.IncomeThisMonth)</p>
             </div>
-            <div class="flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-[#3d3126] dark:bg-[#2c2219]">
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
                 <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Đơn hoàn thành</p>
-                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary">check_circle</span>
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Đơn hoàn thành</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">check_circle</span>
                 </div>
-                <p class="text-3xl font-bold leading-tight text-[#181411] dark:text-white">142</p>
-                <p class="text-sm font-medium text-[#8a7560] dark:text-[#b09b85]">đơn hàng tháng này</p>
+                <p class="text-3xl font-bold leading-tight text-[#181411] group-hover:text-white">@Model.CompletedOrdersThisMonth</p>
+                <p class="text-sm font-medium text-[#E67E22] group-hover:text-white">đơn hàng tháng này</p>
             </div>
         </div>
 
         <!-- Chart + table -->
         <div class="flex flex-col gap-6 lg:gap-8">
             <!-- Chart -->
-            <div class="rounded-xl border border-[#e6e0db] bg-white p-6 shadow-sm dark:border-[#3d3126] dark:bg-[#2c2219]">
+            <div class="rounded-xl border border-[#e6e0db] bg-white p-6 text-black shadow-sm">
                 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h3 class="text-lg font-bold text-[#181411] dark:text-white">Xu hướng thu nhập</h3>
-                        <p class="text-sm text-[#8a7560] dark:text-[#b09b85]">7 ngày gần nhất</p>
+                        <h3 class="text-lg font-bold text-[#181411]">Xu hướng thu nhập</h3>
+                        <p class="text-sm text-[#8a7560]">7 ngày gần nhất</p>
                     </div>
                     <div class="text-left sm:text-right">
-                        <p class="text-xs font-semibold uppercase text-[#8a7560] dark:text-[#b09b85]">Tổng</p>
-                        <p class="text-xl font-bold text-primary">3.200.000đ</p>
+                        <p class="text-xs font-semibold uppercase text-[#8a7560]">Tổng</p>
+                        <p class="text-xl font-bold text-primary">@FormatCurrency(Model.TotalLast7Days)</p>
                     </div>
                 </div>
-                <div class="flex h-[250px] w-full items-end justify-between gap-2 border-b border-dashed border-[#e6e0db] pt-4 dark:border-[#3d3126] sm:gap-4">
-                    @{
-                        var bars = new (string Label, string H, string Tip, bool Highlight)[]
+                <div class="flex gap-3">
+                    <div class="flex h-[250px] w-16 flex-col justify-between text-right text-xs font-semibold text-[#8a7560]">
+                        @foreach (var mark in chartSteps)
                         {
-                            ("T2", "h-[40%]", "450k", false),
-                            ("T3", "h-[55%]", "520k", false),
-                            ("T4", "h-[35%]", "380k", false),
-                            ("T5", "h-[65%]", "610k", false),
-                            ("T6", "h-[45%]", "490k", false),
-                            ("T7", "h-[85%]", "850k", true),
-                            ("CN", "h-[75%]", "720k", false),
-                        };
-                    }
-                    @foreach (var b in bars)
-                    {
-                        <div class="group flex h-full w-full cursor-pointer flex-col items-center justify-end gap-2">
-                            <div class="relative w-full max-w-[40px] rounded-t-sm @(b.Highlight ? "bg-primary shadow-md shadow-primary/20 hover:bg-primary/90" : "bg-primary/20 group-hover:bg-primary/40") @b.H transition-all duration-300">
-                                <div class="absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">@b.Tip</div>
+                            <span>@FormatCurrency(mark)</span>
+                        }
+                        <span>0d</span>
+                    </div>
+                    <div class="relative flex h-[250px] w-full items-end justify-between gap-2 border-b border-dashed border-[#e6e0db] pt-4 sm:gap-4">
+                        @foreach (var mark in chartSteps)
+                        {
+                            var percent = (int)Math.Round((mark / Model.MaxChartValue) * 100m);
+                            <div class="pointer-events-none absolute inset-x-0 border-t border-dashed border-[#eee8e3]" style="bottom:@percent%;"></div>
+                        }
+                        @foreach (var b in Model.Last7Days)
+                        {
+                            <div class="group relative z-10 flex h-full w-full cursor-pointer flex-col items-center justify-end gap-2">
+                                <div class="relative w-full max-w-[40px] rounded-t-sm @(b.Highlight ? "bg-[#E67E22] shadow-md shadow-[#E67E22]/25 hover:bg-[#cf6f1f]" : "bg-[#E67E22]/25 group-hover:bg-[#E67E22]/45") transition-all duration-300" style="height:@b.HeightPercent%;">
+                                    <div class="absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">@FormatCurrency(b.Value)</div>
+                                </div>
+                                <span class="text-xs font-bold @(b.Highlight ? "text-[#E67E22]" : "text-[#8a7560]")">@b.Label</span>
                             </div>
-                            <span class="text-xs font-bold @(b.Highlight ? "text-primary" : "text-[#8a7560]")">@b.Label</span>
-                        </div>
-                    }
+                        }
+                    </div>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="overflow-hidden rounded-xl border border-[#e6e0db] bg-white shadow-sm dark:border-[#3d3126] dark:bg-[#2c2219]">
-                <div class="flex flex-col gap-3 border-b border-[#e6e0db] p-6 sm:flex-row sm:items-center sm:justify-between dark:border-[#3d3126]">
-                    <h2 class="text-lg font-bold text-[#181411] dark:text-white">Chi tiết thu nhập đơn hàng</h2>
-                    <button type="button" class="self-start text-sm font-bold text-primary hover:underline sm:self-auto">Xem tất cả</button>
+            <div class="overflow-hidden rounded-xl border border-[#e6e0db] bg-white text-black shadow-sm">
+                <div class="flex flex-col gap-3 border-b border-[#e6e0db] p-6 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 class="text-lg font-bold text-[#181411]">Chi tiết thu nhập đơn hàng</h2>
+                    <form method="get" asp-controller="Shipper" asp-action="Income" class="w-full sm:w-[320px]">
+                        <div class="flex items-center gap-2">
+                            <input type="text"
+                                   name="orderCodeSearch"
+                                   value="@Model.OrderCodeSearch"
+                                   placeholder="Tìm mã đơn hàng..."
+                                   class="h-10 w-full rounded-lg border border-[#e6e0db] px-3 text-sm outline-none focus:border-primary" />
+                            <button type="submit" class="h-10 rounded-lg border border-[#e6e0db] bg-white px-3 text-sm font-semibold text-black hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white">Tìm</button>
+                        </div>
+                    </form>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse text-left">
                         <thead>
-                            <tr class="bg-[#f8f7f5] text-xs uppercase tracking-wider text-[#8a7560] dark:bg-[#362b22] dark:text-[#b09b85]">
+                            <tr class="bg-[#f8f7f5] text-xs uppercase tracking-wider text-[#8a7560]">
                                 <th class="px-4 py-4 font-semibold md:px-6">Mã đơn</th>
                                 <th class="px-4 py-4 font-semibold md:px-6">Thời gian</th>
                                 <th class="px-4 py-4 font-semibold md:px-6">Chi tiết</th>
@@ -156,159 +160,100 @@
                                 <th class="px-4 py-4 text-center font-semibold md:px-6">Trạng thái</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-[#f0efeb] dark:divide-[#3d3126]">
-                            <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-[#362b22]/50">
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex items-center gap-3">
-                                        <div class="rounded-lg bg-primary/10 p-2 text-primary">
-                                            <span class="material-symbols-outlined text-xl">local_pizza</span>
-                                        </div>
-                                        <span class="font-bold text-[#181411] dark:text-white">#PZ-8842</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-[#181411] dark:text-white">Hôm nay</span>
-                                        <span class="text-xs text-[#8a7560]">14:30</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex max-w-[180px] flex-col gap-1">
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Phí ship (3.2km):</span>
-                                            <span class="font-medium text-[#181411] dark:text-white">25.000đ</span>
-                                        </div>
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Tiền Tip:</span>
-                                            <span class="font-medium text-green-600">+10.000đ</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 text-right md:px-6">
-                                    <span class="text-base font-bold text-primary">35.000đ</span>
-                                </td>
-                                <td class="px-4 py-4 text-center md:px-6">
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        Đã nhận
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-[#362b22]/50">
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex items-center gap-3">
-                                        <div class="rounded-lg bg-primary/10 p-2 text-primary">
-                                            <span class="material-symbols-outlined text-xl">local_pizza</span>
-                                        </div>
-                                        <span class="font-bold text-[#181411] dark:text-white">#PZ-8841</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-[#181411] dark:text-white">Hôm nay</span>
-                                        <span class="text-xs text-[#8a7560]">13:15</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex max-w-[180px] flex-col gap-1">
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Phí ship (5.0km):</span>
-                                            <span class="font-medium text-[#181411] dark:text-white">35.000đ</span>
-                                        </div>
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Tiền Tip:</span>
-                                            <span class="font-medium text-green-600">0đ</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 text-right md:px-6">
-                                    <span class="text-base font-bold text-primary">35.000đ</span>
-                                </td>
-                                <td class="px-4 py-4 text-center md:px-6">
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        Đã nhận
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-[#362b22]/50">
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex items-center gap-3">
-                                        <div class="rounded-lg bg-primary/10 p-2 text-primary">
-                                            <span class="material-symbols-outlined text-xl">local_pizza</span>
-                                        </div>
-                                        <span class="font-bold text-[#181411] dark:text-white">#PZ-8839</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-[#181411] dark:text-white">Hôm nay</span>
-                                        <span class="text-xs text-[#8a7560]">11:05</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex max-w-[180px] flex-col gap-1">
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Phí ship (1.5km):</span>
-                                            <span class="font-medium text-[#181411] dark:text-white">15.000đ</span>
-                                        </div>
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Tiền Tip:</span>
-                                            <span class="font-medium text-green-600">+5.000đ</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 text-right md:px-6">
-                                    <span class="text-base font-bold text-primary">20.000đ</span>
-                                </td>
-                                <td class="px-4 py-4 text-center md:px-6">
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        Đã nhận
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-[#362b22]/50">
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex items-center gap-3">
-                                        <div class="rounded-lg bg-gray-100 p-2 text-gray-400 dark:bg-[#3d3126]">
-                                            <span class="material-symbols-outlined text-xl">local_pizza</span>
-                                        </div>
-                                        <span class="font-bold text-[#181411] dark:text-white">#PZ-8835</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-[#181411] dark:text-white">Hôm qua</span>
-                                        <span class="text-xs text-[#8a7560]">20:45</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 md:px-6">
-                                    <div class="flex max-w-[180px] flex-col gap-1">
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Phí ship (6.2km):</span>
-                                            <span class="font-medium text-[#181411] dark:text-white">42.000đ</span>
-                                        </div>
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-[#8a7560]">Tiền Tip:</span>
-                                            <span class="font-medium text-green-600">+15.000đ</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 text-right md:px-6">
-                                    <span class="text-base font-bold text-primary">57.000đ</span>
-                                </td>
-                                <td class="px-4 py-4 text-center md:px-6">
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
-                                        <span class="material-symbols-outlined text-[14px]">schedule</span>
-                                        Chờ duyệt
-                                    </span>
-                                </td>
-                            </tr>
+                        <tbody class="divide-y divide-[#f0efeb]">
+                            @if (Model.RecentCompletedOrders.Any())
+                            {
+                                @foreach (var row in Model.RecentCompletedOrders)
+                                {
+                                    <tr class="transition-colors hover:bg-[#fff7f1]">
+                                        <td class="px-4 py-4 md:px-6">
+                                            <div class="flex items-center gap-3">
+                                                <div class="rounded-lg bg-primary/10 p-2 text-primary">
+                                                    <span class="material-symbols-outlined text-xl">local_pizza</span>
+                                                </div>
+                                                <span class="font-bold text-[#181411]">#PZ-@row.OrderId</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 md:px-6">
+                                            <div class="flex flex-col">
+                                                <span class="text-sm font-medium text-[#181411]">@RelativeDate(row.CompletedAt)</span>
+                                                <span class="text-xs text-[#8a7560]">@row.CompletedAt.ToLocalTime().ToString("HH:mm")</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 md:px-6">
+                                            <div class="flex max-w-[220px] flex-col gap-1">
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span class="text-[#8a7560]">Phí giao hàng (@row.DistanceText):</span>
+                                                    <span class="font-medium text-[#181411]">@FormatCurrency(row.ShippingFee)</span>
+                                                </div>
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span class="text-[#8a7560]">Tiền Tip:</span>
+                                                    <span class="font-medium text-green-600">+@FormatCurrency(row.TipAmount)</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 text-right md:px-6">
+                                            <span class="text-base font-bold text-primary">@FormatCurrency(row.TotalIncome)</span>
+                                        </td>
+                                        <td class="px-4 py-4 text-center md:px-6">
+                                            @if (row.IsCompleted)
+                                            {
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                                                    <span class="material-symbols-outlined text-[14px]">check</span>
+                                                    Đã nhận
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">
+                                                    <span class="material-symbols-outlined text-[14px]">schedule</span>
+                                                    Chờ duyệt
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">Chưa có dữ liệu thu nhập cho đơn hàng hoàn thành.</td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
+                @if (Model.TotalPages > 1)
+                {
+                    <nav class="flex items-center justify-center gap-2 border-t border-[#f0efeb] px-4 py-4">
+                        <a asp-controller="Shipper"
+                           asp-action="Income"
+                           asp-route-page="@(Model.Page > 1 ? Model.Page - 1 : 1)"
+                           asp-route-orderCodeSearch="@Model.OrderCodeSearch"
+                           class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-2 text-sm font-semibold text-black @(Model.Page <= 1 ? "pointer-events-none opacity-40" : "hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white")">
+                            &#8592;
+                        </a>
+                        @for (var i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <a asp-controller="Shipper"
+                               asp-action="Income"
+                               asp-route-page="@i"
+                               asp-route-orderCodeSearch="@Model.OrderCodeSearch"
+                               class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-semibold @(i == Model.Page ? "bg-[#E67E22] text-white border border-[#E67E22]" : "bg-white text-black border border-[#e6e0db] hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white")">
+                                @i
+                            </a>
+                        }
+                        <a asp-controller="Shipper"
+                           asp-action="Income"
+                           asp-route-page="@(Model.Page < Model.TotalPages ? Model.Page + 1 : Model.TotalPages)"
+                           asp-route-orderCodeSearch="@Model.OrderCodeSearch"
+                           class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-2 text-sm font-semibold text-black @(Model.Page >= Model.TotalPages ? "pointer-events-none opacity-40" : "hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white")">
+                            &#8594;
+                        </a>
+                    </nav>
+                }
             </div>
         </div>
     </div>
-</div>
+</body>
+</html>
