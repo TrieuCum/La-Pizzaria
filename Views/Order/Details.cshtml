@@ -17,10 +17,16 @@
         }
     }
     var deliveryFee = 0m;
+    var isCancelled = string.Equals(Model.OrderStatus, "Cancelled", System.StringComparison.OrdinalIgnoreCase);
     var step = 1;
-    if (Model.OrderStatus == "Ready" || Model.OrderStatus == "Delivering") step = 2;
-    else if (Model.OrderStatus == "Completed" || Model.OrderStatus == "Cancelled") step = 3;
-    var progressPercent = step == 1 ? 35 : step == 2 ? 70 : 100;
+    if (!isCancelled)
+    {
+        if (Model.OrderStatus == "Ready" || Model.OrderStatus == "Delivering") step = 2;
+        else if (Model.OrderStatus == "Completed") step = 3;
+    }
+    var progressPercent = isCancelled
+        ? 100
+        : step == 1 ? 35 : step == 2 ? 70 : 100;
     var userName = "—";
     var userPhone = "—";
     var deliveryAddress = Model.DeliveryAddress;
@@ -70,24 +76,38 @@
                 <!-- Timeline -->
                 <div class="order-detail-card">
                     <h3>Trạng thái đơn hàng</h3>
-                    <div class="order-detail-timeline">
-                        <div class="progress-bar" style="width: @(progressPercent)%"></div>
-                        <div class="step">
-                            <div class="step-icon @(step >= 1 ? "active" : "pending")"><i class="bi bi-egg-fried"></i></div>
-                            <div class="step-title">Đang chuẩn bị</div>
-                            <div class="step-desc @(step >= 1 ? "highlight" : "")">@(step >= 1 ? Model.OrderDate.ToLocalTime().ToString("HH:mm") + " - Nhà bếp đã nhận" : "Chờ xử lý")</div>
+                    @if (isCancelled)
+                    {
+                        <div class="order-detail-timeline cancelled">
+                            <div class="progress-bar bg-danger" style="width: 100%"></div>
+                            <div class="step">
+                                <div class="step-icon active bg-danger text-white"><i class="bi bi-x-circle"></i></div>
+                                <div class="step-title text-danger">Đã hủy</div>
+                                <div class="step-desc text-danger">Đơn hàng đã bị từ chối hoặc hủy @Model.OrderDate.ToLocalTime().ToString("HH:mm")</div>
+                            </div>
                         </div>
-                        <div class="step">
-                            <div class="step-icon @(step >= 2 ? "active" : "pending")"><i class="bi bi-truck"></i></div>
-                            <div class="step-title">Đang giao hàng</div>
-                            <div class="step-desc @(step >= 2 && step < 3 ? "highlight" : "")">@(step == 2 ? "Tài xế đang đến" : step >= 3 ? "Đã giao" : "Dự kiến")</div>
+                    }
+                    else
+                    {
+                        <div class="order-detail-timeline">
+                            <div class="progress-bar" style="width: @(progressPercent)%"></div>
+                            <div class="step">
+                                <div class="step-icon @(step >= 1 ? "active" : "pending")"><i class="bi bi-egg-fried"></i></div>
+                                <div class="step-title">Đang chuẩn bị</div>
+                                <div class="step-desc @(step >= 1 ? "highlight" : "")">@(step >= 1 ? Model.OrderDate.ToLocalTime().ToString("HH:mm") + " - Nhà bếp đã nhận" : "Chờ xử lý")</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-icon @(step >= 2 ? "active" : "pending")"><i class="bi bi-truck"></i></div>
+                                <div class="step-title">Đang giao hàng</div>
+                                <div class="step-desc @(step >= 2 && step < 3 ? "highlight" : "")">@(step == 2 ? "Tài xế đang đến" : step >= 3 ? "Đã giao" : "Dự kiến")</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-icon @(step >= 3 ? "active" : "pending")"><i class="bi bi-check-circle"></i></div>
+                                <div class="step-title">Hoàn thành</div>
+                                <div class="step-desc">@(step >= 3 ? "Đã nhận hàng" : "Dự kiến")</div>
+                            </div>
                         </div>
-                        <div class="step">
-                            <div class="step-icon @(step >= 3 ? "active" : "pending")"><i class="bi bi-check-circle"></i></div>
-                            <div class="step-title">Hoàn thành</div>
-                            <div class="step-desc">@(step >= 3 ? "Đã nhận hàng" : "Dự kiến")</div>
-                        </div>
-                    </div>
+                    }
                 </div>
 
                 <!-- Order items -->

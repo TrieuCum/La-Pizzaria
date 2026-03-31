@@ -20,7 +20,7 @@ namespace LaPizzaria.Controllers
 			_db = db; _svc = svc;
 		}
 
-		public async Task<IActionResult> Index(string? search, string? status)
+		public async Task<IActionResult> Index(string? search, string? status, int page = 1, int pageSize = 10)
 		{
 			var query = _db.Vouchers.AsQueryable();
 
@@ -35,14 +35,31 @@ namespace LaPizzaria.Controllers
                 if (status == "Active")
                     query = query.Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now));
                 else if (status == "Inactive")
-                    query = query.Where(v => !v.IsActive);
+					query = query.Where(v => !v.IsActive);
                 else if (status == "Expired")
                     query = query.Where(v => v.ExpiresAtUtc != null && v.ExpiresAtUtc <= now);
             }
 
-            var list = await query.OrderByDescending(v => v.CreatedAtUtc).ToListAsync();
+			if (page < 1) page = 1;
+			if (pageSize <= 0) pageSize = 10;
+
+			var totalCount = await query.CountAsync();
+			var totalPages = (int)System.Math.Ceiling(totalCount / (double)pageSize);
+			if (totalPages == 0) totalPages = 1;
+			if (page > totalPages) page = totalPages;
+
+            var list = await query
+				.OrderByDescending(v => v.CreatedAtUtc)
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
             ViewBag.Search = search;
             ViewBag.Status = status;
+			ViewBag.Page = page;
+			ViewBag.PageSize = pageSize;
+			ViewBag.TotalCount = totalCount;
+			ViewBag.TotalPages = totalPages;
 			return View(list);
 		}
 
