@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Security.Claims;
 using LaPizzaria.Data;
 using LaPizzaria.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -40,7 +42,9 @@ namespace LaPizzaria.Controllers
 
             var today = DateTime.UtcNow.Date;
             var todaysDelivered = await _db.Orders
-                .Where(o => o.OrderStatus == "Completed" && o.UpdatedAt.Date == today)
+                .Where(o => o.OrderStatus == "Completed"
+                    && !string.IsNullOrWhiteSpace(o.DeliveryAddress)
+                    && o.UpdatedAt.Date == today)
                 .ToListAsync();
 
             var vm = new ShipperIndexViewModel
@@ -48,7 +52,7 @@ namespace LaPizzaria.Controllers
                 ActiveOrder = activeOrders.Select(MapToSummary).FirstOrDefault(),
                 NewOrders = newOrders.Select(MapToSummary).ToList(),
                 DeliveredTodayCount = todaysDelivered.Count,
-                IncomeToday = todaysDelivered.Sum(o => o.TotalPrice)
+                IncomeToday = todaysDelivered.Sum(GetShipperIncomeForOrder)
             };
 
             return View(vm);
@@ -90,9 +94,10 @@ namespace LaPizzaria.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            var income = await query
+            var completedForIncome = await query
                 .Where(o => o.OrderStatus == "Completed")
-                .SumAsync(o => (decimal?)o.TotalPrice) ?? 0m;
+                .ToListAsync();
+            var income = completedForIncome.Sum(GetShipperIncomeForOrder);
 
             var vm = new ShipperHistoryViewModel
             {
@@ -109,10 +114,220 @@ namespace LaPizzaria.Controllers
             return View(vm);
         }
 
-        public IActionResult Income()
+        public async Task<IActionResult> Income(string? orderCodeSearch = null, int page = 1)
         {
             ViewData["ShipperNav"] = "Income";
-            return View();
+            if (page < 1) page = 1;
+            const int pageSize = 6;
+
+            var today = DateTime.UtcNow.Date;
+            var weekStart = today.AddDays(-((7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7));
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var sevenDaysStart = today.AddDays(-6);
+
+            var completedOrders = await _db.Orders
+                .Where(o => o.OrderStatus == "Completed" && !string.IsNullOrWhiteSpace(o.DeliveryAddress))
+                .OrderByDescending(o => o.UpdatedAt)
+                .ToListAsync();
+
+            var incomeToday = completedOrders
+                .Where(o => o.UpdatedAt.Date == today)
+                .Sum(GetShipperIncomeForOrder);
+
+            var incomeThisWeek = completedOrders
+                .Where(o => o.UpdatedAt.Date >= weekStart && o.UpdatedAt.Date <= today)
+                .Sum(GetShipperIncomeForOrder);
+
+            var monthOrders = completedOrders
+                .Where(o => o.UpdatedAt.Date >= monthStart && o.UpdatedAt.Date <= today)
+                .ToList();
+
+            var incomeThisMonth = monthOrders.Sum(GetShipperIncomeForOrder);
+            var completedOrdersThisMonth = monthOrders.Count;
+
+            var incomeByDay = completedOrders
+                .Where(o => o.UpdatedAt.Date >= sevenDaysStart && o.UpdatedAt.Date <= today)
+                .GroupBy(o => o.UpdatedAt.Date)
+                .ToDictionary(g => g.Key, g => g.Sum(GetShipperIncomeForOrder));
+
+            var dayLabels = CultureInfo.GetCultureInfo("vi-VN").DateTimeFormat.AbbreviatedDayNames;
+            var chartValues = new List<IncomeChartPointViewModel>();
+            for (var i = 0; i < 7; i++)
+            {
+                var day = sevenDaysStart.AddDays(i);
+                var value = incomeByDay.TryGetValue(day, out var amount) ? amount : 0m;
+                var label = dayLabels[(int)day.DayOfWeek];
+                chartValues.Add(new IncomeChartPointViewModel
+                {
+                    Label = label,
+                    Value = value,
+                    Highlight = day == today
+                });
+            }
+
+            var maxDataValue = chartValues.Any() ? chartValues.Max(x => x.Value) : 0m;
+            var maxChartValue = Math.Max(2000000m, Math.Ceiling(maxDataValue / 500000m) * 500000m);
+            if (maxChartValue <= 0) maxChartValue = 2000000m;
+
+            foreach (var point in chartValues)
+            {
+                point.HeightPercent = (int)Math.Round((point.Value / maxChartValue) * 100m);
+                if (point.HeightPercent > 0 && point.HeightPercent < 8)
+                {
+                    point.HeightPercent = 8;
+                }
+            }
+
+            var filteredOrders = completedOrders.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(orderCodeSearch))
+            {
+                var keyword = orderCodeSearch.Trim();
+                filteredOrders = filteredOrders.Where(o => o.Id.ToString().Contains(keyword));
+            }
+
+            var totalCount = filteredOrders.Count();
+            var recentRows = filteredOrders
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(o => new ShipperIncomeOrderRowViewModel
+                {
+                    OrderId = o.Id,
+                    CompletedAt = o.UpdatedAt,
+                    ShippingFee = GetShipperIncomeForOrder(o),
+                    TipAmount = 0m,
+                    TotalIncome = GetShipperIncomeForOrder(o),
+                    DistanceText = "N/A",
+                    StatusLabel = o.OrderStatus == "Completed" ? "Da nhan" : "Cho duyet",
+                    IsCompleted = o.OrderStatus == "Completed"
+                })
+                .ToList();
+
+            var vm = new ShipperIncomeViewModel
+            {
+                IncomeToday = incomeToday,
+                IncomeThisWeek = incomeThisWeek,
+                IncomeThisMonth = incomeThisMonth,
+                CompletedOrdersThisMonth = completedOrdersThisMonth,
+                TotalLast7Days = chartValues.Sum(x => x.Value),
+                MaxChartValue = maxChartValue,
+                OrderCodeSearch = orderCodeSearch?.Trim() ?? string.Empty,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                Last7Days = chartValues,
+                RecentCompletedOrders = recentRows
+            };
+
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> MonthlySummary(int? month = null, int? year = null)
+        {
+            ViewData["ShipperNav"] = "Income";
+
+            var now = DateTime.UtcNow;
+            var selectedMonth = month.GetValueOrDefault(now.Month);
+            var selectedYear = year.GetValueOrDefault(now.Year);
+            if (selectedMonth < 1 || selectedMonth > 12) selectedMonth = now.Month;
+            if (selectedYear < 2000 || selectedYear > 2100) selectedYear = now.Year;
+
+            var start = new DateTime(selectedYear, selectedMonth, 1);
+            var end = start.AddMonths(1);
+
+            var monthOrders = await _db.Orders
+                .Where(o => o.OrderStatus == "Completed"
+                    && !string.IsNullOrWhiteSpace(o.DeliveryAddress)
+                    && o.UpdatedAt >= start && o.UpdatedAt < end)
+                .OrderByDescending(o => o.UpdatedAt)
+                .ToListAsync();
+
+            var groupByDay = monthOrders
+                .GroupBy(o => o.UpdatedAt.Date)
+                .ToDictionary(g => g.Key, g => g.Sum(GetShipperIncomeForOrder));
+
+            var chart = new List<IncomeChartPointViewModel>();
+            var daysInMonth = DateTime.DaysInMonth(selectedYear, selectedMonth);
+            for (var day = 1; day <= daysInMonth; day++)
+            {
+                var date = new DateTime(selectedYear, selectedMonth, day);
+                var value = groupByDay.TryGetValue(date.Date, out var amount) ? amount : 0m;
+                chart.Add(new IncomeChartPointViewModel
+                {
+                    Label = day.ToString(),
+                    Value = value
+                });
+            }
+
+            var maxData = chart.Any() ? chart.Max(x => x.Value) : 0m;
+            var maxChartValue = Math.Max(2000000m, Math.Ceiling(maxData / 500000m) * 500000m);
+            if (maxChartValue <= 0) maxChartValue = 2000000m;
+            foreach (var point in chart)
+            {
+                point.HeightPercent = (int)Math.Round((point.Value / maxChartValue) * 100m);
+                if (point.HeightPercent > 0 && point.HeightPercent < 6) point.HeightPercent = 6;
+            }
+
+            var vm = new ShipperMonthlySummaryViewModel
+            {
+                Month = selectedMonth,
+                Year = selectedYear,
+                TotalIncome = monthOrders.Sum(GetShipperIncomeForOrder),
+                TotalOrders = monthOrders.Count,
+                MaxChartValue = maxChartValue,
+                DailyChart = chart,
+                Orders = monthOrders.Select(o => new ShipperIncomeOrderRowViewModel
+                {
+                    OrderId = o.Id,
+                    CompletedAt = o.UpdatedAt,
+                    ShippingFee = GetShipperIncomeForOrder(o),
+                    TipAmount = 0m,
+                    TotalIncome = GetShipperIncomeForOrder(o),
+                    DistanceText = "N/A",
+                    IsCompleted = true,
+                    StatusLabel = "Đã nhận"
+                }).ToList()
+            };
+
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Withdraw()
+        {
+            ViewData["ShipperNav"] = "Income";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = !string.IsNullOrWhiteSpace(userId)
+                ? await _db.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
+            var today = DateTime.UtcNow.Date;
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var completedMonthOrders = await _db.Orders
+                .Where(o => o.OrderStatus == "Completed"
+                    && !string.IsNullOrWhiteSpace(o.DeliveryAddress)
+                    && o.UpdatedAt >= monthStart && o.UpdatedAt <= today.AddDays(1))
+                .ToListAsync();
+            var availableAmount = completedMonthOrders.Sum(GetShipperIncomeForOrder);
+
+            var fullName = $"{user?.FirstName} {user?.LastName}".Trim();
+            var vm = new ShipperWithdrawViewModel
+            {
+                AccountName = string.IsNullOrWhiteSpace(fullName) ? (user?.UserName ?? "Shipper") : fullName,
+                BankName = "Vietcombank",
+                BankAccountNumber = "Chưa cập nhật",
+                AvailableAmount = availableAmount
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult WithdrawConfirm()
+        {
+            TempData["WithdrawSuccess"] = "1";
+            return RedirectToAction(nameof(Withdraw));
         }
 
         [HttpGet]
@@ -222,6 +437,16 @@ namespace LaPizzaria.Controllers
             var last = order.User?.LastName?.Trim();
             var full = $"{first} {last}".Trim();
             return string.IsNullOrWhiteSpace(full) ? (order.User?.UserName ?? "Khách hàng") : full;
+        }
+
+        private static decimal GetShipperIncomeForOrder(Models.Order order)
+        {
+            if (string.IsNullOrWhiteSpace(order.DeliveryAddress))
+            {
+                return 0m;
+            }
+
+            return 20000m;
         }
     }
 }

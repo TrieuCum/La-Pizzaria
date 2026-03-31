@@ -1,0 +1,42 @@
+@model LaPizzaria.Models.OrderInfoModel
+@{
+    ViewData["Title"] = "Thanh toán MoMo (test)";
+}
+
+<div class="container py-4" style="max-width: 520px;">
+    <h1 class="h4 mb-3">Tạo giao dịch thanh toán (sandbox)</h1>
+    <p class="text-muted small">Nhập thông tin đơn hàng, sau đó bạn sẽ được chuyển tới trang <code>test-payment.momo.vn</code>.</p>
+
+    @if (TempData["PaymentError"] != null)
+    {
+        <div class="alert alert-warning">@TempData["PaymentError"]</div>
+    }
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+    }
+
+    <form asp-controller="Payment" asp-action="CreatePayment" method="post" class="card shadow-sm p-4">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label asp-for="OrderId" class="form-label">Mã đơn hàng</label>
+            <input asp-for="OrderId" class="form-control" placeholder="VD: 1001" />
+            <span asp-validation-for="OrderId" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Tên / mô tả đơn</label>
+            <input asp-for="Name" class="form-control" placeholder="VD: Đơn pizza LaPizzaria" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Amount" class="form-label">Số tiền (VNĐ)</label>
+            <input asp-for="Amount" class="form-control" type="number" min="1" step="1000" placeholder="10000" />
+            <span asp-validation-for="Amount" class="text-danger small"></span>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Thanh toán MoMo</button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

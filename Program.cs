@@ -22,7 +22,19 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IQrService, QrService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IOrderPlacementService, OrderPlacementService>();
 // builder.Services.AddHostedService<VoucherCleanupService>();
+
+// --- Tích hợp MoMo (sandbox / production) ---
+// 1) appsettings.json → section "Momo": PartnerCode, AccessKey, SecretKey, MomoApiUrl (API create),
+//    ReturnUrl (redirect GET sau thanh toán), NotifyUrl (IPN POST từ MoMo).
+// 2) Configure<T> nạp các giá trị đó vào MomoOptionModel để inject vào MomoService.
+// 3) AddHttpClient() cung cấp IHttpClientFactory cho MomoService.CreatePaymentAsync.
+// 4) Đăng ký IMomoService với lifetime Scoped (mỗi request một instance, phù hợp controller).
+builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("Momo"));
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IMomoService, MomoService>();
 
 // Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -88,7 +100,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Chỉ bật redirect HTTP→HTTPS khi không phải Development: tránh lỗi khi chạy chỉ http://localhost:5081
+// (MoMo redirect về HTTP mà middleware ép sang HTTPS cổng khác → trang callback lỗi).
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseStaticFiles();
 
 // Banner images: chỉ map khi cấu hình có đường dẫn (Development/local). Production để trống hoặc set trên Azure.

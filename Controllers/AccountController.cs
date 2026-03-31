@@ -272,6 +272,10 @@ namespace LaPizzaria.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login");
+            if (await _userManager.IsInRoleAsync(user, "Shipper"))
+            {
+                ViewData["ShipperNav"] = "Profile";
+            }
             var vm = new ManageAccountViewModel
             {
                 UserName = user.UserName ?? string.Empty,
@@ -291,9 +295,13 @@ namespace LaPizzaria.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Manage(ManageAccountViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login");
+            if (await _userManager.IsInRoleAsync(user, "Shipper"))
+            {
+                ViewData["ShipperNav"] = "Profile";
+            }
+            if (!ModelState.IsValid) return View(model);
 
             // Update profile fields
             user.FirstName = model.FirstName ?? string.Empty;
