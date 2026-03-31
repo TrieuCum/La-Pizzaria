@@ -1,11 +1,16 @@
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
+using LaPizzaria.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LaPizzaria.Controllers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class TableController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -14,22 +19,25 @@ namespace LaPizzaria.Controllers
             _db = db;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var tables = _db.Tables.ToList();
-            ViewBag.OpenOrders = _db.Orders.Where(o => o.OrderStatus != "Completed").ToList();
+            var tables = await _db.Tables.ToListAsync();
+            var openOrders = await _db.Orders.Where(o => o.OrderStatus != "Completed").ToListAsync();
+            var orderTables = await _db.OrderTables.ToListAsync();
 
-            var orderTables = _db.OrderTables.ToList();
             var tableById = tables.ToDictionary(t => t.Id);
             var orderToCodes = orderTables
                 .GroupBy(ot => ot.OrderId)
-                .ToDictionary(g => g.Key, g => g.Select(ot => tableById.ContainsKey(ot.TableId) ? tableById[ot.TableId].Code : $"T{ot.TableId}").ToList());
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(ot => tableById.ContainsKey(ot.TableId) ? tableById[ot.TableId].Code : $"T{ot.TableId}").ToList()
+                );
 
-            var tableAttachInfo = new System.Collections.Generic.Dictionary<int, string>();
+            var tableAttachInfo = new Dictionary<int, string>();
             foreach (var t in tables)
             {
                 var relatedOrders = orderTables.Where(ot => ot.TableId == t.Id).Select(ot => ot.OrderId).Distinct().ToList();
-                var parts = new System.Collections.Generic.List<string>();
+                var parts = new List<string>();
                 foreach (var oid in relatedOrders)
                 {
                     if (orderToCodes.TryGetValue(oid, out var codes))
@@ -39,8 +47,15 @@ namespace LaPizzaria.Controllers
                 }
                 tableAttachInfo[t.Id] = string.Join(" | ", parts);
             }
-            ViewBag.TableAttachInfo = tableAttachInfo;
-            return View(tables);
+
+            var viewModel = new TableIndexViewModel
+            {
+                Tables = tables,
+                OpenOrders = openOrders,
+                TableAttachInfo = tableAttachInfo
+            };
+
+            return View(viewModel);
         }
 
         public IActionResult Upsert(int? id)

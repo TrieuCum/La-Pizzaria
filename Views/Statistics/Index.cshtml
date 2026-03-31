@@ -1,0 +1,241 @@
+@{
+    ViewData["Title"] = "Thống kê";
+    var recentOrders = ViewBag.RecentOrders as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var chartLabels = System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartLabels);
+    var chartValues = System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartValues);
+}
+
+<div class="dashboard-container">
+    <div class="dashboard-header d-flex justify-content-between align-items-center mb-4">
+        <div class="header-left">
+            <h1 class="dashboard-title">Thống kê</h1>
+        </div>
+        <div class="header-right position-relative">
+            <div class="search-box-dashboard">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Phân tích tìm kiếm..." class="search-input-dashboard">
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="stat-icon icon-revenue">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-percentage pos">
+                        <i class="bi bi-arrow-up-short"></i> 12.5%
+                    </div>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">TỔNG DOANH THU</span>
+                    <h3 class="stat-value">@string.Format("{0:N0}đ", ViewBag.TotalRevenue)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="stat-icon icon-orders">
+                        <i class="bi bi-cart-check"></i>
+                    </div>
+                    <div class="stat-percentage pos">
+                        <i class="bi bi-arrow-up-short"></i> 5.2%
+                    </div>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">TỔNG SỐ ĐƠN ĐÃ ĐẶT</span>
+                    <h3 class="stat-value">@ViewBag.TotalOrders</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="stat-icon icon-vouchers">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </div>
+                    <div class="stat-percentage neut">
+                        0%
+                    </div>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">VOUCHER HOẠT ĐỘNG</span>
+                    <h3 class="stat-value">@ViewBag.ActiveVouchers</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="chart-section mb-4">
+        <div class="section-card">
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h5 class="section-title">Thống kê trong tuần</h5>
+                <div class="btn-group chart-filter-group" role="group">
+                    <button type="button" class="btn btn-filter">Daily</button>
+                    <button type="button" class="btn btn-filter active">Weekly</button>
+                    <button type="button" class="btn btn-filter">Monthly</button>
+                </div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 300px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders Table -->
+    <div class="recent-orders-section">
+        <div class="section-card">
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h5 class="section-title">Trạng thái đơn giao gần đây</h5>
+                <a href="/OrderManagement" class="btn-view-all">Xem hết</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dashboard">
+                    <thead>
+                        <tr>
+                            <th>ID ĐƠN HÀNG</th>
+                            <th>KHÁCH HÀNG</th>
+                            <th>MÓN ĐÃ ĐẶT</th>
+                            <th>TỔNG SỐ TIỀN</th>
+                            <th>TRẠNG THÁI</th>
+                            <th>THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in recentOrders)
+                        {
+                            <tr>
+                                <td class="order-id">#PZ-@order.Id</td>
+                                <td>
+                                    <div class="customer-info">
+                                        <div class="customer-avatar">
+                                            @((order.CustomerName as string)?.Substring(0, 1).ToUpper() ?? "G")
+                                        </div>
+                                        <span class="customer-name">@order.CustomerName</span>
+                                    </div>
+                                </td>
+                                <td class="items-summary">@order.ItemsSummary</td>
+                                <td class="total-amount">@string.Format("{0:N0}đ", order.TotalPrice)</td>
+                                <td>
+                                    <span class="status-badge status-@order.OrderStatus.ToLower().Replace(" ", "-")">
+                                        @order.OrderStatus
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn-action"><i class="bi bi-three-dots-vertical"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            var labels = @Html.Raw(chartLabels);
+            var values = @Html.Raw(chartValues);
+
+            var gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(255, 145, 77, 0.4)');
+            gradient.addColorStop(1, 'rgba(255, 145, 77, 0)');
+
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Doanh thu',
+                        data: values,
+                        backgroundColor: '#FF914D',
+                        borderRadius: 8,
+                        barThickness: function(context) {
+                            var chart = context.chart;
+                            var count = chart.data.labels.length;
+                            return count > 10 ? (chart.width / count) * 0.6 : 40;
+                        },
+                        order: 2
+                    }, {
+                        label: 'Xu hướng',
+                        data: values,
+                        type: 'line',
+                        borderColor: '#FFD1B3',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: gradient,
+                        tension: 0.4,
+                        order: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f1f1f1',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 12 },
+                                callback: function(value) {
+                                    if (value >= 1000000) return (value/1000000).toFixed(1) + 'M';
+                                    if (value >= 1000) return (value/1000).toFixed(0) + 'K';
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Handle Filter Clicks
+            document.querySelectorAll('.btn-filter').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update Active Class
+                    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    var type = this.innerText.trim();
+                    updateChart(type);
+                });
+            });
+
+            function updateChart(type) {
+                fetch('/Statistics/GetChartData?type=' + type)
+                    .then(r => r.json())
+                    .then(data => {
+                        myChart.data.labels = data.labels;
+                        myChart.data.datasets[0].data = data.values;
+                        myChart.data.datasets[1].data = data.values;
+                        myChart.update();
+                    })
+                    .catch(e => console.error('Error fetching chart data:', e));
+            }
+        });
+    </script>
+}

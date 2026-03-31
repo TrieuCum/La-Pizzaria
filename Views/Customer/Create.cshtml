@@ -1,0 +1,72 @@
+@model LaPizzaria.ViewModels.CustomerFormViewModel
+@{
+    ViewData["Title"] = "Thêm khách hàng";
+    var users = ViewBag.AvailableUsers as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<div class="customer-page">
+    <header class="page-header">
+        <div>
+            <h1 class="page-title">Thêm khách hàng</h1>
+            <p class="page-subtitle">Chọn tài khoản người dùng và nhập thông tin khách hàng</p>
+        </div>
+        <a asp-controller="Customer" asp-action="Index" class="btn-add-customer" style="background: #64748b; box-shadow: none;">
+            <i class="bi bi-arrow-left"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
+
+    <div class="table-card" style="padding: 1.5rem; max-width: 520px;">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="UserId" class="form-label fw-semibold">Tài khoản người dùng <span class="text-danger">*</span></label>
+                <select asp-for="UserId" class="form-select" required>
+                    <option value="">-- Chọn tài khoản --</option>
+                    @foreach (var u in users)
+                    {
+                        <option value="@u.Id">@u.Display</option>
+                    }
+                </select>
+                <span asp-validation-for="UserId" class="text-danger small"></span>
+                @if (!users.Any())
+                {
+                    <p class="text-warning small mt-1">Chưa có tài khoản nào chưa gắn khách hàng. Vui lòng tạo tài khoản trước.</p>
+                }
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CustomerCode" class="form-label fw-semibold">Mã khách hàng</label>
+                <input asp-for="CustomerCode" class="form-control" placeholder="VD: CUS001" />
+                <span asp-validation-for="CustomerCode" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="LoyaltyPoints" class="form-label fw-semibold">Điểm tích lũy</label>
+                <input asp-for="LoyaltyPoints" type="number" min="0" class="form-control" />
+                <span asp-validation-for="LoyaltyPoints" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Status" class="form-label fw-semibold">Trạng thái</label>
+                <select asp-for="Status" class="form-select">
+                    <option value="Active">Hoạt động</option>
+                    <option value="Locked">Đã khóa</option>
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn-add-customer">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Thêm</span>
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -64,7 +64,11 @@ namespace LaPizzaria.Services
 			if (!v.IsActive) return false;
 			if (v.ExpiresAtUtc != null && v.ExpiresAtUtc <= nowUtc) return false;
 			if (v.MaxUses > 0 && v.UsedCount >= v.MaxUses) return false;
-			if (v.DiscountPercent <= 0) return false;
+			
+            // Basic validity check
+            if (v.VoucherType == "Percentage" && v.DiscountPercent <= 0) return false;
+            if (v.VoucherType == "FixedAmount" && v.DiscountAmount <= 0) return false;
+
 			return true;
 		}
 

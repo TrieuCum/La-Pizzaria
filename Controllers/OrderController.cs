@@ -7,6 +7,10 @@ using LaPizzaria.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using LaPizzaria.ViewModels;
+using LaPizzaria.Helpers;
+using Microsoft.Extensions.Configuration;
 
 namespace LaPizzaria.Controllers
 {
@@ -17,20 +21,78 @@ namespace LaPizzaria.Controllers
         private readonly IQrService _qrService;
         private readonly IComboService _comboService;
         private readonly IVoucherService _voucherService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IConfiguration _config;
 
-        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService)
+        public OrderController(ApplicationDbContext db, IOrderService orderService, IQrService qrService, IComboService comboService, IVoucherService voucherService, UserManager<ApplicationUser> userManager, IConfiguration config)
         {
             _db = db;
             _orderService = orderService;
             _qrService = qrService;
             _comboService = comboService;
             _voucherService = voucherService;
+            _userManager = userManager;
+            _config = config;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? statusFilter, int page = 1)
         {
-            var orders = await _db.Orders.Include(o => o.OrderDetails).ToListAsync();
-            return View(orders);
+            if (page < 1) page = 1;
+            const int pageSize = 5;
+            var userId = _userManager.GetUserId(User);
+            var query = _db.Orders
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+                .AsQueryable();
+            if (!string.IsNullOrEmpty(userId))
+                query = query.Where(o => o.UserId == userId);
+
+            var all = await query.ToListAsync();
+            var allCount = all.Count;
+            var deliveringCount = all.Count(o => o.OrderStatus == "Delivering" || o.OrderStatus == "Preparing" || o.OrderStatus == "Ready" || o.OrderStatus == "Confirmed" || o.OrderStatus == "Pending");
+            var completedCount = all.Count(o => o.OrderStatus == "Completed");
+            var cancelledCount = all.Count(o => o.OrderStatus == "Cancelled");
+
+            if (!string.IsNullOrWhiteSpace(statusFilter))
+            {
+                if (statusFilter == "Delivering")
+                    query = query.Where(o => o.OrderStatus == "Delivering" || o.OrderStatus == "Preparing" || o.OrderStatus == "Ready" || o.OrderStatus == "Confirmed" || o.OrderStatus == "Pending");
+                else if (statusFilter == "Rated")
+                    query = query.Where(o => false);
+                else
+                    query = query.Where(o => o.OrderStatus == statusFilter);
+            }
+            var totalCount = await query.CountAsync();
+            var orders = await query
+                .OrderByDescending(o => o.OrderDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var model = new OrderHistoryViewModel
+            {
+                Orders = orders,
+                StatusFilter = statusFilter,
+                AllCount = allCount,
+                DeliveringCount = deliveringCount,
+                CompletedCount = completedCount,
+                RatedCount = 0,
+                CancelledCount = cancelledCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+            return View(model);
+        }
+
+        /// <summary>Chi tiết đơn giao hàng (shipper) — dữ liệu mock trong view.</summary>
+        [HttpGet]
+        [Authorize(Roles = "Shipper")]
+        public IActionResult Detail(string? id)
+        {
+            ViewData["Title"] = "Chi tiết đơn hàng";
+            ViewBag.OrderCode = string.IsNullOrWhiteSpace(id) ? "ORD-2024" : id;
+            return View();
         }
 
         [HttpGet]
@@ -53,19 +115,41 @@ namespace LaPizzaria.Controllers
         public async Task<IActionResult> Preview([FromBody] QrOrderRequest req)
         {
             var items = req.Items ?? new List<QrOrderItem>();
-            var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+            var productIds = items.Select(i => i.ProductId).Concat(items.Where(i => i.ProductId2.HasValue).Select(i => i.ProductId2!.Value)).Distinct().ToList();
             var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
 
             var details = new List<OrderDetail>();
             foreach (var it in items)
             {
-                if (!products.TryGetValue(it.ProductId, out var p) && it.UnitPrice == null)
+                if (!products.TryGetValue(it.ProductId, out var p1) && it.UnitPrice == null)
                 {
-                    // Unknown product and no explicit price; skip
                     continue;
                 }
-                var price = it.UnitPrice ?? (products.TryGetValue(it.ProductId, out var prod) ? prod.Price : 0m);
-                details.Add(new OrderDetail { ProductId = it.ProductId, Quantity = it.Quantity, UnitPrice = price, Subtotal = price * it.Quantity });
+                
+                decimal price = 0;
+                if (it.UnitPrice != null)
+                {
+                    price = it.UnitPrice.Value;
+                }
+                else if (p1 != null)
+                {
+                    decimal p1Price = p1.Price;
+                    // Apply size modifier
+                    decimal modifier = 0;
+                    if (it.Size == "S") modifier = -30000;
+                    else if (it.Size == "L") modifier = 50000;
+
+                    decimal finalUnitPrice = p1Price + modifier;
+
+                    if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
+                    {
+                        decimal p2Price = p2.Price + modifier;
+                        finalUnitPrice = (finalUnitPrice + p2Price) / 2;
+                    }
+                    price = finalUnitPrice;
+                }
+                
+                details.Add(new OrderDetail { ProductId = it.ProductId, ProductId2 = it.ProductId2, Quantity = it.Quantity, UnitPrice = price, Subtotal = price * it.Quantity, Size = it.Size });
             }
 
             var subtotal = details.Sum(d => d.Subtotal);
@@ -82,14 +166,146 @@ namespace LaPizzaria.Controllers
                 }
             }
             decimal voucherDiscount = 0m;
-            foreach (var v in vouchers)
+            var validatedVouchers = new List<object>();
+
+            foreach (var vid in req.VoucherIds?.Take(2) ?? new List<int>())
             {
-                voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+                var v = await _voucherService.GetByIdAsync(vid);
+                if (v == null) continue;
+
+                if (!_voucherService.IsUsable(v, System.DateTime.UtcNow))
+                {
+                    return BadRequest(new { error = $"Voucher {v.Code} hiện không khả dụng." });
+                }
+
+                if (subtotal < v.MinOrderValue)
+                {
+                    return BadRequest(new { error = $"Đơn hàng chưa đạt giá trị tối thiểu ({v.MinOrderValue:N0}đ) để sử dụng mã {v.Code}." });
+                }
+
+                validatedVouchers.Add(new { id = v.Id, code = v.Code, name = v.Name, percent = v.DiscountPercent, amount = v.DiscountAmount, type = v.VoucherType });
+                
+                if (v.VoucherType == "Percentage")
+                    voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+                else if (v.VoucherType == "FixedAmount")
+                    voucherDiscount += v.DiscountAmount;
+                else if (v.VoucherType == "FreeShipping")
+                    voucherDiscount += v.DiscountAmount; // Store max shipping discount in DiscountAmount
             }
 
             var total = Math.Max(0, subtotal - voucherDiscount);
-            var vInfo = vouchers.Select(v => new { id = v.Id, code = v.Code, name = v.Name, percent = v.DiscountPercent });
-            return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = vInfo });
+            return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = validatedVouchers });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var order = await _db.Orders
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+                .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product2)
+                .Include(o => o.User)
+                .Include(o => o.OrderVouchers!)
+                .ThenInclude(ov => ov.Voucher)
+                .FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) return NotFound();
+            return View(order);
+        }
+
+        /// <summary>Trang in hóa đơn theo mẫu LP/26E (chỉ nội dung in, không layout).</summary>
+        [HttpGet]
+        public async Task<IActionResult> PrintInvoice(int id)
+        {
+            var order = await _db.Orders
+                .Include(o => o.OrderDetails!).ThenInclude(od => od.Product)
+                .Include(o => o.OrderDetails!).ThenInclude(od => od.Product2)
+                .Include(o => o.User)
+                .Include(o => o.OrderVouchers!).ThenInclude(ov => ov.Voucher)
+                .FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) return NotFound();
+
+            var subtotal = order.OrderDetails?.Sum(d => d.Subtotal) ?? 0;
+            var voucherDiscount = 0m;
+            if (order.OrderVouchers != null)
+            {
+                foreach (var ov in order.OrderVouchers.Take(5))
+                {
+                    var v = ov.Voucher;
+                    if (v != null && v.VoucherType == "Percentage")
+                        voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 0);
+                    else if (v != null && v.VoucherType == "FixedAmount")
+                        voucherDiscount += v.DiscountAmount;
+                }
+            }
+            var deliveryFee = 20000m;
+            var totalBeforeTax = subtotal + deliveryFee - voucherDiscount;
+            if (totalBeforeTax < 0) totalBeforeTax = 0;
+            var taxPercent = 10m;
+            var taxAmount = Math.Round(totalBeforeTax * (taxPercent / 100m), 0);
+            var grandTotal = totalBeforeTax + taxAmount;
+
+            var buyerName = "—";
+            var buyerPhone = "—";
+            var buyerAddress = order.DeliveryAddress ?? "—";
+            if (order.User != null)
+            {
+                buyerName = $"{order.User.FirstName} {order.User.LastName}".Trim();
+                if (string.IsNullOrWhiteSpace(buyerName)) buyerName = order.User.UserName ?? order.User.Email ?? "Khách hàng";
+                buyerPhone = order.User.PhoneNumber ?? "—";
+                if (string.IsNullOrWhiteSpace(buyerAddress) || buyerAddress == "—") buyerAddress = order.User.Address ?? "—";
+            }
+
+            var yearSuffix = DateTime.Now.ToString("yy");
+            var vm = new InvoicePrintViewModel
+            {
+                Order = order,
+                InvoiceSymbol = _config["Invoice:Symbol"] ?? "LP/26E",
+                InvoiceNumber = (order.Id).ToString("D6"),
+                IssueDate = order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                SellerName = _config["Invoice:SellerName"] ?? "Công ty TNHH LaPizzaria",
+                SellerTaxCode = _config["Invoice:SellerTaxCode"] ?? "0312345678",
+                SellerAddress = _config["Invoice:SellerAddress"] ?? "193 Đỗ Văn Thi, Phường, Biên Hòa, Đồng Nai",
+                SellerPhone = _config["Invoice:SellerPhone"] ?? "0901 234 567",
+                SellerEmail = _config["Invoice:SellerEmail"] ?? "support@lapizzaria.vn",
+                BuyerName = buyerName,
+                BuyerPhone = buyerPhone,
+                BuyerAddress = buyerAddress,
+                Subtotal = subtotal,
+                DeliveryFee = deliveryFee,
+                VoucherDiscount = voucherDiscount,
+                TotalBeforeTax = totalBeforeTax,
+                TaxPercent = taxPercent,
+                TaxAmount = taxAmount,
+                GrandTotal = grandTotal,
+                AmountInWords = NumberToWordsVietnamese.ToWords(grandTotal),
+                PaymentMethodDisplay = string.IsNullOrEmpty(order.PaymentMethod) ? "Chưa chọn" : order.PaymentMethod,
+                PaymentStatus = "Chưa thanh toán",
+                OrderCode = "PH" + order.Id,
+                OrderDateDisplay = order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                OrderStatusDisplay = order.OrderStatus ?? "Đang chuẩn bị",
+                Lines = order.OrderDetails?.Select((od, i) => {
+                    var name = od.Product?.Name ?? "Món #" + od.ProductId;
+                    if (od.ProductId2.HasValue && od.Product2 != null)
+                    {
+                        name = $"Mix: {od.Product?.Name} / {od.Product2.Name}";
+                    }
+                    if (!string.IsNullOrEmpty(od.Size))
+                    {
+                        name += $" (Size {od.Size})";
+                    }
+
+                    return new InvoicePrintLine
+                    {
+                        Stt = i + 1,
+                        ProductName = name,
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice
+                    };
+                }).ToList() ?? new List<InvoicePrintLine>()
+            };
+
+            return View(vm);
         }
 
         [HttpGet]
@@ -145,15 +361,42 @@ namespace LaPizzaria.Controllers
         {
             try
             {
-                var details = req.Items.Select(i => new OrderDetail
+                var details = new List<OrderDetail>();
+                foreach (var item in req.Items)
                 {
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice,
-                    Subtotal = i.UnitPrice * i.Quantity
-                }).ToList();
+                    var p1 = await _db.Products.FindAsync(item.ProductId);
+                    if (p1 == null) continue;
 
-                var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>());
+                    decimal p1Price = p1.Price;
+                    // Apply size modifier
+                    decimal modifier = 0;
+                    if (item.Size == "S") modifier = -30000;
+                    else if (item.Size == "L") modifier = 50000;
+
+                    decimal finalUnitPrice = p1Price + modifier;
+
+                    if (item.ProductId2.HasValue)
+                    {
+                        var p2 = await _db.Products.FindAsync(item.ProductId2.Value);
+                        if (p2 != null)
+                        {
+                            decimal p2Price = p2.Price + modifier;
+                            finalUnitPrice = (finalUnitPrice + p2Price) / 2;
+                        }
+                    }
+
+                    details.Add(new OrderDetail
+                    {
+                        ProductId = item.ProductId,
+                        ProductId2 = item.ProductId2,
+                        Quantity = item.Quantity,
+                        UnitPrice = finalUnitPrice,
+                        Subtotal = finalUnitPrice * item.Quantity,
+                        Size = item.Size
+                    });
+                }
+
+                var order = await _orderService.CreateOrderAsync(req.UserId, details, req.TableIds ?? new List<int>(), req.DeliveryAddress, req.Latitude, req.Longitude);
                 // Attach up to 2 vouchers if provided and valid
                 if (req.VoucherIds != null && req.VoucherIds.Count > 0)
                 {
@@ -251,17 +494,37 @@ namespace LaPizzaria.Controllers
                 if (req.Items != null)
                 {
                     var productIds = req.Items.Select(i => i.ProductId).Distinct().ToList();
-                    var priceMap = await _db.Products.Where(p => productIds.Contains(p.Id))
-                        .ToDictionaryAsync(p => p.Id, p => p.Price);
+                    var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+
                     foreach (var it in req.Items)
                     {
-                        decimal price = it.UnitPrice ?? (priceMap.TryGetValue(it.ProductId, out var p) ? p : 0m);
+                        decimal price = it.UnitPrice ?? 0m; // Default to 0 if UnitPrice is null
+                        if (it.UnitPrice == null && products.TryGetValue(it.ProductId, out var p1))
+                        {
+                            decimal p1Price = p1.Price;
+                            // Apply size modifier
+                            decimal modifier = 0;
+                            if (it.Size == "S") modifier = -30000;
+                            else if (it.Size == "L") modifier = 50000;
+
+                            decimal finalUnitPrice = p1Price + modifier;
+
+                            if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
+                            {
+                                decimal p2Price = p2.Price + modifier;
+                                finalUnitPrice = (finalUnitPrice + p2Price) / 2;
+                            }
+                            price = finalUnitPrice;
+                        }
+
                         details.Add(new OrderDetail
                         {
                             ProductId = it.ProductId,
+                            ProductId2 = it.ProductId2,
                             Quantity = it.Quantity,
                             UnitPrice = price,
-                            Subtotal = price * it.Quantity
+                            Subtotal = price * it.Quantity,
+                            Size = it.Size
                         });
                     }
                 }
@@ -271,7 +534,7 @@ namespace LaPizzaria.Controllers
                     var t = await _db.Tables.FirstOrDefaultAsync(x => x.Code == req.TableCode);
                     if (t != null) tableIds.Add(t.Id);
                 }
-                var order = await _orderService.CreateOrderAsync(null, details, tableIds);
+                var order = await _orderService.CreateOrderAsync(req.UserId, details, tableIds, req.DeliveryAddress, req.Latitude, req.Longitude);
                 if (req.VoucherIds != null && req.VoucherIds.Count > 0)
                 {
                     foreach (var vid in req.VoucherIds.Take(2))
@@ -297,31 +560,40 @@ namespace LaPizzaria.Controllers
     public class CreateOrderRequest
     {
         public string? UserId { get; set; }
+        public string? DeliveryAddress { get; set; }
         public List<ItemDto> Items { get; set; } = new();
         public List<int>? TableIds { get; set; }
         public List<int> VoucherIds { get; set; } = new();
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 
     public class ItemDto
     {
         public int ProductId { get; set; }
+        public int? ProductId2 { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
+        public string? Size { get; set; }
     }
 
     public class QrOrderRequest
     {
         public string? TableCode { get; set; }
+        public string? DeliveryAddress { get; set; }
+        public string? UserId { get; set; }
         public List<QrOrderItem>? Items { get; set; }
         public List<int>? VoucherIds { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 
     public class QrOrderItem
     {
         public int ProductId { get; set; }
+        public int? ProductId2 { get; set; }
         public int Quantity { get; set; }
         public decimal? UnitPrice { get; set; }
+        public string? Size { get; set; }
     }
 }
-
-

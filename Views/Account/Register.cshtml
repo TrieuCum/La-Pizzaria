@@ -1,70 +1,361 @@
 @model LaPizzaria.ViewModels.RegisterViewModel
-@{ ViewData["Title"] = "Đăng ký"; }
+@{
+    ViewData["Title"] = "Đăng ký";
+    Layout = null;
+}
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8 col-sm-11">
-            <div class="card p-4 shadow-lg auth-card">
-                <h2 class="card-title text-center mb-3 brand-accent">Đăng ký</h2>
-                <p class="text-center text-muted mb-4">Tạo tài khoản mới của bạn để khám phá!</p>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - LaPizzaria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --brand-orange: #F97316;
+            --brand-orange-hover: #EA580C;
+            --brand-dark: #0F172A;
+            --brand-gray: #64748b;
+            --brand-white: #FFFFFF;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            background-color: #f8fafc;
+        }
+
+        .auth-wrapper {
+            display: flex;
+            min-height: 100vh;
+            width: 100vw;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Decorative Floating Elements */
+        .floating-element {
+            position: absolute;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.6;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+        }
+
+        .el-1 { top: 8%; left: 42%; font-size: 3.5rem; animation: float 7s ease-in-out infinite; }
+        .el-2 { bottom: 12%; left: 5%; font-size: 3rem; animation: float 9s ease-in-out infinite alternate; }
+        .el-3 { top: 25%; right: 10%; font-size: 2.5rem; animation: float 8s ease-in-out infinite 0.5s; }
+
+        @@keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-25px) rotate(15deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        /* Left Side - Image Hero */
+        .auth-hero {
+            flex: 1.1;
+            background: url('/images/auth_bg.png') no-repeat center center;
+            background-size: cover;
+            position: relative;
+            display: none;
+        }
+
+        @@media (min-width: 992px) {
+            .auth-hero { display: block; }
+        }
+
+        .auth-hero::after {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(249, 115, 22, 0.35) 100%);
+            backdrop-filter: saturate(1.3);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 140px 20px;
+            color: white;
+        }
+
+        .hero-title {
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 900;
+            font-size: 4.5rem;
+            line-height: 1.1;
+            margin-bottom: 12px;
+            letter-spacing: -2.5px;
+            text-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+
+        .hero-subtitle {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            max-width: 500px;
+            opacity: 1;
+            line-height: 1.8;
+            font-weight: 500;
+            letter-spacing: -0.1px;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Right Side - Form Container */
+        .auth-form-container {
+            flex: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .form-card {
+            width: 100%;
+            max-width: 580px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px) saturate(200%);
+            -webkit-backdrop-filter: blur(30px) saturate(200%);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 50px;
+            box-shadow: var(--shadow-premium), inset 0 0 0 1px rgba(255,255,255,0.4);
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none !important;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo-text {
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 900;
+            font-size: 1.75rem;
+            color: var(--brand-dark);
+            letter-spacing: -1px;
+        }
+
+        .form-title {
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 800;
+            font-size: 2rem;
+            color: var(--brand-dark);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .form-subtitle {
+            color: var(--brand-gray);
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+
+        /* Social Auth */
+        .social-auth {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .btn-social {
+            flex: 1;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 12px; border-radius: 16px; border: 1px solid #e2e8f0;
+            background: white; color: var(--brand-dark); font-weight: 600;
+            font-size: 0.9rem; transition: all 0.2s; text-decoration: none;
+        }
+
+        .btn-social:hover { background: #f8fafc; transform: translateY(-2px); border-color: #cbd5e1; }
+
+        .divider {
+            display: flex; align-items: center; text-align: center;
+            margin-bottom: 32px; color: #94a3b8; font-size: 0.75rem;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
+        .divider:not(:empty)::before { margin-right: 1.5em; }
+        .divider:not(:empty)::after { margin-left: 1.5em; }
+
+        /* Form Styling */
+        .form-label { color: var(--brand-dark); font-weight: 600; margin-bottom: 8px; }
+
+        .form-control {
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.7);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--brand-orange);
+            box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15);
+            background: white;
+            transform: translateY(-1px);
+        }
+
+        .btn-auth {
+            background: linear-gradient(135deg, var(--brand-orange) 0%, #f98e3d 100%);
+            color: white; font-weight: 700; border-radius: 18px;
+            padding: 16px; border: none; font-size: 1.1rem;
+            box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 20px;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 30px -5px rgba(249, 115, 22, 0.5);
+            color: white;
+        }
+
+        .auth-footer { margin-top: 32px; text-align: center; color: var(--brand-gray); }
+        .auth-link { color: var(--brand-orange); text-decoration: none; font-weight: 700; transition: color 0.2s; }
+        .auth-link:hover { color: var(--brand-orange-hover); text-decoration: underline; }
+
+        .floating-back {
+            position: absolute; top: 40px; left: 40px;
+            color: white; text-decoration: none !important;
+            z-index: 100;
+            font-weight: 700; display: flex; align-items: center; gap: 8px;
+            padding: 12px 24px; border-radius: 14px;
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+        }
+        .floating-back:hover { 
+            background: rgba(15, 23, 42, 0.6); 
+            transform: translateY(-2px); 
+            box-shadow: 0 15px 35px -10px rgba(0,0,0,0.4); 
+            color: white;
+        }
+
+        @@keyframes fadeInUpPremium {
+            from { opacity: 0; transform: translateY(40px); filter: blur(15px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        .animate-premium {
+            animation: fadeInUpPremium 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-wrapper">
+        <a href="/" class="floating-back animate-premium" style="animation-delay: 0.6s;">
+            <i class="bi bi-arrow-left"></i> Trang chủ
+        </a>
+
+        <!-- Floating Decor -->
+        <span class="floating-element el-1">🍕</span>
+        <span class="floating-element el-2">🌿</span>
+        <span class="floating-element el-3">🌶️</span>
+
+        <div class="auth-hero">
+            <div class="hero-content">
+                <h1 class="hero-title animate-premium">Tham Gia<br>LaPizzaria.</h1>
+                <p class="hero-subtitle animate-premium" style="animation-delay: 0.15s;">
+                    Đăng ký để trở thành thực khách VIP, tích điểm không giới hạn và nhận voucher bí mật mỗi tuần.
+                </p>
+            </div>
+        </div>
+        <div class="auth-form-container">
+            <div class="form-card animate-premium" style="animation-delay: 0.3s;">
+                <a href="/" class="brand-logo">
+                    <span style="font-size: 2.5rem; filter: drop-shadow(0 5px 10px rgba(249, 115, 22, 0.3));">🍕</span>
+                    <span class="brand-logo-text">LaPizzaria</span>
+                </a>
+                <h2 class="form-title">Tạo hành trình mới</h2>
+                <p class="form-subtitle">Chúng tôi rất hào hứng được chào đón bạn!</p>
+
+                <div class="social-auth">
+                    <a href="#" class="btn-social">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Google
+                    </a>
+                    <a href="#" class="btn-social">
+                        <i class="bi bi-facebook" style="color: #1877F2; font-size: 1.25rem;"></i> Facebook
+                    </a>
+                </div>
+
+                <div class="divider">Thông tin của bạn</div>
+
                 <form asp-controller="Account" asp-action="Register" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    <div class="row">
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                    
+                    <div class="row g-4">
                         <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input asp-for="FirstName" class="form-control" placeholder="Họ của bạn" />
-                                <label asp-for="FirstName"></label>
-                                <span asp-validation-for="FirstName" class="text-danger"></span>
-                            </div>
+                            <label asp-for="FirstName" class="form-label small">Họ</label>
+                            <input asp-for="FirstName" class="form-control" placeholder="Nguyễn" />
+                            <span asp-validation-for="FirstName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input asp-for="LastName" class="form-control" placeholder="Tên của bạn" />
-                                <label asp-for="LastName"></label>
-                                <span asp-validation-for="LastName" class="text-danger"></span>
-                            </div>
+                            <label asp-for="LastName" class="form-label small">Tên</label>
+                            <input asp-for="LastName" class="form-control" placeholder="Văn A" />
+                            <span asp-validation-for="LastName" class="text-danger small"></span>
                         </div>
                     </div>
-                    <div class="form-floating mb-3">
-                        <input asp-for="Email" class="form-control" placeholder="Email của bạn" />
-                        <label asp-for="Email"></label>
-                        <span asp-validation-for="Email" class="text-danger"></span>
+
+                    <div class="mt-3">
+                        <label asp-for="Email" class="form-label small">Email của bạn</label>
+                        <input asp-for="Email" class="form-control" placeholder="name@example.com" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
                     </div>
-                    <div class="form-floating mb-3">
-                        <input asp-for="PhoneNumber" class="form-control" placeholder="Số điện thoại" />
-                        <label asp-for="PhoneNumber"></label>
-                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+
+                    <div class="mt-3">
+                        <label asp-for="PhoneNumber" class="form-label small">Số điện thoại</label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="0xxx xxx xxx" />
+                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                     </div>
-                    <div class="form-floating mb-3">
-                        <input asp-for="Password" class="form-control" placeholder="Mật khẩu" />
-                        <label asp-for="Password"></label>
-                        <span asp-validation-for="Password" class="text-danger"></span>
+
+                    <div class="row g-4 mt-1">
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label small">Mật khẩu</label>
+                            <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ConfirmPassword" class="form-label small">Xác nhận</label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="••••••••" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                        </div>
                     </div>
-                    <div class="form-floating mb-4">
-                        <input asp-for="ConfirmPassword" class="form-control" placeholder="Xác nhận mật khẩu" />
-                        <label asp-for="ConfirmPassword"></label>
-                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-auth">Bắt đầu trải nghiệm</button>
                     </div>
-                    <div class="d-grid gap-2 mb-4">
-                        <button type="submit" class="btn btn-brand-secondary btn-lg">Đăng ký</button>
-                    </div>
-                    <div class="text-center">
-                        <p class="mb-0">Đã có tài khoản? <a asp-controller="Account" asp-action="Login" class="brand-accent-hover">Đăng nhập</a></p>
+
+                    <div class="auth-footer">
+                        Đã là thành viên? <a asp-controller="Account" asp-action="Login" class="auth-link">Đăng nhập tại đây</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-</div>
 
-<style>
-    .auth-card { background-color: var(--light-cream); border-radius: 15px; overflow: hidden; }
-    .brand-accent { color: var(--wood-brown); font-weight: bold; }
-    .brand-accent-hover:hover { color: var(--wood-brown); }
-    .btn-brand-secondary {
-        background-color: var(--wood-brown); border-color: var(--wood-brown);
-        color: var(--light-text-color); font-weight: bold; border-radius: 50px; padding: 10px 30px;
-        transition: background-color .3s ease-in-out, border-color .3s ease-in-out;
-    }
-    .btn-brand-secondary:hover { background-color: var(--primary-red); border-color: var(--primary-red); }
-</style>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

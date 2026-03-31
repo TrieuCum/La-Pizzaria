@@ -1,0 +1,773 @@
+@{
+    ViewData["Title"] = "Kiểm tra đơn hàng";
+}
+
+<div class="checkout-redesign py-4 bg-brand-bg min-vh-100">
+    <div class="container">
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb breadcrumb-custom">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Giỏ hàng</li>
+            </ol>
+        </nav>
+
+        <!-- Title Header -->
+        <div class="mb-5">
+            <h1 class="fw-black font-work-sans mb-1 text-brand-dark">Kiểm tra đơn hàng</h1>
+            <p class="text-brand-gray">Xem lại các món ăn và chọn phương thức nhận hàng phù hợp</p>
+        </div>
+
+        <div class="row g-5">
+            <!-- Left Side: Order List & Suggestions -->
+            <div class="col-lg-8">
+                <section class="mb-5">
+                    <h5 class="fw-bold mb-4">Danh sách đã chọn</h5>
+                    <div id="cart-items-list" class="d-grid gap-3">
+                        <!-- Items rendered by JS -->
+                    </div>
+                </section>
+
+                <section class="mb-5">
+                    <h5 class="fw-bold mb-4">Gợi ý món tráng miệng ăn kèm</h5>
+                    <div id="upsell-items" class="row g-3">
+                        <!-- Suggestions rendered by JS -->
+                        <div class="col-md-6">
+                            <div class="brand-card p-2 d-flex align-items-center gap-3 bg-white">
+                                <div class="suggestion-img-wrap rounded-3 overflow-hidden" style="width: 80px; height: 60px;">
+                                    <img src="/images/v17_1114.png" class="w-100 h-100 object-fit-cover">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold small">Coca Cola 1.5L</div>
+                                    <div class="text-brand-orange fw-black extra-small">35.000đ</div>
+                                </div>
+                                <button class="btn btn-brand-orange-light text-brand-orange rounded-circle p-1" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <div class="mt-4">
+                    <a asp-controller="Menu" asp-action="Index" class="text-brand-gray text-decoration-none d-inline-flex align-items-center gap-2 hover-orange transition-all">
+                        <i class="bi bi-arrow-left"></i> Tiếp tục mua hàng
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Side: Sidebar -->
+            <div class="col-lg-4">
+                <div class="sticky-top" style="top: 100px;">
+                    <!-- Delivery Option Card -->
+                    <div class="brand-card p-4 bg-white mb-4 shadow-sm">
+                        <h6 class="fw-bold mb-4">Tùy chọn nhận hàng</h6>
+                        <div class="delivery-toggle-wrap p-1 bg-brand-bg rounded-pill d-flex mb-4">
+                            <button id="toggleShip" class="btn btn-toggle flex-grow-1 rounded-pill active" onclick="switchDelivery('ship')">Giao tận nơi</button>
+                            <button id="toggleDine" class="btn btn-toggle flex-grow-1 rounded-pill" onclick="switchDelivery('dine')">Ăn tại chỗ</button>
+                        </div>
+
+                        <div id="shipInputs">
+                            @if (ViewBag.UserName != null || ViewBag.UserPhone != null)
+                            {
+                                <div class="mb-3 p-2 bg-brand-bg rounded-3 extra-small">
+                                    <span class="text-brand-gray">Người nhận:</span> <strong id="displayRecipientName">@ViewBag.UserName</strong>
+                                    @if (!string.IsNullOrWhiteSpace(ViewBag.UserPhone?.ToString()))
+                                    {
+                                        <span class="text-brand-gray"> · </span><span id="displayRecipientPhone">@ViewBag.UserPhone</span>
+                                    }
+                                </div>
+                            }
+                            <div class="mb-3">
+                                <label class="form-label extra-small fw-bold text-brand-gray">Địa chỉ giao hàng</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-brand-gray"><i class="bi bi-geo-alt"></i></span>
+                                    <input type="text" id="shipAddress" class="form-control border-start-0 ps-0 extra-small" placeholder="Số nhà, tên đường, phường/xã....">
+                                    <button class="btn btn-outline-light border text-brand-orange" type="button" onclick="openMapPicker()" title="Chọn từ bản đồ">
+                                        <i class="bi bi-map"></i>
+                                    </button>
+                                    <button class="btn btn-outline-light border text-brand-orange" type="button" onclick="getCurrentLocation()" title="Lấy vị trí hiện tại">
+                                        <i class="bi bi-crosshair"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label extra-small fw-bold text-brand-gray">Ghi chú đơn hàng</label>
+                                <textarea id="orderNotes" class="form-control extra-small" rows="3" placeholder="Ví dụ: Để ở cổng trước, gọi trước khi đến"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="dineInputs" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label extra-small fw-bold text-brand-gray">Mã bàn</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-brand-gray"><i class="bi bi-hash"></i></span>
+                                    <input type="text" id="tableCode" class="form-control border-start-0 ps-0 extra-small" placeholder="Nhập mã bàn của bạn">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Card -->
+                    <div class="brand-card p-4 bg-white shadow-sm">
+                        <h6 class="fw-bold mb-4">Tổng kết đơn hàng</h6>
+                        <div class="summary-details d-grid gap-2 mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between extra-small">
+                                <span class="text-brand-gray">Tạm tính (<span id="count-summary">0</span> món)</span>
+                                <span class="fw-bold" id="subtotal">0đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between extra-small">
+                                <span class="text-brand-gray">Phí vận chuyển</span>
+                                <span class="fw-bold" id="shipFee">0đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between extra-small text-brand-green">
+                                <span class="fw-bold">Giảm giá voucher</span>
+                                <span class="fw-bold" id="discount">-0đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between extra-small">
+                                <span class="text-brand-gray">Thuế (VAT)</span>
+                                <span class="fw-bold" id="vat">0đ</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">Tổng cộng</span>
+                            <span class="total-price-orange" id="totalPrice">0đ</span>
+                        </div>
+                        <div class="text-brand-gray extra-small text-end mb-4">Thời gian giao dự kiến: 25-35 phút</div>
+
+                        <div id="globalAppliedVouchersPlaceholder" class="mb-3 d-flex flex-wrap gap-2"></div>
+
+                        <button class="btn btn-brand-primary w-100 py-3 rounded-4 fw-bold fs-6 d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="submitOrder()">
+                            Xác nhận đặt hàng <i class="bi bi-arrow-right"></i>
+                        </button>
+                        
+                        <div class="mt-3 text-center">
+                            <div class="extra-small text-brand-gray-light d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-shield-lock"></i> Thanh toán bảo mật qua MoMo, VNPay hoặc Tiền mặt
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- Map Picker Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-black">Chọn vị trí giao hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="map-picker-container" style="height: 450px; border-radius: 12px;" class="bg-light border mb-3"></div>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" id="mapSearchBox" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm địa chỉ...">
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-brand-primary rounded-pill px-4" onclick="confirmMapAddress()">Sử dụng vị trí này</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Premium aesthetics override */
+    :root {
+        --brand-orange: #f48c25;
+        --brand-bg: #f8f7f5;
+        --brand-dark: #181411;
+        --brand-gray: #6b7280;
+        --brand-green: #16a34a;
+    }
+
+    .bg-brand-bg { background-color: var(--brand-bg) !important; }
+    .text-brand-dark { color: var(--brand-dark); }
+    .text-brand-gray { color: var(--brand-gray); }
+    .text-brand-gray-light { color: #9ca3af; }
+    .text-brand-green { color: var(--brand-green); }
+    .text-brand-orange { color: var(--brand-orange); }
+
+    .font-work-sans { font-family: 'Work Sans', sans-serif; }
+    .fw-black { font-weight: 900; }
+    
+    .breadcrumb-custom { font-size: 0.8rem; font-weight: 600; }
+    .breadcrumb-custom .breadcrumb-item + .breadcrumb-item::before { content: "/"; }
+    .breadcrumb-custom a { text-decoration: none; color: var(--brand-gray); }
+    
+    /* Segmented Toggle */
+    .delivery-toggle-wrap { background: #f1f5f9; }
+    .btn-toggle { border: none !important; font-size: 0.75rem; font-weight: 700; padding: 10px 0; color: var(--brand-gray); transition: all 0.3s; }
+    .btn-toggle.active { background: #ffffff !important; color: var(--brand-orange) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    
+    /* Sidebar total price */
+    .total-price-orange { color: var(--brand-orange); font-size: 1.75rem; font-weight: 900; }
+    
+    /* Cart Item Card */
+    .cart-item-card { background: #ffffff; border-radius: 20px; border: 1px solid rgba(0,0,0,0.03); transition: transform 0.2s, box-shadow 0.2s; }
+    .cart-item-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.02); }
+    .cart-img-wrap { width: 100px; height: 100px; border-radius: 12px; background: #f9fafb; flex-shrink: 0; }
+    
+    /* Custom Qty Control */
+    .qty-control-minimal { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; padding: 4px; gap: 15px; }
+    .btn-qty-min { border: none; background: transparent; color: var(--brand-dark); font-weight: 900; font-size: 1.2rem; line-height: 1; padding: 0 5px; }
+    .qty-value { font-weight: 900; color: var(--brand-dark); font-size: 0.9rem; min-width: 20px; text-align: center; }
+    
+    .extra-small { font-size: 0.75rem; }
+    .small-btn { font-size: 0.7rem; color: var(--brand-gray); text-decoration: none; font-weight: 600; }
+    .small-btn:hover { color: #dc2626; }
+    
+    input.form-control, textarea.form-control { border-radius: 10px; border: 1.5px solid #f1f5f9; padding: 12px 15px; }
+    input.form-control:focus, textarea.form-control:focus { box-shadow: 0 0 0 3px rgba(244,140,37,0.1); border-color: var(--brand-orange); }
+
+    .btn-outline-light:hover { background: var(--brand-bg); }
+    #map-picker-container { position: relative; overflow: hidden; }
+
+    /* Voucher UI Styles */
+    .voucher-icon-abs {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--brand-orange);
+        font-size: 1.2rem;
+        cursor: pointer;
+        z-index: 5;
+    }
+    .voucher-item {
+        border: 1px solid #f1f5f9;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+    }
+    .voucher-item.ineligible {
+        opacity: 0.6;
+        background: #f8fafc;
+    }
+    .voucher-item:not(.ineligible):hover {
+        border-color: var(--brand-orange);
+        background: #fffafa;
+    }
+    .voucher-condition-text {
+        font-size: 11px;
+        color: var(--brand-gray);
+        margin-top: 8px;
+        display: none;
+        padding-top: 8px;
+        border-top: 1px dashed #eee;
+    }
+    .extra-small { font-size: 0.75rem; }
+    .bg-brand-orange-light { background-color: #fff1e6; }
+</style>
+
+@section Scripts {
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const STORE_LAT = 10.9416;
+        const STORE_LNG = 106.8407;
+        let deliveryType = 'ship'; // 'ship' or 'dine'
+        let map, marker;
+        let selectedAddress = '';
+        let currentLat = null;
+        let currentLng = null;
+        let travelDistance = -1; // -1 means not calculated
+        let searchTimeout = null;
+
+        @* Thông tin khách đăng nhập để pre-fill và gửi kèm đơn hàng *@
+        window.checkoutUser = {
+            userId: @Html.Raw(ViewBag.CurrentUserId != null ? "\"" + ViewBag.CurrentUserId.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"" : "null"),
+            name: @Html.Raw(ViewBag.UserName != null ? "\"" + ViewBag.UserName.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ") + "\"" : "null"),
+            phone: @Html.Raw(ViewBag.UserPhone != null ? "\"" + ViewBag.UserPhone.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"" : "null"),
+            address: @Html.Raw(ViewBag.UserAddress != null ? "\"" + ViewBag.UserAddress.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ") + "\"" : "null")
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.checkoutUser && window.checkoutUser.address) {
+                document.getElementById('shipAddress').value = window.checkoutUser.address;
+                selectedAddress = window.checkoutUser.address;
+            }
+            renderList();
+            loadSuggestions();
+            updateSummary();
+            initAutocomplete();
+        });
+
+        // Initialize Nominatim-based Autocomplete
+        function initAutocomplete() {
+            const input = document.getElementById('shipAddress');
+            const resultsContainer = document.createElement('div');
+            resultsContainer.id = 'autocomplete-results';
+            resultsContainer.className = 'list-group position-absolute w-100 shadow-sm z-3';
+            resultsContainer.style.top = '100%';
+            input.parentElement.style.position = 'relative';
+            input.parentElement.appendChild(resultsContainer);
+            input.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                const query = input.value.trim();
+                if (query.length < 3) {
+                    resultsContainer.innerHTML = '';
+                    return;
+                }
+
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&limit=5`);
+                        const data = await res.json();
+                        
+                        resultsContainer.innerHTML = data.map(item => `
+                            <button type="button" class="list-group-item list-group-item-action extra-small" onclick="selectResult('${item.display_name.replace(/'/g, "\\'")}', ${item.lat}, ${item.lon})">
+                                ${item.display_name}
+                            </button>
+                        `).join('');
+                    } catch (e) {
+                        console.error("Geocoding error", e);
+                    }
+                }, 500);
+            });
+
+            // Close results on click outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
+                    resultsContainer.innerHTML = '';
+                }
+            });
+        }
+
+        function selectResult(address, lat, lon) {
+            document.getElementById('shipAddress').value = address;
+            selectedAddress = address;
+            currentLat = lat;
+            currentLng = lon;
+            document.getElementById('autocomplete-results').innerHTML = '';
+            calculateDistance(lat, lon);
+        }
+
+        async function calculateDistance(lat, lng) {
+            if (!lat || !lng) return;
+            try {
+                // OSRM API: lon,lat;lon,lat
+                const url = `https://router.project-osrm.org/route/v1/driving/${STORE_LNG},${STORE_LAT};${lng},${lat}?overview=false`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.code === 'Ok' && data.routes.length > 0) {
+                    const distMeters = data.routes[0].distance;
+                    if (distMeters > 5000) {
+                        travelDistance = -1;
+                        updateDistanceUI(-1); // Special value for out of range
+                        updateSummary();
+                        window.showToast('Vượt quá phạm vi giao hàng (Tối đa 5km)', 'warning');
+                    } else {
+                        travelDistance = distMeters;
+                        updateDistanceUI(travelDistance);
+                        updateSummary();
+                    }
+                }
+            } catch (e) {
+                console.error("OSRM Error:", e);
+                window.showToast('Không thể tính quãng đường', 'warning');
+            }
+        }
+
+        function updateDistanceUI(meters) {
+            let el = document.getElementById('distance-display');
+            if (!el) {
+                const parent = document.getElementById('shipAddress').parentElement.parentElement;
+                el = document.createElement('div');
+                el.id = 'distance-display';
+                el.className = 'extra-small fw-bold mt-1 animate-fade-in';
+                parent.appendChild(el);
+            }
+
+            if (meters === -1) {
+                el.className = 'extra-small text-danger fw-bold mt-1';
+                el.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> Vượt quá phạm vi giao hàng (5km)`;
+                return;
+            }
+
+            const km = (meters / 1000).toFixed(1);
+            const m = Math.round(meters % 1000);
+            const distText = `${km}km ${m}m`;
+            
+            el.className = 'extra-small text-brand-orange fw-bold mt-1 animate-fade-in';
+            el.innerHTML = `<i class="bi bi-truck me-1"></i> Khoảng cách: ${distText}`;
+        }
+
+        function openMapPicker() {
+            const modalEl = document.getElementById('mapModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            
+            modalEl.addEventListener('shown.bs.modal', function onShown() {
+                initMap();
+                modalEl.removeEventListener('shown.bs.modal', onShown);
+            });
+        }
+
+        function initMap() {
+            const container = document.getElementById('map-picker-container');
+            const defaultPos = [10.762622, 106.660172]; // HCM City
+
+            if (map) {
+                map.remove();
+            }
+
+            map = L.map(container).setView(defaultPos, 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            marker = L.marker(defaultPos, {
+                draggable: true
+            }).addTo(map);
+
+            marker.on('dragend', function() {
+                const position = marker.getLatLng();
+                reverseGeocode(position.lat, position.lng);
+            });
+
+            map.on('click', function(e) {
+                marker.setLatLng(e.latlng);
+                reverseGeocode(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Search box in modal using Nominatim
+            const searchInput = document.getElementById('mapSearchBox');
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                const query = searchInput.value.trim();
+                if (query.length < 3) return;
+
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&limit=1`);
+                        const data = await res.json();
+                        if (data.length > 0) {
+                            const first = data[0];
+                            const latlng = [parseFloat(first.lat), parseFloat(first.lon)];
+                            map.setView(latlng, 17);
+                            marker.setLatLng(latlng);
+                            selectedAddress = first.display_name;
+                            currentLat = first.lat;
+                            currentLng = first.lon;
+                            calculateDistance(currentLat, currentLng);
+                        }
+                    } catch (e) {}
+                }, 800);
+            });
+
+            // Try Geolocation
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    const myPos = [pos.coords.latitude, pos.coords.longitude];
+                    map.setView(myPos, 16);
+                    marker.setLatLng(myPos);
+                    reverseGeocode(myPos[0], myPos[1]);
+                });
+            }
+        }
+
+        async function reverseGeocode(lat, lon) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await res.json();
+                if (data && data.display_name) {
+                    selectedAddress = data.display_name;
+                    currentLat = lat;
+                    currentLng = lon;
+                    document.getElementById('mapSearchBox').value = selectedAddress;
+                    calculateDistance(lat, lon);
+                }
+            } catch (e) {
+                console.error("Reverse geocoding error", e);
+            }
+        }
+
+        function confirmMapAddress() {
+            if (selectedAddress) {
+                document.getElementById('shipAddress').value = selectedAddress;
+                bootstrap.Modal.getInstance(document.getElementById('mapModal')).hide();
+            }
+        }
+
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                window.showToast('Đang lấy vị trí của bạn...', 'info');
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                            const data = await res.json();
+                            if (data && data.display_name) {
+                                document.getElementById('shipAddress').value = data.display_name;
+                                selectedAddress = data.display_name;
+                                currentLat = lat;
+                                currentLng = lon;
+                                window.showToast('Đã cập nhật vị trí của bạn', 'success');
+                                calculateDistance(lat, lon);
+                            } else {
+                                window.showToast('Không thể lấy địa chỉ cụ thể', 'warning');
+                            }
+                        } catch (err) {
+                            document.getElementById('shipAddress').value = `${lat}, ${lon}`;
+                            window.showToast('Đã lấy tọa độ', 'info');
+                        }
+                    },
+                    (error) => window.showToast('Lỗi lấy vị trí: ' + error.message, 'error')
+                );
+            } else {
+                window.showToast('Trình duyệt không hỗ trợ định vị', 'error');
+            }
+        }
+
+
+        function renderList() {
+            const container = document.getElementById('cart-items-list');
+            const items = cart.get();
+            
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5 bg-white rounded-4 border">
+                        <i class="bi bi-cart-x fs-1 text-brand-gray-light"></i>
+                        <p class="text-brand-gray mt-2 fw-semibold">Giỏ hàng của bạn đang trống</p>
+                        <a href="/Menu" class="btn btn-brand-primary btn-sm mt-2">Đến thực đơn</a>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const isMix = item.id2 || (item.name && item.name.startsWith('Mix:'));
+                const displayImg = isMix ? '/images/mix-default.png' : item.imageUrl;
+                const size = item.size || 'M';
+                
+                return `
+                <div class="cart-item-card p-3 d-flex align-items-center gap-4">
+                    <div class="cart-img-wrap overflow-hidden border">
+                        <img src="${window.sanitizeImageUrl(displayImg)}" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-black mb-1 text-brand-dark">${item.name}</h6>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                             <select class="form-select form-select-sm py-0 px-1 border-0 bg-light extra-small fw-bold text-brand-orange" 
+                                     style="width: auto; cursor: pointer; height: 24px;"
+                                     onchange="cart.updateSize(${item.id}, '${item.type}', this.value, ${item.id2 || 'null'}, '${size}'); renderList(); updateSummary();">
+                                 <option value="S" ${size === 'S' ? 'selected' : ''}>Size S</option>
+                                 <option value="M" ${size === 'M' ? 'selected' : ''}>Size M</option>
+                                 <option value="L" ${size === 'L' ? 'selected' : ''}>Size L</option>
+                             </select>
+                             <div class="text-brand-gray extra-small">${isMix ? 'Pizza ghép 2 nửa' : (item.type === 'product' && item.name.toLowerCase().includes('pizza') ? 'Đế truyền thống' : '')}</div>
+                        </div>
+                        <div class="price-val fw-black text-brand-orange">${(item.price).toLocaleString()}đ</div>
+                    </div>
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        <div class="qty-control-minimal">
+                            <button class="btn-qty-min" onclick="changeQty(${item.id}, '${item.type}', -1, ${item.id2 || 'null'}, '${size}')">&minus;</button>
+                            <span class="qty-value">${item.quantity}</span>
+                            <button class="btn-qty-min" onclick="changeQty(${item.id}, '${item.type}', 1, ${item.id2 || 'null'}, '${size}')">&plus;</button>
+                        </div>
+                        <a href="javascript:void(0)" class="small-btn" onclick="removeItem(${item.id}, '${item.type}', ${item.id2 || 'null'}, '${size}')">Xóa món</a>
+                    </div>
+                </div>
+            `;}).join('');
+        }
+
+        function changeQty(id, type, delta, id2 = null, size = 'M') {
+            const items = cart.get();
+            const item = items.find(i => i.id === id && i.type === type && (i.id2 || null) === (id2 || null) && (i.size || 'M') === size);
+            if (item) {
+                const newQty = Math.max(1, item.quantity + delta);
+                cart.updateQuantity(id, type, newQty, id2, size);
+                renderList();
+                updateSummary();
+            }
+        }
+
+        function removeItem(id, type, id2 = null, size = 'M') {
+            cart.remove(id, type, id2, size);
+            renderList();
+            updateSummary();
+        }
+
+        function switchDelivery(type) {
+            deliveryType = type;
+            document.getElementById('toggleShip').classList.toggle('active', type === 'ship');
+            document.getElementById('toggleDine').classList.toggle('active', type === 'dine');
+            document.getElementById('shipInputs').style.display = type === 'ship' ? 'block' : 'none';
+            document.getElementById('dineInputs').style.display = type === 'dine' ? 'block' : 'none';
+            updateSummary();
+        }
+
+        async function updateSummary() {
+            const items = cart.get().map(i => ({ productId: i.id, productId2: i.id2, quantity: i.quantity, unitPrice: i.price, size: i.size || 'M' }));
+            const voucherIds = cart.getVoucherIds();
+            
+            document.getElementById('count-summary').textContent = cart.count();
+
+            try {
+                const response = await fetch('/Order/Preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items, voucherIds })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Auto-removal logic: if voucher applied but discount is 0 and subtotal > 0
+                    if (voucherIds.length > 0 && data.voucherDiscount === 0 && data.subtotal > 0) {
+                        localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
+                        window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
+                        updateSummary();
+                        return;
+                    }
+
+                    const subtotal = data.subtotal || 0;
+                    
+                    let shipFeeVal = 0;
+                    if (deliveryType === 'ship' && travelDistance > 0) {
+                        const distKm = travelDistance / 1000;
+                        if (distKm <= 2) shipFeeVal = 15000;
+                        else shipFeeVal = 25000;
+                    }
+                    const discountVal = data.voucherDiscount || 0;
+                    const vatVal = Math.round((subtotal - discountVal) * 0.05); // 5% demo tax
+                    const total = subtotal + shipFeeVal - discountVal + vatVal;
+
+                    document.getElementById('subtotal').textContent = subtotal.toLocaleString() + 'đ';
+                    document.getElementById('shipFee').textContent = shipFeeVal.toLocaleString() + 'đ';
+                    document.getElementById('discount').textContent = '-' + discountVal.toLocaleString() + 'đ';
+                    document.getElementById('vat').textContent = vatVal.toLocaleString() + 'đ';
+                    document.getElementById('totalPrice').textContent = total.toLocaleString() + 'đ';
+                    
+                    // Render Voucher UI manually since we bypass Cart.renderCartUI here natively
+                    const placeholder = document.getElementById('globalAppliedVouchersPlaceholder');
+                    if (placeholder) {
+                        placeholder.innerHTML = '';
+                        const currentVIds = cart.getVoucherIds();
+                        if (currentVIds.length > 0 && cart._allVouchers) {
+                           currentVIds.forEach((id, idx) => {
+                               const v = cart._allVouchers.find(x => x.id === id);
+                               if (!v) return;
+                               const b = document.createElement('div');
+                               b.className = 'badge bg-brand-orange-light text-brand-orange p-2 rounded d-flex align-items-center gap-2 border border-brand-orange';
+                               b.innerHTML = `<span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeVoucher(${idx}); updateSummary();"></i>`;
+                               placeholder.appendChild(b);
+                           });
+                        }
+                    }
+
+                } else if (response.status === 400) {
+                    if (voucherIds.length > 0) {
+                        // Clear without triggering cart's updateSummary
+                        localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
+                        window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
+                        // Call updateSummary again without vouchers to reflect the correct price
+                        updateSummary();
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to update summary', err);
+            }
+        }
+
+        async function loadSuggestions() {
+            try {
+                const res = await fetch('/api/menu');
+                const groups = await res.json();
+                // Find 'Drink', 'Side Dish' or their Vietnamese equivalents
+                const suggestGroups = groups.filter(g => {
+                    const k = (g.key || '').toLowerCase();
+                    return k.includes('uống') || k.includes('drink') || k.includes('món phụ') || k.includes('side');
+                });
+                
+                let allSuggestItems = [];
+                suggestGroups.forEach(g => {
+                    if (g.items) allSuggestItems = allSuggestItems.concat(g.items);
+                });
+
+                if (allSuggestItems.length > 0) {
+                    const html = allSuggestItems.slice(0, 4).map(it => `
+                        <div class="col-md-6">
+                            <div class="brand-card p-2 d-flex align-items-center gap-3 bg-white">
+                                <div class="suggestion-img-wrap rounded-3 overflow-hidden" style="width: 80px; height: 60px;">
+                                    <img src="${window.sanitizeImageUrl(it.imageUrl)}" class="w-100 h-100 object-fit-cover">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold small text-truncate" style="max-width: 120px;">${it.name}</div>
+                                    <div class="text-brand-orange fw-black extra-small">${(it.price).toLocaleString()}đ</div>
+                                </div>
+                                <button class="btn btn-brand-orange-light text-brand-orange rounded-circle p-1 transition-all hover-scale" 
+                                        style="width: 32px; height: 32px;" 
+                                        onclick="cart.add({ id: ${it.id}, name: '${it.name}', price: ${it.price}, imageUrl: '${it.imageUrl}', type: 'product' }); renderList(); updateSummary();">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                    document.getElementById('upsell-items').innerHTML = html;
+                }
+            } catch (e) {}
+        }
+
+        async function submitOrder() {
+            const items = cart.get();
+            if (items.length === 0) return window.showToast('Giỏ hàng trống!', 'warning');
+
+            const payload = {
+                items: items.map(i => ({ productId: i.id, productId2: i.id2, quantity: i.quantity, unitPrice: i.price, size: i.size || 'M' })),
+                voucherIds: cart.getVoucherIds(),
+                tableCode: deliveryType === 'dine' ? document.getElementById('tableCode').value : 'SHIPPING',
+                latitude: currentLat,
+                longitude: currentLng,
+                userId: window.checkoutUser && window.checkoutUser.userId ? window.checkoutUser.userId : null,
+                deliveryAddress: deliveryType === 'ship' ? (document.getElementById('shipAddress').value || '').trim() : null
+            };
+
+            if (deliveryType === 'ship') {
+                if (!document.getElementById('shipAddress').value) {
+                    return window.showToast('Vui lòng nhập địa chỉ giao hàng', 'warning');
+                }
+                if (travelDistance === -1) {
+                    return window.showToast('Địa chỉ nằm ngoài phạm vi giao hàng (5km)', 'error');
+                }
+            }
+            if (deliveryType === 'dine' && !payload.tableCode) {
+                return window.showToast('Vui lòng nhập mã bàn', 'warning');
+            }
+
+            try {
+                const res = await fetch('/Order/FromQr', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    window.showToast('Đặt hàng thành công! Đơn hàng: #' + data.orderId, 'success');
+                    cart.save([]);
+                    setTimeout(() => window.location.href = '/', 2000);
+                } else {
+                    const err = await res.json();
+                    window.showToast(err.error || 'Đặt hàng thất bại', 'error');
+                }
+            } catch (e) {
+                window.showToast('Lỗi kết nối máy chủ', 'error');
+            }
+        }
+    </script>
+}

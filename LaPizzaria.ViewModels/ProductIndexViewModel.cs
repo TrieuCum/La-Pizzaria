@@ -8,6 +8,8 @@ namespace LaPizzaria.ViewModels
         public IEnumerable<Product> Products { get; set; } = new List<Product>();
         public IEnumerable<Combo> Combos { get; set; } = new List<Combo>();
         public List<int> OutOfStockIds { get; set; } = new List<int>();
+        // safe / warning / danger based on related ingredients
+        public Dictionary<int, string> ProductStockStatus { get; set; } = new();
     }
 }
 

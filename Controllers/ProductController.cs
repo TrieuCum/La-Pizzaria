@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace LaPizzaria.Controllers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -21,17 +22,18 @@ namespace LaPizzaria.Controllers
         /// </summary>
         private string? SanitizeImageUrl(string? imageUrl)
         {
-            if (string.IsNullOrEmpty(imageUrl))
-                return imageUrl;
+            if (string.IsNullOrWhiteSpace(imageUrl))
+                return imageUrl?.Trim();
 
+            var trimmed = imageUrl.Trim();
             // If it's a file:// URL, extract the filename and convert to web path
-            if (imageUrl.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+            if (trimmed.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
             {
-                var filename = System.IO.Path.GetFileName(imageUrl);
+                var filename = System.IO.Path.GetFileName(trimmed);
                 return $"/images/{filename}";
             }
 
-            return imageUrl;
+            return trimmed;
         }
         public async Task<IActionResult> Index(string? q, string? category, string? status)
         {
@@ -49,18 +51,60 @@ namespace LaPizzaria.Controllers
 
             var allProductIngredients = await _db.ProductIngredients.ToListAsync();
             var ingredientsById = await _db.Ingredients.ToDictionaryAsync(i => i.Id);
-
+            
             var outOfStockIds = new List<int>();
+            var productStockStatus = new Dictionary<int, string>(); // safe / warning / danger
+
             foreach (var p in products)
             {
                 var mappings = allProductIngredients.Where(pi => pi.ProductId == p.Id).ToList();
                 if (!mappings.Any())
                 {
+                    // Không cấu hình nguyên liệu → coi như an toàn
+                    productStockStatus[p.Id] = "safe";
                     continue;
                 }
+
+                // Tính trạng thái dựa theo từng nguyên liệu liên quan
+                // > 50  : safe (An toàn)
+                // > 20  : warning (Trung bình)
+                // <= 20 : danger (Sắp hết)
+                var aggregateStatus = "safe";
+
+                foreach (var pi in mappings)
+                {
+                    if (!ingredientsById.TryGetValue(pi.IngredientId, out var ing))
+                    {
+                        aggregateStatus = "out";
+                        break;
+                    }
+
+                    var qty = ing.StockQuantity;
+                    var ingStatus = qty <= 0 ? "out" :
+                                    qty <= 20 ? "danger" :
+                                    qty <= 50 ? "warning" : "safe";
+
+                    if (ingStatus == "out")
+                    {
+                        aggregateStatus = "out";
+                        break;
+                    }
+                    if (ingStatus == "danger" && aggregateStatus != "out")
+                    {
+                        aggregateStatus = "danger";
+                    }
+                    if (ingStatus == "warning" && aggregateStatus == "safe")
+                    {
+                        aggregateStatus = "warning";
+                    }
+                }
+
+                productStockStatus[p.Id] = aggregateStatus;
+
+                // Giữ lại danh sách hết hàng (không đủ nguyên liệu để làm 1 phần)
                 var insufficient = mappings.Any(pi =>
-                    ingredientsById.TryGetValue(pi.IngredientId, out var ing)
-                        ? ing.StockQuantity < pi.QuantityPerUnit
+                    ingredientsById.TryGetValue(pi.IngredientId, out var ing2)
+                        ? ing2.StockQuantity < pi.QuantityPerUnit
                         : true
                 );
                 if (insufficient)
@@ -91,7 +135,8 @@ namespace LaPizzaria.Controllers
             {
                 Products = products,
                 Combos = combos,
-                OutOfStockIds = outOfStockIds
+                OutOfStockIds = outOfStockIds,
+                ProductStockStatus = productStockStatus
             };
 
             ViewBag.Query = q ?? string.Empty;
@@ -128,9 +173,17 @@ namespace LaPizzaria.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ApiMenu()
         {
-            var products = await _db.Products.Where(p => p.IsActive)
-                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category })
+            var productsRaw = await _db.Products.Where(p => p.IsActive)
+                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category, imageUrl = p.ImageUrl })
                 .ToListAsync();
+
+            var products = productsRaw.Select(p => new {
+                p.id,
+                p.name,
+                p.price,
+                p.category,
+                imageUrl = SanitizeImageUrl(p.imageUrl)
+            }).ToList();
 
             // Materialize combos and compute price on client to avoid EF translation issues
             var combosRaw = await _db.Combos.Where(c => c.IsActive)
@@ -149,7 +202,7 @@ namespace LaPizzaria.Controllers
             var result = new List<object>();
             var productGroups = products
                 .GroupBy(p => p.category)
-                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price }) });
+                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price, imageUrl = x.imageUrl }) });
             result.AddRange(productGroups);
             result.Add(new { key = "Combo", type = "combo", items = combos.Select(c => new { id = c.id, name = c.name, price = c.price, items = c.items }) });
 

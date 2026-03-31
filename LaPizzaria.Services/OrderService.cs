@@ -22,7 +22,7 @@ namespace LaPizzaria.Services
             _pricingService = pricingService;
         }
 
-        public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds)
+        public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds, string? deliveryAddress = null, double? latitude = null, double? longitude = null)
         {
             var itemList = items.ToList();
             var ok = await _inventory.CheckAndReserveAsync(itemList);
@@ -31,15 +31,27 @@ namespace LaPizzaria.Services
                 throw new System.InvalidOperationException("Đang hết nguyên liệu");
             }
 
+            string? finalAddress = deliveryAddress;
+            ApplicationUser? userEntity = null;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                userEntity = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (userEntity != null && string.IsNullOrWhiteSpace(finalAddress) && !string.IsNullOrWhiteSpace(userEntity.Address))
+                    finalAddress = userEntity.Address;
+            }
+
             var order = new Order
             {
                 OrderStatus = "Pending",
-                OrderDetails = itemList
+                OrderDetails = itemList,
+                DeliveryAddress = finalAddress,
+                Latitude = latitude,
+                Longitude = longitude
             };
             if (!string.IsNullOrEmpty(userId))
             {
-                // link to user by Id string
-                order.User = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                order.UserId = userId;
+                order.User = userEntity;
             }
             _db.Orders.Add(order);
             await _db.SaveChangesAsync();
@@ -102,9 +114,12 @@ namespace LaPizzaria.Services
                 var moved = new OrderDetail
                 {
                     ProductId = detail.ProductId,
+                    ProductId2 = detail.ProductId2,
                     Quantity = moveQty,
                     UnitPrice = detail.UnitPrice,
-                    Subtotal = detail.UnitPrice * moveQty
+                    Subtotal = detail.UnitPrice * moveQty,
+                    Size = detail.Size, // Preserve size
+                    OrderDetailToppings = detail.OrderDetailToppings?.Select(odt => new OrderDetailTopping { ToppingId = odt.ToppingId }).ToList() // Copy toppings
                 };
                 newOrder.OrderDetails.Add(moved);
             }
@@ -121,17 +136,23 @@ namespace LaPizzaria.Services
         public async Task<decimal> CalculateTotalAsync(int orderId)
         {
             var order = await _db.Orders
-                .Include(o => o.OrderDetails)
+                .Include(o => o.OrderDetails).ThenInclude(od => od.OrderDetailToppings)
                 .Include(o => o.OrderVouchers).ThenInclude(ov => ov.Voucher)
                 .FirstAsync(o => o.Id == orderId);
-            // Apply dynamic pricing before calculating subtotals
-            var productIds = order.OrderDetails.Select(x => x.ProductId).Distinct().ToList();
+            var productIds = order.OrderDetails.Select(x => x.ProductId)
+                .Concat(order.OrderDetails.Where(x => x.ProductId2.HasValue).Select(x => x.ProductId2!.Value))
+                .Distinct().ToList();
             var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
             foreach (var d in order.OrderDetails)
             {
-                if (products.TryGetValue(d.ProductId, out var product))
+                if (products.TryGetValue(d.ProductId, out var p1))
                 {
-                    d.UnitPrice = _pricingService.AdjustUnitPrice(product, d.UnitPrice, System.DateTime.UtcNow);
+                    decimal basePrice = p1.Price;
+                    if (d.ProductId2.HasValue && products.TryGetValue(d.ProductId2.Value, out var p2))
+                    {
+                        basePrice = (p1.Price + p2.Price) / 2;
+                    }
+                    d.UnitPrice = _pricingService.AdjustUnitPrice(p1, basePrice, System.DateTime.UtcNow);
                 }
                 d.Subtotal = d.UnitPrice * d.Quantity;
             }

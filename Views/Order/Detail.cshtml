@@ -1,0 +1,205 @@
+@{
+    Layout = "_Layout";
+    var orderCode = ViewBag.OrderCode as string ?? "ORD-2024";
+    ViewData["Title"] = $"Đơn #{orderCode}";
+}
+
+@section Styles {
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#f48c25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221910",
+                    },
+                    fontFamily: { display: ["Work Sans", "sans-serif"] },
+                    borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", full: "9999px" },
+                },
+            },
+        };
+    </script>
+    <style>
+        .order-detail-shipper ::-webkit-scrollbar { width: 6px; height: 6px; }
+        .order-detail-shipper ::-webkit-scrollbar-track { background: transparent; }
+        .order-detail-shipper ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .order-detail-shipper ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .order-detail-shipper .material-symbols-outlined {
+            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+        }
+    </style>
+}
+
+<div class="order-detail-shipper -mx-3 bg-background-light font-display text-[#181411] dark:bg-background-dark dark:text-white md:-mx-4">
+    <div class="mx-auto max-w-7xl px-4 py-6 md:px-8">
+        <!-- Main grid: left panel + map (responsive) -->
+        <div class="grid min-h-[min(720px,calc(100vh-12rem))] grid-cols-1 overflow-hidden rounded-2xl border border-[#e5e7eb] bg-[#f3f4f6] shadow-sm dark:border-[#3a2d20] dark:bg-black/20 lg:grid-cols-12">
+            <!-- Left: order details -->
+            <div class="flex h-full max-h-[85vh] flex-col overflow-hidden border-b border-[#e5e7eb] bg-white dark:border-[#3a2d20] dark:bg-[#221910] lg:col-span-5 lg:max-h-none lg:border-b-0 lg:border-r xl:col-span-4">
+                <div class="shrink-0 border-b border-[#f5f2f0] p-6 dark:border-[#3a2d20]">
+                    <div class="mb-2 flex flex-wrap items-start justify-between gap-2">
+                        <h1 class="text-2xl font-bold text-[#181411] dark:text-white">Đơn #@orderCode</h1>
+                        <span class="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+                            <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                            Đang giao hàng
+                        </span>
+                    </div>
+                    <p class="text-sm text-[#8a7560] dark:text-[#a08d7d]">Thời gian đặt: 10:30 - 24/05/2024</p>
+                </div>
+
+                <div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6">
+                    <!-- Customer -->
+                    <div class="rounded-xl border border-[#e5e7eb] bg-background-light p-4 dark:border-[#3a2d20] dark:bg-[#2a2016]">
+                        <div class="flex items-center gap-4">
+                            <div class="aspect-square h-12 w-12 shrink-0 rounded-full border border-gray-200 bg-cover bg-center dark:border-gray-700" style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCVThD1SXqgvlr9OzGrNJgAXgCw6ccGmegLQtZEW52nBMOlaq9lXOyxYKiAU-axpQnDImSB01CDaTRLBTed__zGc9XrE6e4jwIa9c2m0lB4NWnXnUrvFLyPv77HEpBqdVqPbISdjzyaog3yiQvL1PghXIMqOeZ51qDBADuys4cs9xZpZiFrRPupaFzUBPQK8vm7uVJuk3uXFqzA5SoBlfm3Qernx6jPFl1_jsgCERPTL3NziGtI25lfwcWm1kPyE3m5g6P8FB5s9PA');"></div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-[#8a7560] dark:text-[#a08d7d]">Khách hàng</p>
+                                <p class="text-lg font-bold text-[#181411] dark:text-white">Nguyễn Văn A</p>
+                            </div>
+                            <button type="button" class="flex size-10 shrink-0 items-center justify-center rounded-full bg-green-600 text-white shadow-lg shadow-green-600/20 transition-colors hover:bg-green-700" aria-label="Gọi khách">
+                                <span class="material-symbols-outlined">call</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div class="relative pl-2">
+                        <div class="absolute bottom-10 left-[22px] top-4 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="relative mb-6 flex gap-4">
+                            <div class="z-10 self-start rounded-full border border-gray-100 bg-white p-1 text-[#8a7560] shadow-sm dark:border-gray-700 dark:bg-[#221910]">
+                                <div class="flex size-8 items-center justify-center rounded-full bg-[#e5e7eb] text-[#6b7280]">
+                                    <span class="material-symbols-outlined text-[18px]">storefront</span>
+                                </div>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="mb-1 text-sm font-medium text-[#8a7560] dark:text-[#a08d7d]">Điểm lấy hàng</p>
+                                <p class="font-semibold text-[#181411] dark:text-white">Lapizzaria Center Point</p>
+                                <p class="text-sm text-[#8a7560] dark:text-[#a08d7d]">45 Lê Lợi, Quận 1, TP.HCM</p>
+                                <div class="mt-2 flex gap-2">
+                                    <span class="rounded border border-green-200 bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Đã lấy xong</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative flex gap-4">
+                            <div class="z-10 self-start rounded-full border border-gray-100 bg-white p-1 text-primary shadow-md dark:border-gray-700 dark:bg-[#221910]">
+                                <div class="flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30">
+                                    <span class="material-symbols-outlined text-[18px]">location_on</span>
+                                </div>
+                            </div>
+                            <div class="min-w-0 flex-1 rounded-xl border border-primary/20 bg-primary/5 p-3 dark:bg-primary/10">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <p class="mb-1 text-sm font-bold text-primary">Điểm giao hàng</p>
+                                        <p class="text-lg font-bold text-[#181411] dark:text-white">Nhà riêng</p>
+                                        <p class="mt-1 text-sm leading-relaxed text-[#8a7560] dark:text-[#a08d7d]">123 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP.HCM</p>
+                                        <div class="mt-2 flex items-center gap-2 rounded-lg border border-primary/10 bg-white p-2 text-sm font-medium text-primary dark:bg-black/20">
+                                            <span class="material-symbols-outlined text-[16px]">edit_note</span>
+                                            <span class="italic">Gọi khi đến cổng số 2</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="shrink-0 rounded-lg p-2 text-primary transition-colors hover:bg-primary/10" title="Chỉ đường">
+                                        <span class="material-symbols-outlined">directions</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items -->
+                    <div class="border-t border-[#f5f2f0] pt-6 dark:border-[#3a2d20]">
+                        <h3 class="mb-4 text-lg font-bold text-[#181411] dark:text-white">Danh sách món ăn</h3>
+                        <div class="space-y-4">
+                            <div class="flex gap-3">
+                                <div class="flex size-12 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 font-bold text-[#181411] dark:border-white/10 dark:bg-white/5 dark:text-white">1x</div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-medium text-[#181411] dark:text-white">Pizza Hải Sản Pesto</p>
+                                    <p class="text-sm text-[#8a7560] dark:text-[#a08d7d]">Cỡ L, Đế dày, Thêm phô mai</p>
+                                </div>
+                                <p class="shrink-0 font-bold text-[#181411] dark:text-white">250.000đ</p>
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="flex size-12 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 font-bold text-[#181411] dark:border-white/10 dark:bg-white/5 dark:text-white">2x</div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-medium text-[#181411] dark:text-white">Coca Cola (Lon)</p>
+                                    <p class="text-sm text-[#8a7560] dark:text-[#a08d7d]">Ướp lạnh</p>
+                                </div>
+                                <p class="shrink-0 font-bold text-[#181411] dark:text-white">40.000đ</p>
+                            </div>
+                            <div class="mt-2 flex items-center justify-between border-t border-dashed border-[#e5e7eb] pt-4 dark:border-[#3a2d20]">
+                                <p class="font-medium text-[#8a7560] dark:text-[#a08d7d]">Tổng thu (COD)</p>
+                                <p class="text-2xl font-bold text-primary">290.000đ</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="h-8 shrink-0 lg:hidden"></div>
+                </div>
+
+                <!-- Sticky actions -->
+                <div class="sticky bottom-0 z-20 shrink-0 border-t border-[#e5e7eb] bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] dark:border-[#3a2d20] dark:bg-[#221910]">
+                    <div class="mb-3 grid grid-cols-2 gap-3">
+                        <button type="button" disabled class="flex h-12 cursor-not-allowed items-center justify-center rounded-xl border border-gray-200 bg-gray-100 text-sm font-bold text-gray-400 dark:border-transparent dark:bg-white/5">
+                            <span class="material-symbols-outlined mr-2 text-[20px]">check_circle</span>
+                            Đã lấy hàng
+                        </button>
+                        <button type="button" class="flex h-12 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-sm font-bold text-red-600 transition-colors hover:bg-red-100 dark:border-red-900/50 dark:bg-red-900/10 dark:text-red-400 dark:hover:bg-red-900/20">
+                            <span class="material-symbols-outlined mr-2 text-[20px]">assignment_return</span>
+                            Hoàn trả đơn
+                        </button>
+                    </div>
+                    <button type="button" class="flex h-14 w-full transform items-center justify-center rounded-xl bg-primary text-lg font-bold text-white shadow-lg shadow-primary/30 transition-all hover:bg-[#e07d1d] hover:shadow-primary/50 active:scale-[0.98]">
+                        <span class="material-symbols-outlined mr-2 text-[24px]">verified</span>
+                        Xác nhận Đã Giao Hàng
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: map -->
+            <div class="relative min-h-[400px] bg-[#e5e7eb] dark:bg-gray-900 lg:col-span-7 xl:col-span-8">
+                <div class="absolute inset-0 h-full w-full bg-cover bg-center opacity-80" style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuB2Ucwpa3jjRqQwZ4f0i17noyBSPoJ9Pq6dpBulk7LPKLs1nRkP8c2WuZ1m45y3g32GijGngJ1RV_oO6KI8jh1Vr2xEPjmQ66iwLdGloAsGQNF6RUhICm_aAV_aNjjNDgGNBlEvcBtKw6I6S5EbJsUAo6e_Hn2dVmsDYMiBz0ndwrUojz5p_wsGTIjcTdKvqGtDjrKP0mmyu0L24isWtHS2eOfqFxAy2ABHSYeP3WMrmBpk6KHo9fhqdQL-B1VGF0_rIsO_jvrVnos');"></div>
+                <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                <svg class="pointer-events-none absolute inset-0 h-full w-full drop-shadow-xl" style="z-index:1" aria-hidden="true">
+                    <path class="animate-pulse" d="M 300 150 Q 500 250 600 500 T 800 600" fill="none" stroke="#f48c25" stroke-dasharray="12 4" stroke-linecap="round" stroke-width="6"></path>
+                    <circle cx="300" cy="150" r="8" fill="white" stroke="#6b7280" stroke-width="4"></circle>
+                    <circle cx="800" cy="600" r="12" fill="#f48c25" stroke="white" stroke-width="4"></circle>
+                </svg>
+                <div class="absolute left-4 right-4 top-4 z-20 flex flex-col gap-4 md:left-auto md:right-4 md:w-96">
+                    <div class="flex h-12 w-full items-stretch overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg dark:border-gray-800 dark:bg-[#221910]">
+                        <div class="flex items-center justify-center pl-4 pr-2 text-[#8a7560]">
+                            <span class="material-symbols-outlined">search</span>
+                        </div>
+                        <input type="text" class="w-full border-none bg-transparent text-[#181411] placeholder:text-[#8a7560] focus:ring-0 dark:text-white" placeholder="Tìm địa điểm khác..." />
+                    </div>
+                </div>
+                <div class="absolute bottom-8 right-8 z-20 flex flex-col gap-2">
+                    <button type="button" class="flex size-12 items-center justify-center rounded-xl bg-white text-[#181411] shadow-lg transition-colors hover:bg-gray-50 dark:bg-[#221910] dark:text-white dark:hover:bg-gray-800">
+                        <span class="material-symbols-outlined">my_location</span>
+                    </button>
+                    <div class="flex flex-col divide-y divide-gray-100 overflow-hidden rounded-xl bg-white shadow-lg dark:divide-gray-800 dark:bg-[#221910]">
+                        <button type="button" class="flex size-12 items-center justify-center text-[#181411] transition-colors hover:bg-gray-50 dark:text-white dark:hover:bg-gray-800">
+                            <span class="material-symbols-outlined">add</span>
+                        </button>
+                        <button type="button" class="flex size-12 items-center justify-center text-[#181411] transition-colors hover:bg-gray-50 dark:text-white dark:hover:bg-gray-800">
+                            <span class="material-symbols-outlined">remove</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="absolute bottom-8 left-8 z-20 hidden max-w-xs md:block">
+                    <div class="rounded-xl border border-white/20 bg-white/90 p-4 shadow-lg backdrop-blur-sm dark:border-white/5 dark:bg-[#221910]/90">
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-outlined mt-1 text-primary">info</span>
+                            <div>
+                                <p class="text-sm font-bold text-[#181411] dark:text-white">Lưu ý giao thông</p>
+                                <p class="mt-1 text-xs text-[#8a7560] dark:text-[#a08d7d]">Khu vực đường Nguyễn Huệ đang có mật độ giao thông cao. Dự kiến trễ 5 phút.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
