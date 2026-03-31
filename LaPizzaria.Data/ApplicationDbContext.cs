@@ -108,6 +108,8 @@ namespace LaPizzaria.Data
                 .WithMany(i => i.ProductIngredients)
                 .HasForeignKey(pi => pi.IngredientId);
 
+            modelBuilder.Entity<ProductIngredient>().Property(pi => pi.QuantityPerUnit).HasPrecision(18, 2);
+
             // Configure Combo-Items
             modelBuilder.Entity<ComboItem>()
                 .HasOne(ci => ci.Combo)

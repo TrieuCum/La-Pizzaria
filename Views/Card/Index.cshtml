@@ -100,9 +100,12 @@
                         <div id="dineInputs" style="display: none;">
                             <div class="mb-3">
                                 <label class="form-label extra-small fw-bold text-brand-gray">Mã bàn</label>
-                                <div class="input-group">
+                                <div class="input-group cursor-pointer" onclick="openTablePicker()">
                                     <span class="input-group-text bg-white border-end-0 text-brand-gray"><i class="bi bi-hash"></i></span>
-                                    <input type="text" id="tableCode" class="form-control border-start-0 ps-0 extra-small" placeholder="Nhập mã bàn của bạn">
+                                    <input type="text" id="tableCode" class="form-control border-start-0 ps-0 extra-small bg-white" placeholder="Chọn bàn của bạn..." readonly style="cursor: pointer;">
+                                    <button class="btn btn-outline-light border text-brand-orange" type="button" title="Chọn bàn">
+                                        <i class="bi bi-grid-3x3-gap"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -178,6 +181,39 @@
         </div>
     </div>
 </div>
+<!-- Table Picker Modal -->
+<div class="modal fade" id="tableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+            <div class="modal-header border-0 bg-brand-orange text-white py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-grid-3x3-gap fs-5 text-brand-orange"></i>
+                    <h5 class="modal-title text-brand-orange fw-black m-0">Sơ đồ bàn ăn</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-3 border-bottom">
+                    <p class="text-brand-gray small m-0 fw-semibold">Vui lòng chọn vị trí ngồi của bạn.</p>
+                    <div class="d-flex gap-3">
+                        <div class="d-flex align-items-center gap-1 extra-small fw-bold">
+                            <span class="p-1 px-2 rounded-pill bg-success text-white" style="font-size: 8px;">Trống</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1 extra-small fw-bold">
+                            <span class="p-1 px-2 rounded-pill bg-warning text-white" style="font-size: 8px;">Có người</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="tableGrid" class="row row-cols-3 row-cols-sm-4 g-3">
+                    <!-- Tables rendered by JS -->
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light py-2 px-4">
+                <p class="extra-small text-brand-gray m-0 italic">Nhấn vào bàn tương ứng để chọn nhanh.</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
     /* Premium aesthetics override */
@@ -230,6 +266,81 @@
 
     .btn-outline-light:hover { background: var(--brand-bg); }
     #map-picker-container { position: relative; overflow: hidden; }
+
+    /* Table Picker UI Refined */
+    .table-card-v {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 18px 12px;
+        border: 1px solid #eef2f6;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        text-align: center;
+        position: relative;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    }
+    .table-card-v:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        border-color: var(--brand-orange);
+        z-index: 2;
+    }
+    .table-card-v.occupied {
+        background: #fafafb;
+    }
+    .table-card-v.free {
+        border-top: 4px solid #10b981;
+    }
+    .table-card-v.occupied {
+        border-top: 4px solid #f59e0b;
+    }
+    
+    .table-card-v .table-code {
+        font-size: 1.5rem;
+        font-weight: 900;
+        margin-bottom: 0px;
+        display: block;
+        letter-spacing: -1px;
+    }
+    .table-card-v.free .table-code { color: #065f46; }
+    .table-card-v.occupied .table-code { color: #92400e; }
+    
+    .table-card-v .table-cap {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #94a3b8;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        margin-top: 4px;
+    }
+    
+    .table-card-v.selected {
+        border: 2px solid var(--brand-orange);
+        background: #fff8f1;
+        box-shadow: 0 0 0 4px rgba(244,140,37,0.1);
+    }
+    .table-card-v.selected::before {
+        content: "\F272"; /* bi-check-circle-fill */
+        font-family: "bootstrap-icons";
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: var(--brand-orange);
+        color: white;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .cursor-pointer { cursor: pointer !important; }
 
     /* Voucher UI Styles */
     .voucher-icon-abs {
@@ -746,7 +857,7 @@
                 }
             }
             if (deliveryType === 'dine' && !payload.tableCode) {
-                return window.showToast('Vui lòng nhập mã bàn', 'warning');
+                return window.showToast('Vui lòng chọn bàn ăn của bạn!', 'warning');
             }
 
             try {
@@ -768,6 +879,45 @@
             } catch (e) {
                 window.showToast('Lỗi kết nối máy chủ', 'error');
             }
+        }
+
+        async function openTablePicker() {
+            const modalEl = document.getElementById('tableModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            
+            const grid = document.getElementById('tableGrid');
+            grid.innerHTML = '<div class="col-12 text-center py-4 text-muted extra-small">Đang tải danh sách bàn...</div>';
+            
+            try {
+                const res = await fetch('/api/tables');
+                const tables = await res.json();
+                
+                if (!tables || tables.length === 0) {
+                    grid.innerHTML = '<div class="col-12 text-center py-4 text-muted">Không có bàn nào khả dụng.</div>';
+                    return;
+                }
+                
+                grid.innerHTML = tables.map(t => `
+                    <div class="col">
+                        <div class="table-card-v ${t.isOccupied ? 'occupied' : 'free'} ${document.getElementById('tableCode').value === t.code ? 'selected' : ''}" 
+                             onclick="selectTable('${t.code}')">
+                            <span class="table-code">${t.code}</span>
+                            <div class="table-cap">
+                                <i class="bi bi-people"></i> <span>${t.capacity} chỗ</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (err) {
+                grid.innerHTML = '<div class="col-12 text-center py-4 text-danger">Lỗi tải danh sách bàn.</div>';
+            }
+        }
+
+        function selectTable(code) {
+            document.getElementById('tableCode').value = code;
+            bootstrap.Modal.getInstance(document.getElementById('tableModal')).hide();
         }
     </script>
 }

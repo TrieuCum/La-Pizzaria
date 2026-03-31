@@ -19,6 +19,22 @@ namespace LaPizzaria.Controllers
             _db = db;
         }
 
+        [HttpGet("/api/tables")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ApiList()
+        {
+            var tables = await _db.Tables
+                .OrderBy(t => t.Code)
+                .Select(t => new { 
+                    id = t.Id, 
+                    code = t.Code, 
+                    capacity = t.Capacity, 
+                    isOccupied = t.IsOccupied 
+                })
+                .ToListAsync();
+            return Ok(tables);
+        }
+
         public async Task<IActionResult> Index()
         {
             var tables = await _db.Tables.ToListAsync();
