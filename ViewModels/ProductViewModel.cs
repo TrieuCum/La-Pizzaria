@@ -26,5 +26,16 @@ namespace LaPizzaria.ViewModels
         public bool IsActive { get; set; } = true;
 
         public bool IsCustomizable { get; set; } = false;
+
+        public List<IngredientSelectionViewModel> Ingredients { get; set; } = new ();
+    }
+
+    public class IngredientSelectionViewModel
+    {
+        public int IngredientId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Unit { get; set; } = string.Empty;
+        public decimal StockQuantity { get; set; }
+        public decimal QuantityPerUnit { get; set; } // selected qty
     }
 }

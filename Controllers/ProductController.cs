@@ -294,25 +294,37 @@ namespace LaPizzaria.Controllers
 
         public async Task<IActionResult> Upsert(int? id)
         {
-            ProductViewModel productViewModel = new ProductViewModel();
-            if (id == null || id == 0)
+            ProductViewModel viewModel = new ProductViewModel();
+            var allIngredients = await _db.Ingredients.OrderBy(i => i.Name).ToListAsync();
+            var mappings = new List<ProductIngredient>();
+
+            if (id != null && id != 0)
             {
-                return View(productViewModel);
+                var p = await _db.Products.FindAsync(id.Value);
+                if (p == null) return NotFound();
+                
+                viewModel.Id = p.Id;
+                viewModel.Name = p.Name;
+                viewModel.Description = p.Description;
+                viewModel.Price = p.Price;
+                viewModel.ImageUrl = p.ImageUrl;
+                viewModel.Category = p.Category;
+                viewModel.IsActive = p.IsActive;
+                viewModel.IsCustomizable = p.IsCustomizable;
+
+                mappings = await _db.ProductIngredients.Where(pi => pi.ProductId == id).ToListAsync();
             }
-            var p = await _db.Products.FindAsync(id.Value);
-            if (p == null) return NotFound();
-            productViewModel = new ProductViewModel
+
+            viewModel.Ingredients = allIngredients.Select(i => new IngredientSelectionViewModel
             {
-                Id = p.Id,
-                Name = p.Name,
-                Description = p.Description,
-                Price = p.Price,
-                ImageUrl = p.ImageUrl,
-                Category = p.Category,
-                IsActive = p.IsActive,
-                IsCustomizable = p.IsCustomizable
-            };
-            return View(productViewModel);
+                IngredientId = i.Id,
+                Name = i.Name,
+                Unit = i.Unit,
+                StockQuantity = i.StockQuantity,
+                QuantityPerUnit = mappings.FirstOrDefault(m => m.IngredientId == i.Id)?.QuantityPerUnit ?? 0m
+            }).ToList();
+
+            return View(viewModel);
         }
 
         [HttpPost]
@@ -321,36 +333,64 @@ namespace LaPizzaria.Controllers
         {
             if (ModelState.IsValid)
             {
+                var p = productViewModel.Id == 0 ? new Product() : await _db.Products.FindAsync(productViewModel.Id);
+                if (p == null) return NotFound();
+
+                p.Name = productViewModel.Name;
+                p.Description = productViewModel.Description;
+                p.Price = productViewModel.Price;
+                p.ImageUrl = productViewModel.ImageUrl;
+                p.Category = productViewModel.Category;
+                p.IsActive = productViewModel.IsActive;
+                p.IsCustomizable = productViewModel.IsCustomizable;
+
                 if (productViewModel.Id == 0)
                 {
-                    var p = new Product
-                    {
-                        Name = productViewModel.Name,
-                        Description = productViewModel.Description,
-                        Price = productViewModel.Price,
-                        ImageUrl = productViewModel.ImageUrl,
-                        Category = productViewModel.Category,
-                        IsActive = productViewModel.IsActive,
-                        IsCustomizable = productViewModel.IsCustomizable
-                    };
                     _db.Products.Add(p);
                 }
                 else
                 {
-                    var p = await _db.Products.FindAsync(productViewModel.Id);
-                    if (p == null) return NotFound();
-                    p.Name = productViewModel.Name;
-                    p.Description = productViewModel.Description;
-                    p.Price = productViewModel.Price;
-                    p.ImageUrl = productViewModel.ImageUrl;
-                    p.Category = productViewModel.Category;
-                    p.IsActive = productViewModel.IsActive;
-                    p.IsCustomizable = productViewModel.IsCustomizable;
                     _db.Products.Update(p);
+                    // Clear old mappings
+                    var oldMappings = _db.ProductIngredients.Where(pi => pi.ProductId == p.Id);
+                    _db.ProductIngredients.RemoveRange(oldMappings);
                 }
+
                 await _db.SaveChangesAsync();
+
+                // Save new mappings
+                if (productViewModel.Ingredients != null)
+                {
+                    foreach (var item in productViewModel.Ingredients)
+                    {
+                        if (item.QuantityPerUnit > 0)
+                        {
+                            _db.ProductIngredients.Add(new ProductIngredient
+                            {
+                                ProductId = p.Id,
+                                IngredientId = item.IngredientId,
+                                QuantityPerUnit = item.QuantityPerUnit
+                            });
+                        }
+                    }
+                    await _db.SaveChangesAsync();
+                }
+
                 TempData["success"] = productViewModel.Id == 0 ? "Tạo sản phẩm thành công" : "Cập nhật sản phẩm thành công";
                 return RedirectToAction("Index");
+            }
+
+            // Re-fetch ingredients if model state is invalid
+            var ingredients = await _db.Ingredients.OrderBy(i => i.Name).ToListAsync();
+            foreach (var item in productViewModel.Ingredients)
+            {
+                var ing = ingredients.FirstOrDefault(i => i.Id == item.IngredientId);
+                if (ing != null)
+                {
+                    item.Name = ing.Name;
+                    item.Unit = ing.Unit;
+                    item.StockQuantity = ing.StockQuantity;
+                }
             }
             return View(productViewModel);
         }

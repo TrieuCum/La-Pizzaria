@@ -1,138 +1,454 @@
 @model LaPizzaria.ViewModels.ProductViewModel
-@{ ViewData["Title"] = "Thêm/Sửa Món ăn"; }
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm Món ăn Mới" : "Sửa Món ăn"; }
 
-<div class="container mt-4">
-    <div class="card shadow-sm p-4">
-        <h2 class="text-center mb-4 text-wood-brown">@(Model.Id == 0 ? "Thêm Món ăn Mới" : "Sửa Món ăn")</h2>
-        <form asp-action="Upsert" method="post">
+<div class="product-upsert-wrapper">
+    <div class="container-fluid px-4 py-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fw-black h3 m-0 text-brand-dark">@(Model.Id == 0 ? "Thêm Món ăn Mới" : "Sửa Món ăn")</h1>
+                <p class="text-brand-gray small m-0">Quản lý thông tin chi tiết và định lượng nguyên liệu món ăn.</p>
+            </div>
+            <a asp-action="Index" class="btn btn-light-glass border-0 rounded-pill px-4 py-2 small fw-bold">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại danh sách
+            </a>
+        </div>
+
+        <form asp-action="Upsert" method="post" id="upsertForm">
             <input type="hidden" asp-for="Id" />
-
-            <div class="form-floating mb-3">
-                <input asp-for="Name" class="form-control" placeholder="Tên món ăn">
-                <label asp-for="Name">Tên món ăn</label>
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <textarea asp-for="Description" class="form-control" placeholder="Mô tả món ăn" style="height: 100px"></textarea>
-                <label asp-for="Description">Mô tả</label>
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Price" class="form-control" placeholder="Giá">
-                <label asp-for="Price">Giá</label>
-                <span asp-validation-for="Price" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="ImageUrl" class="form-control" placeholder="URL Hình ảnh">
-                <label asp-for="ImageUrl">URL Hình ảnh</label>
-                <span asp-validation-for="ImageUrl" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <select asp-for="Category" class="form-select">
-                    <option value="">-- Chọn danh mục --</option>
-                    <option value="Pizza">Pizza</option>
-                    <option value="Drink">Đồ uống</option>
-                    <option value="Side Dish">Món phụ</option>
-                </select>
-                <label asp-for="Category">Danh mục</label>
-                <span asp-validation-for="Category" class="text-danger"></span>
-            </div>
-
-            <div class="form-check mb-3">
-                <input asp-for="IsActive" class="form-check-input" type="checkbox">
-                <label asp-for="IsActive" class="form-check-label">Đang bán</label>
-            </div>
-
-            <div class="form-check mb-4">
-                <input asp-for="IsCustomizable" class="form-check-input" type="checkbox">
-                <label asp-for="IsCustomizable" class="form-check-label">Cho phép tùy chỉnh Topping</label>
-            </div>
-
-            @* Thanh chọn nguyên liệu bánh: chỉ hiện khi danh mục là Pizza *@
-            @if (!string.IsNullOrWhiteSpace(Model.Category) && Model.Category == "Pizza")
-            {
-                <div class="mb-4">
-                    <div class="card border-0 shadow-sm" style="background:#FFF7ED;">
-                        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
-                            <div>
-                                <div class="fw-bold mb-1" style="color:#B45309;">Nguyên liệu bánh Pizza</div>
-                                @if (Model.Id == 0)
-                                {
-                                    <div class="text-muted small">
-                                        Lưu món trước, sau đó vào lại màn hình sửa để cấu hình nguyên liệu bánh cho Pizza này.
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="text-muted small">
-                                        Cấu hình danh sách nguyên liệu và định lượng cho phần đế bánh Pizza này.
-                                    </div>
-                                }
+            
+            <div class="row g-4">
+                <!-- Left Column: Product Details -->
+                <div class="col-lg-5">
+                    <div class="upsert-card h-100">
+                        <div class="card-header-v">
+                            <i class="bi bi-info-circle-fill"></i> Thông tin cơ bản
+                        </div>
+                        <div class="card-body-v">
+                            <!-- Image Preview Area -->
+                            <div class="image-preview-container mb-4">
+                                <div class="preview-box" id="imagePreviewBox">
+                                    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                                    {
+                                        <img src="@Model.ImageUrl" id="previewImg" class="img-fluid rounded-3 shadow-sm" onerror="this.src='/images/placeholder-pizza.png'; this.classList.add('opacity-50')">
+                                    }
+                                    else
+                                    {
+                                        <div class="preview-placeholder">
+                                            <i class="bi bi-image fs-1 opacity-25"></i>
+                                            <p class="small text-muted mt-2">Chưa có hình ảnh</p>
+                                        </div>
+                                    }
+                                </div>
                             </div>
-                            @if (Model.Id != 0)
-                            {
-                                <a asp-controller="Product" asp-action="Ingredients" asp-route-id="@Model.Id"
-                                   class="btn btn-sm fw-bold mt-3 mt-md-0"
-                                   style="background:#F97316;color:white;border-radius:999px;padding-inline:20px;">
-                                    Chọn nguyên liệu bánh
-                                </a>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-sm mt-3 mt-md-0" disabled
-                                        style="border-radius:999px;padding-inline:20px;background:#FED7AA;color:#9A3412;">
-                                    Lưu món để chọn nguyên liệu
-                                </button>
-                            }
+
+                            <div class="form-group-v mb-3">
+                                <label asp-for="Name" class="form-label-v">Tên món ăn <span class="text-danger">*</span></label>
+                                <input asp-for="Name" class="form-control-v" placeholder="VD: Pizza Hải Sản">
+                                <span asp-validation-for="Name" class="text-danger extra-small"></span>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-group-v">
+                                        <label asp-for="Price" class="form-label-v">Giá bán (₫) <span class="text-danger">*</span></label>
+                                        <input asp-for="Price" type="number" class="form-control-v" placeholder="0">
+                                        <span asp-validation-for="Price" class="text-danger extra-small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-v">
+                                        <label asp-for="Category" class="form-label-v">Danh mục <span class="text-danger">*</span></label>
+                                        <select asp-for="Category" class="form-select-v">
+                                            <option value="">-- Chọn danh mục --</option>
+                                            <option value="Pizza">Pizza</option>
+                                            <option value="Drink">Đồ uống</option>
+                                            <option value="Side Dish">Món phụ</option>
+                                            <option value="Combo">Combo</option>
+                                        </select>
+                                        <span asp-validation-for="Category" class="text-danger extra-small"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group-v mb-3">
+                                <label asp-for="ImageUrl" class="form-label-v">URL Hình ảnh</label>
+                                <div class="input-group-v">
+                                    <span class="input-icon"><i class="bi bi-link-45deg"></i></span>
+                                    <input asp-for="ImageUrl" class="form-control-v with-icon" placeholder="https://..." id="imageUrlInput">
+                                </div>
+                                <span asp-validation-for="ImageUrl" class="text-danger extra-small"></span>
+                            </div>
+
+                            <div class="form-group-v mb-4">
+                                <label asp-for="Description" class="form-label-v">Mô tả món ăn</label>
+                                <textarea asp-for="Description" class="form-control-v" rows="4" placeholder="Nhập mô tả ngắn về món ăn..."></textarea>
+                                <span asp-validation-for="Description" class="text-danger extra-small"></span>
+                            </div>
+
+                            <div class="d-flex gap-4">
+                                <div class="form-check-v">
+                                    <input asp-for="IsActive" class="check-input-v" type="checkbox" id="isActiveCheck">
+                                    <label class="check-label-v" for="isActiveCheck">Đang kinh doanh</label>
+                                </div>
+                                <div class="form-check-v">
+                                    <input asp-for="IsCustomizable" class="check-input-v" type="checkbox" id="isCustCheck">
+                                    <label class="check-label-v" for="isCustCheck">Cho phép thêm Topping</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            }
 
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                <button type="submit" class="btn btn-primary-custom">Lưu</button>
-                <a asp-action="Index" class="btn btn-secondary-custom">Hủy</a>
+                <!-- Right Column: Ingredient Selection -->
+                <div class="col-lg-7">
+                    <div class="upsert-card h-100 d-flex flex-column">
+                        <div class="card-header-v d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-basket3-fill"></i> Định lượng nguyên liệu</span>
+                            <div class="search-box-v">
+                                <i class="bi bi-search"></i>
+                                <input type="text" id="ingSearch" placeholder="Tìm nguyên liệu...">
+                            </div>
+                        </div>
+                        <div class="card-body-v flex-grow-1 overflow-hidden d-flex flex-column">
+                            <p class="text-brand-gray extra-small mb-3">Thiết lập số lượng nguyên liệu tiêu hao cho <strong>1 phần</strong> món ăn này.</p>
+                            
+                            <div class="ingredients-list-container flex-grow-1 overflow-auto pe-2">
+                                <table class="table-v">
+                                    <thead>
+                                        <tr>
+                                            <th>Nguyên liệu</th>
+                                            <th class="text-center">Đơn vị</th>
+                                            <th class="text-center">Tồn kho</th>
+                                            <th class="text-end" style="width: 150px;">Số lượng / Phần</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ingTableBody">
+                                        @for (int i = 0; i < Model.Ingredients.Count; i++)
+                                        {
+                                            <tr class="ing-row" data-name="@Model.Ingredients[i].Name.ToLower()">
+                                                <td>
+                                                    <input type="hidden" asp-for="@Model.Ingredients[i].IngredientId" />
+                                                    <input type="hidden" asp-for="@Model.Ingredients[i].Name" />
+                                                    <input type="hidden" asp-for="@Model.Ingredients[i].Unit" />
+                                                    <div class="fw-bold text-brand-dark small">@Model.Ingredients[i].Name</div>
+                                                    <div class="extra-small text-brand-gray">ID: ING-@Model.Ingredients[i].IngredientId.ToString("D3")</div>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-light text-brand-gray border py-1 px-2 fw-bold extra-small">@Model.Ingredients[i].Unit</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="small fw-bold @(Model.Ingredients[i].StockQuantity < 10 ? "text-danger" : "text-brand-dark")">
+                                                        @Model.Ingredients[i].StockQuantity.ToString("N1")
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <input type="number" asp-for="@Model.Ingredients[i].QuantityPerUnit" 
+                                                           class="form-control-v form-control-sm text-end fw-bold ing-qty-input @(Model.Ingredients[i].QuantityPerUnit > 0 ? "active" : "")" 
+                                                           step="0.01" min="0" placeholder="0.00" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer-v bg-light border-top p-4 d-flex justify-content-between align-items-center">
+                            <div class="selected-count extra-small fw-bold text-brand-orange" id="selectedCount">
+                                0 nguyên liệu được chọn
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-brand-orange rounded-pill px-5 py-2 fw-black shadow-sm transition-all hover-scale">
+                                    <i class="bi bi-check2-circle me-2"></i> Lưu dữ liệu
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
 </div>
 
-@section Scripts {
-}
-
 <style>
-    .text-wood-brown {
-        color: var(--wood-brown);
-        font-weight: bold;
+    :root {
+        --brand-orange: #f48c25;
+        --brand-bg: #f8f7f5;
+        --brand-dark: #181411;
+        --brand-gray: #6b7280;
+        --brand-light: #f3f4f6;
     }
-    .btn-primary-custom {
-        background-color: var(--primary-red);
-        border-color: var(--primary-red);
-        color: var(--light-text-color);
-        font-weight: bold;
-        border-radius: 5px;
-        padding: 8px 15px;
-        transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+
+    .product-upsert-wrapper {
+        background-color: var(--brand-bg);
+        min-height: 100vh;
+        font-family: 'Work Sans', sans-serif;
     }
-    .btn-primary-custom:hover {
-        background-color: var(--dark-brown);
-        border-color: var(--dark-brown);
+
+    .fw-black { font-weight: 900; }
+
+    .upsert-card {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        overflow: hidden;
     }
-    .btn-secondary-custom {
-        background-color: var(--wood-brown);
-        border-color: var(--wood-brown);
-        color: var(--light-text-color);
-        font-weight: bold;
-        border-radius: 5px;
-        padding: 8px 15px;
-        transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+
+    .card-header-v {
+        padding: 20px 24px;
+        background: #fafafb;
+        border-bottom: 1px solid #f1f5f9;
+        font-weight: 900;
+        color: var(--brand-dark);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
-    .btn-secondary-custom:hover {
-        background-color: var(--primary-red);
-        border-color: var(--primary-red);
+
+    .card-body-v { padding: 24px; }
+
+    .form-label-v {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--brand-gray);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
+
+    .form-control-v, .form-select-v {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--brand-light);
+        border: 2px solid transparent;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--brand-dark);
+        transition: all 0.2s;
+    }
+
+    .form-control-v:focus, .form-select-v:focus {
+        background: white;
+        border-color: var(--brand-orange);
+        box-shadow: 0 0 0 4px rgba(244, 140, 37, 0.1);
+        outline: none;
+    }
+
+    .input-group-v { position: relative; }
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--brand-gray);
+        font-size: 1.1rem;
+        z-index: 5;
+    }
+    .form-control-v.with-icon { padding-left: 42px; }
+
+    .form-check-v {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+    .check-input-v {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: 2px solid #d1d5db;
+        cursor: pointer;
+        appearance: none;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .check-input-v:checked {
+        background-color: var(--brand-orange);
+        border-color: var(--brand-orange);
+    }
+
+    .check-input-v:checked::after {
+        content: "\F26E";
+        font-family: "bootstrap-icons";
+        position: absolute;
+        color: white;
+        font-size: 12px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .check-label-v {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--brand-dark);
+        cursor: pointer;
+    }
+
+    /* Image Preview */
+    .image-preview-container {
+        width: 100%;
+        aspect-ratio: 16/9;
+    }
+    .preview-box {
+        width: 100%;
+        height: 100%;
+        background: var(--brand-light);
+        border-radius: 16px;
+        border: 2px dashed #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    .preview-placeholder { text-align: center; }
+    #previewImg { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Ingredients Table */
+    .search-box-v {
+        position: relative;
+        width: 220px;
+    }
+    .search-box-v i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--brand-gray);
+        font-size: 0.8rem;
+    }
+    .search-box-v input {
+        width: 100%;
+        padding: 6px 12px 6px 32px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .table-v { width: 100%; }
+    .table-v th {
+        padding: 12px 16px;
+        font-size: 0.65rem;
+        font-weight: 900;
+        color: var(--brand-gray);
+        text-transform: uppercase;
+        border-bottom: 1px solid #f1f5f9;
+        background: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .table-v td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f8fafc;
+        vertical-align: middle;
+    }
+    .ing-row:hover { background: #fafafb; }
+
+    .ing-qty-input.active {
+        background: #fff8f1;
+        border-color: var(--brand-orange);
+    }
+
+    .btn-brand-orange {
+        background-color: var(--brand-orange);
+        color: white;
+        border: none;
+    }
+    .btn-brand-orange:hover {
+        background-color: #e67a15;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-light-glass {
+        background: rgba(255,255,255,0.8);
+        backdrop-filter: blur(4px);
+        color: var(--brand-gray);
+    }
+    .btn-light-glass:hover {
+        background: white;
+        color: var(--brand-dark);
+    }
+
+    .hover-scale:hover { transform: scale(1.02); }
+    .transition-all { transition: all 0.3s ease; }
+    .extra-small { font-size: 0.7rem; }
 </style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // Image Preview logic
+            const $urlInput = $('#imageUrlInput');
+            const $previewBox = $('#imagePreviewBox');
+
+            function updatePreview(url) {
+                if (url && url.length > 5) {
+                    let sanitizedUrl = url;
+                    if (url.startsWith("file:///")) {
+                         const parts = url.split('/');
+                         sanitizedUrl = "/images/" + parts[parts.length - 1];
+                    }
+                    
+                    $previewBox.html(`<img src="${sanitizedUrl}" id="previewImg" class="img-fluid rounded-3 shadow-sm" onerror="handleImageError(this)">`);
+                } else {
+                    $previewBox.html(`
+                        <div class="preview-placeholder">
+                            <i class="bi bi-image fs-1 opacity-25"></i>
+                            <p class="small text-muted mt-2">Chưa có hình ảnh</p>
+                        </div>
+                    `);
+                }
+            }
+
+            window.handleImageError = function(el) {
+                $(el).attr('src', '/images/placeholder-pizza.png').addClass('opacity-50');
+            };
+
+            $urlInput.on('input', function() {
+                updatePreview($(this).val().trim());
+            });
+
+            // Ingredient Search logic
+            $('#ingSearch').on('input', function() {
+                const q = $(this).val().toLowerCase();
+                $('.ing-row').each(function() {
+                    const name = $(this).data('name');
+                    $(this).toggle(name.indexOf(q) > -1);
+                });
+            });
+
+            // Selected count tracking
+            function updateSelectedCount() {
+                const count = $('.ing-qty-input').filter(function() {
+                    return parseFloat($(this).val()) > 0;
+                }).length;
+                $('#selectedCount').text(`${count} nguyên liệu được chọn`);
+                
+                // Highlight active inputs
+                $('.ing-qty-input').each(function() {
+                    if (parseFloat($(this).val()) > 0) {
+                        $(this).addClass('active');
+                        $(this).closest('tr').addClass('bg-brand-bg-light');
+                    } else {
+                        $(this).removeClass('active');
+                        $(this).closest('tr').removeClass('bg-brand-bg-light');
+                    }
+                });
+            }
+
+            $('.ing-qty-input').on('input', updateSelectedCount);
+            updateSelectedCount(); // init
+        });
+    </script>
+}

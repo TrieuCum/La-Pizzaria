@@ -849,6 +849,9 @@
             };
 
             if (deliveryType === 'ship') {
+                if (!window.checkoutUser || !window.checkoutUser.userId) {
+                    return window.showToast('Vui lòng đăng nhập để đặt hàng giao tận nơi!', 'warning');
+                }
                 if (!document.getElementById('shipAddress').value) {
                     return window.showToast('Vui lòng nhập địa chỉ giao hàng', 'warning');
                 }
