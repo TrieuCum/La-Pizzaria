@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,9 +43,41 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
+    options.User.RequireUniqueEmail = true;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.SlidingExpiration = true;
+});
+
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    builder.Services
+        .AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            options.CallbackPath = "/signin-google";
+            options.AccessDeniedPath = "/Account/Login";
+            options.SaveTokens = true;
+            // Always show Google account chooser so users can pick any existing account.
+            options.Events.OnRedirectToAuthorizationEndpoint = context =>
+            {
+                var separator = context.RedirectUri.Contains('?') ? "&" : "?";
+                context.Response.Redirect($"{context.RedirectUri}{separator}prompt=select_account");
+                return Task.CompletedTask;
+            };
+        });
+}
 
 var app = builder.Build();
 
@@ -74,11 +107,11 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Đảm bảo các role Admin, Staff, Shipper tồn tại (seed nếu chưa có)
+// Đảm bảo các role hệ thống tồn tại (seed nếu chưa có)
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var roleName in new[] { "Admin", "Staff", "Shipper", "Customer" })
+    foreach (var roleName in new[] { "Admin", "User", "Staff", "Shipper", "Customer" })
     {
         if (!await roleManager.RoleExistsAsync(roleName))
             await roleManager.CreateAsync(new IdentityRole(roleName));

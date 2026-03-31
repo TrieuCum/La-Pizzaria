@@ -1,268 +1,124 @@
+@model LaPizzaria.ViewModels.ShipperHistoryViewModel
 @{
     Layout = null;
+    string StatusClass(string s) => Model.Status == s ? "bg-[#E67E22] text-white" : "bg-white text-gray-700 border border-gray-200";
+    string StatusLabel(string s) => s switch
+    {
+        "All" => "Tất cả",
+        "Completed" => "Hoàn thành",
+        "Cancelled" => "Đã hủy",
+        "Delivering" => "Đang giao",
+        "Pending" => "Chờ xử lý",
+        "Confirmed" => "Đã xác nhận",
+        "Ready" => "Sẵn sàng",
+        _ => s
+    };
 }
 <!DOCTYPE html>
-<html class="light" lang="vi">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shipper Pizza - Lịch sử Giao hàng</title>
+    <title>Shipper - Lịch sử giao hàng</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#f48c25",
-                        "background-light": "#f8f7f5",
-                        "background-dark": "#221910",
-                        "surface-dark": "#2c2219",
-                    },
-                    fontFamily: {
-                        display: ["Work Sans", "sans-serif"],
-                        body: ["Noto Sans", "sans-serif"],
-                    },
-                    borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", full: "9999px" },
-                },
-            },
-        };
-    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .material-symbols-outlined {
-            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
-        }
-        .material-symbols-outlined.fill {
-            font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        body { font-family: 'Work Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
     </style>
 </head>
-<body class="min-h-screen bg-background-light font-display text-[#181411] dark:bg-background-dark dark:text-white">
+<body class="bg-[#f8f7f5]">
     @await Html.PartialAsync("_ShipperTopNav")
 
-    <!-- Mobile title (bổ sung khi không có sidebar) -->
-    <div class="border-b border-[#e6e2de] bg-white px-4 py-3 dark:border-[#3d3126] dark:bg-surface-dark md:hidden">
-        <h1 class="text-lg font-bold text-[#181411] dark:text-white">Lịch sử giao hàng</h1>
-    </div>
-
-    <main class="w-full">
-        <div class="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 pb-12 md:px-10 md:py-10">
-            <!-- Page heading -->
-            <div class="flex flex-col gap-2">
-                <h2 class="text-3xl font-black tracking-tight text-[#181411] dark:text-white md:text-4xl">Lịch sử Giao hàng</h2>
-                <p class="text-base font-normal text-[#8a7560] dark:text-[#b09b85]">Xem lại các đơn hàng đã giao và thu nhập của bạn.</p>
-            </div>
-
-            <!-- Stats -->
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div class="flex flex-col gap-3 rounded-2xl border border-[#e6e2de] bg-white p-6 shadow-sm dark:border-[#3d3126] dark:bg-surface-dark">
-                    <div class="flex items-start justify-between">
-                        <p class="text-sm font-medium text-[#8a7560] dark:text-[#b09b85]">Tổng đơn (Tháng này)</p>
-                        <span class="material-symbols-outlined rounded-lg bg-primary/10 p-2 text-primary">shopping_bag</span>
-                    </div>
-                    <div class="mt-1 flex items-end gap-3">
-                        <p class="text-3xl font-bold leading-tight text-[#181411] dark:text-white">45</p>
-                        <span class="mb-1 rounded bg-green-50 px-2 py-0.5 text-sm font-medium text-[#07880e]">+12%</span>
-                    </div>
-                </div>
-                <div class="flex flex-col gap-3 rounded-2xl border border-[#e6e2de] bg-white p-6 shadow-sm dark:border-[#3d3126] dark:bg-surface-dark">
-                    <div class="flex items-start justify-between">
-                        <p class="text-sm font-medium text-[#8a7560] dark:text-[#b09b85]">Thu nhập (Tháng này)</p>
-                        <span class="material-symbols-outlined rounded-lg bg-primary/10 p-2 text-primary">attach_money</span>
-                    </div>
-                    <div class="mt-1 flex items-end gap-3">
-                        <p class="text-3xl font-bold leading-tight text-[#181411] dark:text-white">1.350.000đ</p>
-                        <span class="mb-1 rounded bg-green-50 px-2 py-0.5 text-sm font-medium text-[#07880e]">+5%</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Toolbar -->
-            <div class="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
-                <div class="w-full lg:w-96">
-                    <label class="flex h-12 w-full items-center rounded-xl border border-[#e6e2de] bg-white px-4 shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/50 dark:border-[#3d3126] dark:bg-surface-dark">
-                        <span class="material-symbols-outlined text-[#8a7560] dark:text-[#b09b85]">search</span>
-                        <input type="search" class="ml-2 w-full border-none bg-transparent text-sm font-medium text-[#181411] placeholder:text-[#8a7560] focus:ring-0 dark:text-white dark:placeholder:text-[#6e5d4d]" placeholder="Tìm kiếm theo Mã đơn hàng..." />
-                    </label>
-                </div>
-                <div class="flex w-full gap-2 overflow-x-auto pb-2 scrollbar-hide lg:w-auto lg:pb-0">
-                    <button type="button" class="flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-md shadow-primary/20 transition-transform hover:scale-105 active:scale-95">Hôm nay</button>
-                    <button type="button" class="flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-[#e6e2de] bg-white px-5 text-sm font-medium text-[#8a7560] transition-colors hover:bg-gray-50 dark:border-[#3d3126] dark:bg-surface-dark dark:text-[#b09b85] dark:hover:bg-[#362b22]">Tuần này</button>
-                    <button type="button" class="flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-[#e6e2de] bg-white px-5 text-sm font-medium text-[#8a7560] transition-colors hover:bg-gray-50 dark:border-[#3d3126] dark:bg-surface-dark dark:text-[#b09b85] dark:hover:bg-[#362b22]">Tháng này</button>
-                </div>
-            </div>
-
-            <!-- Order cards -->
-            <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                <!-- Card 1 -->
-                <div class="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-[#e6e2de] bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-[#3d3126] dark:bg-surface-dark">
-                    <div class="absolute -right-4 -top-4 h-24 w-24 rounded-bl-full bg-gradient-to-br from-primary/5 to-transparent"></div>
-                    <div class="relative z-10 flex items-start justify-between">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Mã đơn</span>
-                            <h3 class="text-lg font-black text-[#181411] dark:text-white">#PZ-8829</h3>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">20/10/2023</span>
-                            <span class="text-sm font-bold text-[#181411] dark:text-gray-300">14:30</span>
-                        </div>
-                    </div>
-                    <div class="h-px w-full bg-[#f0ebe8] dark:bg-[#3d3126]"></div>
-                    <div class="relative z-10 flex items-start gap-3">
-                        <span class="material-symbols-outlined mt-0.5 text-primary">location_on</span>
-                        <p class="text-sm font-medium leading-relaxed text-[#4a3e36] dark:text-gray-300">123 Nguyễn Văn Linh, Quận 7, TP. Hồ Chí Minh</p>
-                    </div>
-                    <div class="relative z-10 mt-auto flex items-center justify-between pt-2">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">Phí ship nhận được</span>
-                            <span class="text-xl font-bold text-primary">30.000đ</span>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#e7f7e8] px-3 py-1.5 text-xs font-bold text-[#07880e] dark:bg-green-900/30 dark:text-green-400">
-                            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                            Thành công
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Card 2 -->
-                <div class="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-[#e6e2de] bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-[#3d3126] dark:bg-surface-dark">
-                    <div class="absolute -right-4 -top-4 h-24 w-24 rounded-bl-full bg-gradient-to-br from-primary/5 to-transparent"></div>
-                    <div class="relative z-10 flex items-start justify-between">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Mã đơn</span>
-                            <h3 class="text-lg font-black text-[#181411] dark:text-white">#PZ-8812</h3>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">20/10/2023</span>
-                            <span class="text-sm font-bold text-[#181411] dark:text-gray-300">11:15</span>
-                        </div>
-                    </div>
-                    <div class="h-px w-full bg-[#f0ebe8] dark:bg-[#3d3126]"></div>
-                    <div class="relative z-10 flex items-start gap-3">
-                        <span class="material-symbols-outlined mt-0.5 text-primary">location_on</span>
-                        <p class="text-sm font-medium leading-relaxed text-[#4a3e36] dark:text-gray-300">45 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh</p>
-                    </div>
-                    <div class="relative z-10 mt-auto flex items-center justify-between pt-2">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">Phí ship nhận được</span>
-                            <span class="text-xl font-bold text-primary">45.000đ</span>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#e7f7e8] px-3 py-1.5 text-xs font-bold text-[#07880e] dark:bg-green-900/30 dark:text-green-400">
-                            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                            Thành công
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Card 3 Hoàn trả -->
-                <div class="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-[#e6e2de] bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-[#3d3126] dark:bg-surface-dark">
-                    <div class="relative z-10 flex items-start justify-between">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Mã đơn</span>
-                            <h3 class="text-lg font-black text-[#181411] dark:text-white">#PZ-8750</h3>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">19/10/2023</span>
-                            <span class="text-sm font-bold text-[#181411] dark:text-gray-300">19:45</span>
-                        </div>
-                    </div>
-                    <div class="h-px w-full bg-[#f0ebe8] dark:bg-[#3d3126]"></div>
-                    <div class="relative z-10 flex items-start gap-3">
-                        <span class="material-symbols-outlined mt-0.5 text-gray-400">location_on</span>
-                        <p class="text-sm font-medium leading-relaxed text-[#4a3e36] opacity-70 dark:text-gray-300">88/2 Xô Viết Nghệ Tĩnh, Bình Thạnh, TP. Hồ Chí Minh</p>
-                    </div>
-                    <div class="relative z-10 mt-auto flex items-center justify-between pt-2">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">Phí ship nhận được</span>
-                            <span class="text-xl font-bold text-gray-400 line-through decoration-2">25.000đ</span>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 dark:bg-red-900/30 dark:text-red-400">
-                            <span class="material-symbols-outlined text-[16px]">replay</span>
-                            Hoàn trả
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Card 4 -->
-                <div class="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-[#e6e2de] bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-[#3d3126] dark:bg-surface-dark">
-                    <div class="absolute -right-4 -top-4 h-24 w-24 rounded-bl-full bg-gradient-to-br from-primary/5 to-transparent"></div>
-                    <div class="relative z-10 flex items-start justify-between">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Mã đơn</span>
-                            <h3 class="text-lg font-black text-[#181411] dark:text-white">#PZ-8742</h3>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">19/10/2023</span>
-                            <span class="text-sm font-bold text-[#181411] dark:text-gray-300">18:20</span>
-                        </div>
-                    </div>
-                    <div class="h-px w-full bg-[#f0ebe8] dark:bg-[#3d3126]"></div>
-                    <div class="relative z-10 flex items-start gap-3">
-                        <span class="material-symbols-outlined mt-0.5 text-primary">location_on</span>
-                        <p class="text-sm font-medium leading-relaxed text-[#4a3e36] dark:text-gray-300">Khu đô thị Sala, Mai Chí Thọ, Quận 2, TP. Hồ Chí Minh</p>
-                    </div>
-                    <div class="relative z-10 mt-auto flex items-center justify-between pt-2">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">Phí ship nhận được</span>
-                            <span class="text-xl font-bold text-primary">50.000đ</span>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#e7f7e8] px-3 py-1.5 text-xs font-bold text-[#07880e] dark:bg-green-900/30 dark:text-green-400">
-                            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                            Thành công
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Card 5 -->
-                <div class="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-[#e6e2de] bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-[#3d3126] dark:bg-surface-dark">
-                    <div class="absolute -right-4 -top-4 h-24 w-24 rounded-bl-full bg-gradient-to-br from-primary/5 to-transparent"></div>
-                    <div class="relative z-10 flex items-start justify-between">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-[#8a7560] dark:text-[#b09b85]">Mã đơn</span>
-                            <h3 class="text-lg font-black text-[#181411] dark:text-white">#PZ-8711</h3>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">19/10/2023</span>
-                            <span class="text-sm font-bold text-[#181411] dark:text-gray-300">09:10</span>
-                        </div>
-                    </div>
-                    <div class="h-px w-full bg-[#f0ebe8] dark:bg-[#3d3126]"></div>
-                    <div class="relative z-10 flex items-start gap-3">
-                        <span class="material-symbols-outlined mt-0.5 text-primary">location_on</span>
-                        <p class="text-sm font-medium leading-relaxed text-[#4a3e36] dark:text-gray-300">Toà nhà Landmark 81, Bình Thạnh, TP. Hồ Chí Minh</p>
-                    </div>
-                    <div class="relative z-10 mt-auto flex items-center justify-between pt-2">
-                        <div class="flex flex-col">
-                            <span class="text-xs font-medium text-[#8a7560] dark:text-[#b09b85]">Phí ship nhận được</span>
-                            <span class="text-xl font-bold text-primary">35.000đ</span>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#e7f7e8] px-3 py-1.5 text-xs font-bold text-[#07880e] dark:bg-green-900/30 dark:text-green-400">
-                            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                            Thành công
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-2 flex justify-center">
-                <button type="button" class="flex items-center gap-1 text-sm font-bold text-primary hover:underline">
-                    Xem thêm đơn hàng cũ
-                    <span class="material-symbols-outlined text-lg">expand_more</span>
-                </button>
-            </div>
+    <main class="mx-auto max-w-6xl px-4 py-6 md:px-8">
+        <div class="mb-5 flex flex-col gap-2">
+            <h1 class="text-3xl font-black text-[#181411]">Lịch sử giao hàng</h1>
+            <p class="text-gray-500">Lọc theo ngày/trạng thái, xem phân trang và tổng thu nhập theo bộ lọc hiện tại.</p>
         </div>
+
+        <section class="mb-5 grid gap-4 md:grid-cols-3">
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                <p class="text-sm font-semibold text-gray-500">Tổng đơn theo bộ lọc</p>
+                <p class="mt-2 text-3xl font-extrabold text-[#2C3E50]">@Model.TotalCount</p>
+            </div>
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 md:col-span-2">
+                <p class="text-sm font-semibold text-gray-500">Tổng thu nhập (chỉ đơn Completed)</p>
+                <p class="mt-2 text-3xl font-extrabold text-[#E67E22]">@Model.TotalIncome.ToString("N0")đ</p>
+            </div>
+        </section>
+
+        <section class="mb-5 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+            <form method="get" asp-controller="Shipper" asp-action="History" class="grid gap-3 md:grid-cols-4">
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-gray-600">Từ ngày</label>
+                    <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="w-full rounded-xl border border-gray-200 px-3 py-2" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-gray-600">Đến ngày</label>
+                    <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="w-full rounded-xl border border-gray-200 px-3 py-2" />
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-semibold text-gray-600">Trạng thái</label>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var s in new[] { "All", "Completed", "Cancelled", "Delivering", "Pending", "Confirmed", "Ready" })
+                        {
+                            <button type="submit" name="status" value="@s" class="rounded-xl px-3 py-2 text-sm font-semibold @StatusClass(s)">@StatusLabel(s)</button>
+                        }
+                    </div>
+                </div>
+                <input type="hidden" name="page" value="1" />
+            </form>
+        </section>
+
+        <section class="space-y-3">
+            @if (Model.Orders.Any())
+            {
+                @foreach (var o in Model.Orders)
+                {
+                    var isCompleted = o.OrderStatus == "Completed";
+                    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="text-lg font-bold text-[#2C3E50]">#@o.OrderId - @o.ItemCount x @o.ItemTitle</p>
+                                <p class="text-sm text-gray-600">@o.DeliveryAddress</p>
+                                <p class="text-xs text-gray-500">Khách: @o.CustomerName @(!string.IsNullOrWhiteSpace(o.CustomerPhone) ? $"| {o.CustomerPhone}" : "")</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500">@o.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                                <p class="font-bold @(isCompleted ? "text-[#E67E22]" : "text-gray-500")">@o.TotalPrice.ToString("N0")đ</p>
+                                <span class="inline-block rounded-full px-2 py-1 text-xs font-bold @(isCompleted ? "bg-green-100 text-green-700" : (o.OrderStatus == "Cancelled" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"))">@StatusLabel(o.OrderStatus)</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="rounded-2xl bg-white p-8 text-center text-gray-500 shadow-sm ring-1 ring-gray-100">
+                    Không có dữ liệu theo bộ lọc hiện tại.
+                </div>
+            }
+        </section>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="mt-6 flex items-center justify-center gap-2">
+                @for (var i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a asp-controller="Shipper" asp-action="History"
+                       asp-route-page="@i"
+                       asp-route-status="@Model.Status"
+                       asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                       asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))"
+                       class="rounded-xl px-3 py-2 text-sm font-semibold @(i == Model.Page ? "bg-[#E67E22] text-white" : "bg-white text-gray-700 ring-1 ring-gray-200")">
+                        @i
+                    </a>
+                }
+            </nav>
+        }
     </main>
 </body>
 </html>
