@@ -28,6 +28,7 @@ namespace LaPizzaria.Data
 		public DbSet<OrderVoucher> OrderVouchers { get; set; }
 		public DbSet<UserSavedVoucher> UserSavedVouchers { get; set; }
 		public DbSet<Employee> Employees { get; set; }
+        public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
 
         public DbSet<Customer> Customers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -178,6 +179,19 @@ namespace LaPizzaria.Data
                 .WithMany()
                 .HasForeignKey(c => c.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Loyalty transactions
+            modelBuilder.Entity<LoyaltyTransaction>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<LoyaltyTransaction>()
+                .HasIndex(t => new { t.UserId, t.CreatedAtUtc });
+            modelBuilder.Entity<LoyaltyTransaction>()
+                .HasIndex(t => new { t.UserId, t.ReferenceCode })
+                .IsUnique()
+                .HasFilter("[ReferenceCode] IS NOT NULL");
 
             // OrderDetail relationships
             modelBuilder.Entity<OrderDetail>()

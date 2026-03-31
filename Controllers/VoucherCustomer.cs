@@ -25,9 +25,20 @@ namespace LaPizzaria.Controllers
         {
             var currentCategory = string.IsNullOrWhiteSpace(category) ? "All" : category;
             var currentTab = !string.IsNullOrWhiteSpace(tab) ? tab : (!string.IsNullOrWhiteSpace(category) ? "monan" : "vouchers");
+            var userId = _userManager.GetUserId(User);
+            var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
 
-            var vouchers = await _db.Vouchers
+            var vouchersQuery = _db.Vouchers
                 .Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > DateTime.UtcNow))
+                .AsQueryable();
+
+            // Ưu đãi theo tài khoản: khách chưa đăng nhập chỉ thấy voucher public.
+            // Khách đã đăng nhập thấy voucher public + voucher dành riêng cho chính họ.
+            vouchersQuery = isAuthenticated && !string.IsNullOrEmpty(userId)
+                ? vouchersQuery.Where(v => v.TargetUserId == null || v.TargetUserId == userId)
+                : vouchersQuery.Where(v => v.TargetUserId == null);
+
+            var vouchers = await vouchersQuery
                 .OrderByDescending(v => v.DiscountPercent)
                 .ToListAsync();
 
@@ -54,10 +65,8 @@ namespace LaPizzaria.Controllers
             };
 
             var savedVoucherIds = new List<int>();
-            var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
             if (isAuthenticated)
             {
-                var userId = _userManager.GetUserId(User);
                 if (!string.IsNullOrEmpty(userId))
                     savedVoucherIds = await _db.UserSavedVouchers
                         .Where(usv => usv.UserId == userId)
@@ -95,6 +104,8 @@ namespace LaPizzaria.Controllers
                 return Json(new { success = false, message = "Mã không tồn tại." });
             if (!voucher.IsActive || (voucher.ExpiresAtUtc.HasValue && voucher.ExpiresAtUtc.Value < DateTime.UtcNow))
                 return Json(new { success = false, message = "Mã đã hết hạn hoặc không còn hiệu lực." });
+            if (!string.IsNullOrEmpty(voucher.TargetUserId) && voucher.TargetUserId != userId)
+                return Json(new { success = false, message = "Mã ưu đãi này không thuộc tài khoản của bạn." });
 
             var existing = await _db.UserSavedVouchers
                 .AnyAsync(usv => usv.UserId == userId && usv.VoucherId == voucherId, cancellationToken);

@@ -1,10 +1,6 @@
+@model LaPizzaria.ViewModels.LoyaltyIndexViewModel
 @{
     ViewData["Title"] = "Tích điểm & Ưu đãi";
-    var points = (int)(ViewBag.Points ?? 0);
-    var tier = (string)(ViewBag.Tier ?? "Đồng");
-    var nextTierName = (string)(ViewBag.NextTierName ?? "Vàng");
-    var nextTierTarget = (int)(ViewBag.NextTierTarget ?? 1500);
-    var progress = Math.Clamp(points * 100 / Math.Max(1, nextTierTarget), 0, 100);
 }
 
 @section Styles {
@@ -19,34 +15,43 @@
             <p>Tích lũy điểm thưởng qua mỗi đơn hàng và đổi lấy những phần quà hấp dẫn.</p>
         </div>
 
-        <div class="lp-loyalty-summary mb-4" style="--lp-progress:@progress%">
+        @if (TempData["error"] != null)
+        {
+            <div class="alert alert-danger py-2 px-3 mb-3">@TempData["error"]</div>
+        }
+        @if (TempData["success"] != null)
+        {
+            <div class="alert alert-success py-2 px-3 mb-3">@TempData["success"]</div>
+        }
+
+        <div class="lp-loyalty-summary mb-4" style="--lp-progress:@Model.ProgressPercent%">
             <div class="lp-loyalty-points">
                 <div class="lp-loyalty-points-label">Tổng điểm tích lũy</div>
                 <div class="lp-loyalty-points-value">
-                    <strong>@points.ToString("N0")</strong>
+                    <strong>@Model.Points.ToString("N0")</strong>
                     <span class="fw-semibold">điểm</span>
                 </div>
                 <div class="lp-loyalty-tier">
                     <span class="material-symbols-outlined lp-icon">stars</span>
-                    <span>Thành viên @tier</span>
+                    <span>Thành viên @Model.Tier</span>
                 </div>
             </div>
             <div class="lp-loyalty-progress">
-                <div class="lp-loyalty-progress-title">Tiến độ thăng hạng @nextTierName</div>
+                <div class="lp-loyalty-progress-title">Tiến độ thăng hạng @Model.NextTierName</div>
                 <div class="lp-loyalty-progress-sub">
-                    Bạn cần thêm <span class="fw-bold text-brand-orange">@Math.Max(0, nextTierTarget - points).ToString("N0") điểm</span> nữa để thăng hạng.
+                    Bạn cần thêm <span class="fw-bold text-brand-orange">@Model.RemainingToNextTier.ToString("N0") điểm</span> nữa để thăng hạng.
                 </div>
                 <div class="lp-loyalty-bar">
                     <div class="lp-loyalty-bar-fill"></div>
                 </div>
                 <div class="lp-loyalty-bar-steps">
-                    <span>Bạc (500)</span>
-                    <span>@nextTierName (@nextTierTarget.ToString("N0"))</span>
+                    <span>Đồng (0)</span>
+                    <span>@Model.NextTierName (@Model.NextTierTarget.ToString("N0"))</span>
                 </div>
             </div>
             <div class="lp-loyalty-progress-right">
-                <div class="lp-loyalty-progress-main">@points.ToString("N0")</div>
-                <div class="lp-loyalty-progress-subnum">/@nextTierTarget.ToString("N0")</div>
+                <div class="lp-loyalty-progress-main">@Model.Points.ToString("N0")</div>
+                <div class="lp-loyalty-progress-subnum">/@Model.NextTierTarget.ToString("N0")</div>
             </div>
         </div>
 
@@ -60,25 +65,26 @@
                         </div>
                     </div>
                     <div class="lp-tier-grid">
-                        <div class="lp-tier-card @(tier == "Đồng" ? "current" : "")">
-                            @if (tier == "Đồng") { <div class="lp-tier-current-badge">Hiện tại</div> }
+                        <div class="lp-tier-card @(Model.Tier == "Đồng" ? "current" : "")">
+                            @if (Model.Tier == "Đồng") { <div class="lp-tier-current-badge">Hiện tại</div> }
                             <div class="lp-tier-name">Đồng</div>
                             <div class="lp-tier-range">0 - 500 điểm</div>
                             <div class="lp-tier-desc">Ưu đãi cơ bản cho khách mới.</div>
                         </div>
-                        <div class="lp-tier-card @(tier == "Bạc" ? "current" : "")">
-                            @if (tier == "Bạc") { <div class="lp-tier-current-badge">Hiện tại</div> }
+                        <div class="lp-tier-card @(Model.Tier == "Bạc" ? "current" : "")">
+                            @if (Model.Tier == "Bạc") { <div class="lp-tier-current-badge">Hiện tại</div> }
                             <div class="lp-tier-name">Bạc</div>
                             <div class="lp-tier-range">501 - 1.500 điểm</div>
                             <div class="lp-tier-desc">Tích điểm x1.2, quà sinh nhật.</div>
                         </div>
-                        <div class="lp-tier-card @(tier == "Vàng" ? "current" : "")">
-                            @if (tier == "Vàng") { <div class="lp-tier-current-badge">Hiện tại</div> }
+                        <div class="lp-tier-card @(Model.Tier == "Vàng" ? "current" : "")">
+                            @if (Model.Tier == "Vàng") { <div class="lp-tier-current-badge">Hiện tại</div> }
                             <div class="lp-tier-name">Vàng</div>
                             <div class="lp-tier-range">1.501 - 3.000 điểm</div>
-                            <div class="lp-tier-desc">Tích điểm x1.5, freeship &lt; 5km.</div>
+                            <div class="lp-tier-desc">Tích điểm x1.5, freeship dưới 5km.</div>
                         </div>
-                        <div class="lp-tier-card">
+                        <div class="lp-tier-card @(Model.Tier == "Kim Cương" ? "current" : "")">
+                            @if (Model.Tier == "Kim Cương") { <div class="lp-tier-current-badge">Hiện tại</div> }
                             <div class="lp-tier-name">Kim Cương</div>
                             <div class="lp-tier-range">3.000+ điểm</div>
                             <div class="lp-tier-desc">Tích điểm x2, ưu đãi VIP.</div>
@@ -92,53 +98,31 @@
                             <span class="material-symbols-outlined lp-icon">redeem</span>
                             <span>Đổi ưu đãi</span>
                         </div>
-                        <a href="#" class="lp-card-link">Xem tất cả</a>
                     </div>
                     <div class="lp-redeem-grid">
-                        <div class="lp-redeem-card">
-                            <div class="lp-redeem-body">
-                                <div class="lp-redeem-title">Giảm 10% tổng hóa đơn</div>
-                                <div class="lp-redeem-desc">Áp dụng cho đơn từ 200.000đ, tối đa 50.000đ.</div>
+                        @foreach (var reward in Model.Rewards)
+                        {
+                            <div class="lp-redeem-card">
+                                <div class="lp-redeem-body">
+                                    <div class="lp-redeem-title">@reward.Title</div>
+                                    <div class="lp-redeem-desc">@reward.Description</div>
+                                </div>
+                                <div class="lp-redeem-footer">
+                                    <span class="lp-pill-points @(reward.CanRedeem ? "" : "text-muted")">@reward.CostPoints.ToString("N0") điểm</span>
+                                    <form asp-controller="Loyalty" asp-action="Redeem" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="code" value="@reward.Code" />
+                                        <button type="submit" class="lp-btn-small" @(reward.CanRedeem ? null : "disabled")>
+                                            @(reward.CanRedeem ? "Đổi ngay" : "Thiếu điểm")
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                            <div class="lp-redeem-footer">
-                                <span class="lp-pill-points">500 điểm</span>
-                                <button class="lp-btn-small">Đổi ngay</button>
-                            </div>
-                        </div>
-                        <div class="lp-redeem-card">
-                            <div class="lp-redeem-body">
-                                <div class="lp-redeem-title">Tặng 1 Coca-Cola 1.5L</div>
-                                <div class="lp-redeem-desc">Nhận 1 chai Coca cho bất kỳ đơn hàng.</div>
-                            </div>
-                            <div class="lp-redeem-footer">
-                                <span class="lp-pill-points">200 điểm</span>
-                                <button class="lp-btn-small">Đổi ngay</button>
-                            </div>
-                        </div>
-                        <div class="lp-redeem-card">
-                            <div class="lp-redeem-body">
-                                <div class="lp-redeem-title">Freeship dưới 5km</div>
-                                <div class="lp-redeem-desc">Miễn phí giao hàng cho khoảng cách &lt; 5km.</div>
-                            </div>
-                            <div class="lp-redeem-footer">
-                                <span class="lp-pill-points">300 điểm</span>
-                                <button class="lp-btn-small">Đổi ngay</button>
-                            </div>
-                        </div>
-                        <div class="lp-redeem-card">
-                            <div class="lp-redeem-body">
-                                <div class="lp-redeem-title">Tặng Pizza size M</div>
-                                <div class="lp-redeem-desc">Miễn phí 1 pizza size M dòng Classic.</div>
-                            </div>
-                            <div class="lp-redeem-footer">
-                                <span class="lp-pill-points text-muted">2.000 điểm</span>
-                                <button class="lp-btn-small" disabled>Thiếu điểm</button>
-                            </div>
-                        </div>
+                        }
                     </div>
                 </div>
 
-                <div class="lp-card lp-voucher-card">
+                <div class="lp-card lp-voucher-card mt-3">
                     <div class="lp-card-header">
                         <div class="lp-card-title">
                             <span class="material-symbols-outlined lp-icon">confirmation_number</span>
@@ -146,45 +130,31 @@
                         </div>
                     </div>
                     <div class="lp-voucher-list">
-                        <div class="lp-voucher-item">
-                            <div class="lp-voucher-icon lp-voucher-icon-green">
-                                <span class="material-symbols-outlined">percent</span>
-                            </div>
-                            <div class="lp-voucher-body">
-                                <div class="lp-voucher-title">Giảm 50k cho đơn từ 300k</div>
-                                <div class="lp-voucher-meta">HSD: 30/12/2023</div>
-                            </div>
-                            <div class="lp-voucher-right">
-                                <span class="lp-voucher-badge lp-voucher-badge-green">Chưa dùng</span>
-                                <button class="lp-btn-small outline">Dùng ngay</button>
-                            </div>
-                        </div>
-
-                        <div class="lp-voucher-item lp-voucher-item-muted">
-                            <div class="lp-voucher-icon lp-voucher-icon-gray">
-                                <span class="material-symbols-outlined">local_shipping</span>
-                            </div>
-                            <div class="lp-voucher-body">
-                                <div class="lp-voucher-title text-decoration-line-through">Freeship đơn 0đ</div>
-                                <div class="lp-voucher-meta">Đã dùng vào 15/10/2023</div>
-                            </div>
-                            <div class="lp-voucher-right">
-                                <span class="lp-voucher-badge lp-voucher-badge-gray">Đã dùng</span>
-                            </div>
-                        </div>
-
-                        <div class="lp-voucher-item lp-voucher-item-muted">
-                            <div class="lp-voucher-icon lp-voucher-icon-red">
-                                <span class="material-symbols-outlined">sentiment_sad</span>
-                            </div>
-                            <div class="lp-voucher-body">
-                                <div class="lp-voucher-title">Giảm 20% (Tối đa 50k)</div>
-                                <div class="lp-voucher-meta">Hết hạn: 01/09/2023</div>
-                            </div>
-                            <div class="lp-voucher-right">
-                                <span class="lp-voucher-badge lp-voucher-badge-red">Hết hạn</span>
-                            </div>
-                        </div>
+                        @if (Model.Vouchers.Any())
+                        {
+                            @foreach (var v in Model.Vouchers)
+                            {
+                                var badgeClass = v.Status == "unused" ? "lp-voucher-badge-green" : v.Status == "used" ? "lp-voucher-badge-gray" : "lp-voucher-badge-red";
+                                var badgeText = v.Status == "unused" ? "Chưa dùng" : v.Status == "used" ? "Đã dùng" : "Hết hạn";
+                                var itemMuted = v.Status == "unused" ? "" : "lp-voucher-item-muted";
+                                <div class="lp-voucher-item @itemMuted">
+                                    <div class="lp-voucher-icon @(v.Status == "unused" ? "lp-voucher-icon-green" : v.Status == "used" ? "lp-voucher-icon-gray" : "lp-voucher-icon-red")">
+                                        <span class="material-symbols-outlined">@((v.Status == "unused") ? "percent" : (v.Status == "used" ? "check_circle" : "event_busy"))</span>
+                                    </div>
+                                    <div class="lp-voucher-body">
+                                        <div class="lp-voucher-title">@v.Title</div>
+                                        <div class="lp-voucher-meta">@v.Meta</div>
+                                    </div>
+                                    <div class="lp-voucher-right">
+                                        <span class="lp-voucher-badge @badgeClass">@badgeText</span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-muted small">Bạn chưa có voucher từ tích điểm. Hãy đổi ưu đãi để nhận voucher mới.</div>
+                        }
                     </div>
                 </div>
             </div>
@@ -196,60 +166,33 @@
                             <span class="material-symbols-outlined lp-icon">history</span>
                             <span>Lịch sử điểm</span>
                         </div>
-                        <a href="#" class="lp-card-link">Xem thêm</a>
                     </div>
                     <table class="lp-history-table">
                         <tbody>
-                            <tr>
-                                <td>
-                                    <div class="lp-history-title">Đơn hàng #8823</div>
-                                    <div class="lp-history-date">20/10/2023</div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="lp-history-change earn">+150</div>
-                                    <div class="lp-history-balance">1.250</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="lp-history-title">Đổi voucher 10%</div>
-                                    <div class="lp-history-date">18/10/2023</div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="lp-history-change spend">-500</div>
-                                    <div class="lp-history-balance">1.100</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="lp-history-title">Đơn hàng #7712</div>
-                                    <div class="lp-history-date">10/10/2023</div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="lp-history-change earn">+200</div>
-                                    <div class="lp-history-balance">1.600</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="lp-history-title">Đánh giá món ăn</div>
-                                    <div class="lp-history-date">05/10/2023</div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="lp-history-change earn">+50</div>
-                                    <div class="lp-history-balance">1.400</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="lp-history-title">Thăng hạng Bạc</div>
-                                    <div class="lp-history-date">01/10/2023</div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="lp-history-change">-</div>
-                                    <div class="lp-history-balance">1.350</div>
-                                </td>
-                            </tr>
+                            @if (Model.Transactions.Any())
+                            {
+                                @foreach (var t in Model.Transactions)
+                                {
+                                    var css = t.PointsChange > 0 ? "earn" : "spend";
+                                    var sign = t.PointsChange > 0 ? "+" : "";
+                                    <tr>
+                                        <td>
+                                            <div class="lp-history-title">@t.Description</div>
+                                            <div class="lp-history-date">@t.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="lp-history-change @css">@sign@t.PointsChange.ToString("N0")</div>
+                                            <div class="lp-history-balance">@t.BalanceAfter.ToString("N0")</div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="2" class="text-muted small py-3">Chưa có lịch sử điểm.</td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
@@ -257,4 +200,3 @@
         </div>
     </div>
 </div>
-

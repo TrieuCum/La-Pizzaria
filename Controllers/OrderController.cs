@@ -172,6 +172,10 @@ namespace LaPizzaria.Controllers
             {
                 var v = await _voucherService.GetByIdAsync(vid);
                 if (v == null) continue;
+                if (!IsVoucherForUser(v, req.UserId))
+                {
+                    return BadRequest(new { error = $"Voucher {v.Code} không thuộc tài khoản hiện tại." });
+                }
 
                 if (!_voucherService.IsUsable(v, System.DateTime.UtcNow))
                 {
@@ -401,10 +405,12 @@ namespace LaPizzaria.Controllers
                 if (req.VoucherIds != null && req.VoucherIds.Count > 0)
                 {
                     var ids = req.VoucherIds.Take(2).ToList();
+                    var currentUserId = _userManager.GetUserId(User);
+                    var effectiveUserId = !string.IsNullOrWhiteSpace(currentUserId) ? currentUserId : req.UserId;
                     foreach (var vid in ids)
                     {
                         var v = await _voucherService.GetByIdAsync(vid);
-                        if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                        if (v != null && IsVoucherForUser(v, effectiveUserId) && _voucherService.IsUsable(v, System.DateTime.UtcNow))
                         {
                             _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                             v.UsedCount += 1;
@@ -537,10 +543,12 @@ namespace LaPizzaria.Controllers
                 var order = await _orderService.CreateOrderAsync(req.UserId, details, tableIds, req.DeliveryAddress, req.Latitude, req.Longitude);
                 if (req.VoucherIds != null && req.VoucherIds.Count > 0)
                 {
+                    var currentUserId = _userManager.GetUserId(User);
+                    var effectiveUserId = !string.IsNullOrWhiteSpace(currentUserId) ? currentUserId : req.UserId;
                     foreach (var vid in req.VoucherIds.Take(2))
                     {
                         var v = await _voucherService.GetByIdAsync(vid);
-                        if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                        if (v != null && IsVoucherForUser(v, effectiveUserId) && _voucherService.IsUsable(v, System.DateTime.UtcNow))
                         {
                             _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                             v.UsedCount += 1;
@@ -554,6 +562,13 @@ namespace LaPizzaria.Controllers
             {
                 return BadRequest(new { error = ex.Message });
             }
+        }
+
+        private static bool IsVoucherForUser(Voucher voucher, string? userId)
+        {
+            if (string.IsNullOrWhiteSpace(voucher.TargetUserId)) return true; // public voucher
+            if (string.IsNullOrWhiteSpace(userId)) return false;
+            return string.Equals(voucher.TargetUserId, userId, StringComparison.Ordinal);
         }
     }
 
@@ -596,4 +611,5 @@ namespace LaPizzaria.Controllers
         public decimal? UnitPrice { get; set; }
         public string? Size { get; set; }
     }
+
 }
