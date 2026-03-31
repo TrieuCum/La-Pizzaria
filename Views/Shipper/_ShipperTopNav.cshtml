@@ -1,35 +1,38 @@
 @{
     var nav = ViewData["ShipperNav"] as string ?? "Index";
 }
-<header class="sticky top-0 z-[1000] w-full border-b border-[#e6e2de] bg-white/95 backdrop-blur-sm dark:border-[#3d3126] dark:bg-surface-dark/95">
-    <div class="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-4 md:px-8 lg:px-10">
-        <div class="flex min-w-0 items-baseline gap-2">
-            <span class="text-lg font-extrabold tracking-tight text-[#181411] dark:text-white md:text-xl">Lapizzaria</span>
-            <span class="hidden text-sm font-semibold text-primary sm:inline">Giao hàng</span>
+<header class="sticky top-0 z-[1000] w-full border-b border-[#ece6e1] bg-white/95 shadow-sm backdrop-blur-md dark:border-[#3d3126] dark:bg-surface-dark/95">
+    <div class="mx-auto flex h-[82px] max-w-6xl items-center justify-between gap-3 px-4 md:px-8 lg:px-10">
+        <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff2e8] text-lg">🍕</div>
+            <div class="flex flex-col leading-tight">
+                <span class="text-lg font-extrabold tracking-tight text-[#181411] dark:text-white md:text-xl">Lapizzaria</span>
+                <span class="text-xs font-semibold uppercase tracking-wide text-primary">Giao hàng</span>
+            </div>
         </div>
-        <nav class="flex flex-wrap items-center justify-end gap-1 sm:gap-2 md:gap-4">
+        <nav class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 md:gap-3">
             <a asp-controller="Shipper" asp-action="Index"
-               class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors md:px-4 md:py-2.5 @(nav == "Index" ? "bg-primary/10 font-bold text-primary" : "text-[#181411] hover:bg-[#f5f2f0] dark:text-gray-200 dark:hover:bg-[#3d3126]")">
+               class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors md:px-4 md:py-2.5 @(nav == "Index" ? "bg-primary/10 font-bold text-primary ring-1 ring-primary/20" : "text-[#181411] hover:bg-[#f5f2f0] dark:text-gray-200 dark:hover:bg-[#3d3126]")">
                 <span class="material-symbols-outlined text-[20px] @(nav == "Index" ? "fill text-primary" : "text-[#8a7560] dark:text-[#b09b85]")">two_wheeler</span>
                 <span class="hidden sm:inline">Đơn hiện tại</span>
             </a>
             <a asp-controller="Shipper" asp-action="History"
-               class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors md:px-4 md:py-2.5 @(nav == "History" ? "bg-primary/10 font-bold text-primary" : "text-[#181411] hover:bg-[#f5f2f0] dark:text-gray-200 dark:hover:bg-[#3d3126]")">
+               class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors md:px-4 md:py-2.5 @(nav == "History" ? "bg-primary/10 font-bold text-primary ring-1 ring-primary/20" : "text-[#181411] hover:bg-[#f5f2f0] dark:text-gray-200 dark:hover:bg-[#3d3126]")">
                 <span class="material-symbols-outlined text-[20px] @(nav == "History" ? "fill text-primary" : "text-[#8a7560] dark:text-[#b09b85]")">history</span>
                 <span class="hidden sm:inline">Lịch sử</span>
             </a>
             <a asp-controller="Shipper" asp-action="Income"
-               class="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors md:flex md:px-4 md:py-2.5 @(nav == "Income" ? "bg-primary/10 font-bold text-primary" : "text-[#181411] hover:bg-[#f5f2f0] dark:text-gray-200 dark:hover:bg-[#3d3126]")">
+               class="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors md:flex md:px-4 md:py-2.5 @(nav == "Income" ? "bg-primary/10 font-bold text-primary ring-1 ring-primary/20" : "text-[#181411] hover:bg-[#f5f2f0] dark:text-gray-200 dark:hover:bg-[#3d3126]")">
                 <span class="material-symbols-outlined text-[20px] @(nav == "Income" ? "fill text-primary" : "text-[#8a7560] dark:text-[#b09b85]")">payments</span>
                 <span>Thu nhập</span>
             </a>
-            <button type="button" class="ml-1 flex items-center gap-2 rounded-lg bg-[#27AE60] px-3 py-2 text-xs font-semibold text-white shadow-sm md:text-[13px]">
-                <span class="h-2 w-2 rounded-full bg-white"></span>
+            <button type="button" class="ml-1 hidden items-center gap-2 rounded-lg bg-[#22b162] px-3 py-2 text-xs font-semibold text-white shadow-sm md:flex md:text-[13px]">
+                <span class="h-2 w-2 animate-pulse rounded-full bg-white"></span>
                 <span class="hidden sm:inline">Đang làm việc</span>
             </button>
-            <div class="ml-1 flex items-center gap-3 border-l border-[#e6e2de] pl-3 dark:border-[#3d3126] md:ml-2 md:pl-4">
-                <span class="cursor-pointer text-xl text-[#95A5A6]" role="img" aria-label="Thông báo">🔔</span>
-                <a asp-controller="Account" asp-action="Manage" class="flex items-center gap-2 rounded-xl py-1.5 pl-1 pr-2 text-sm font-semibold text-[#2C3E50] hover:bg-[#fdf2e9] hover:text-[#E67E22] dark:text-gray-200">
+            <div class="ml-1 flex items-center gap-2 border-l border-[#e6e2de] pl-3 dark:border-[#3d3126] md:ml-2 md:pl-4">
+                <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-xl text-[#95A5A6] transition hover:bg-[#f5f2f0]" aria-label="Thông báo">🔔</button>
+                <a asp-controller="Account" asp-action="Manage" class="flex items-center gap-2 rounded-xl py-1.5 pl-1 pr-2 text-sm font-semibold text-[#2C3E50] transition hover:bg-[#fdf2e9] hover:text-[#E67E22] dark:text-gray-200">
                     <img src="https://ui-avatars.com/api/?name=Shipper&background=E67E22&color=fff" alt="" class="h-9 w-9 rounded-full border-2 border-[#E67E22] object-cover" width="36" height="36" />
                     <span class="hidden lg:inline">Hồ sơ</span>
                 </a>

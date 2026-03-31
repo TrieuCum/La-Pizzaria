@@ -176,12 +176,16 @@
             margin-bottom: 32px;
         }
 
-        .btn-social {
+        .social-auth form {
             flex: 1;
+            margin: 0;
+        }
+
+        .btn-social {
             display: flex; align-items: center; justify-content: center; gap: 10px;
             padding: 12px; border-radius: 16px; border: 1px solid #e2e8f0;
             background: white; color: var(--brand-dark); font-weight: 600;
-            font-size: 0.9rem; transition: all 0.2s; text-decoration: none;
+            font-size: 0.9rem; transition: all 0.2s; text-decoration: none; width: 100%;
         }
 
         .btn-social:hover { background: #f8fafc; transform: translateY(-2px); border-color: #cbd5e1; }
@@ -291,12 +295,26 @@
                 <p class="form-subtitle">Chúng tôi rất hào hứng được chào đón bạn!</p>
 
                 <div class="social-auth">
-                    <a href="#" class="btn-social">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Google
-                    </a>
-                    <a href="#" class="btn-social">
+                    @if (ViewBag.GoogleLoginEnabled == true)
+                    {
+                        <form asp-controller="Account" asp-action="ExternalLogin" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="provider" value="Google" />
+                            <input type="hidden" name="mode" value="register" />
+                            <button type="submit" class="btn-social">
+                                <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Đăng ký Google
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn-social" disabled title="Cần cấu hình Google ClientId/ClientSecret">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Đăng ký Google
+                        </button>
+                    }
+                    <button type="button" class="btn-social" disabled>
                         <i class="bi bi-facebook" style="color: #1877F2; font-size: 1.25rem;"></i> Facebook
-                    </a>
+                    </button>
                 </div>
 
                 <div class="divider">Thông tin của bạn</div>

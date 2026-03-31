@@ -178,8 +178,12 @@
             margin-bottom: 32px;
         }
 
-        .btn-social {
+        .social-auth form {
             flex: 1;
+            margin: 0;
+        }
+
+        .btn-social {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -193,6 +197,7 @@
             font-size: 0.9rem;
             transition: all 0.2s;
             text-decoration: none;
+            width: 100%;
         }
 
         .btn-social:hover {
@@ -338,14 +343,36 @@
                 </a>
                 <h2 class="form-title">Chào mừng!</h2>
                 <p class="form-subtitle">Đăng nhập để tận hưởng ưu đãi đặc quyền.</p>
+                @if (TempData["error"] != null)
+                {
+                    <div class="alert alert-danger py-2 px-3 small" role="alert">@TempData["error"]</div>
+                }
+                @if (TempData["success"] != null)
+                {
+                    <div class="alert alert-success py-2 px-3 small" role="alert">@TempData["success"]</div>
+                }
 
                 <div class="social-auth">
-                    <a href="#" class="btn-social">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Google
-                    </a>
-                    <a href="#" class="btn-social">
+                    @if (ViewBag.GoogleLoginEnabled == true)
+                    {
+                        <button
+                            type="button"
+                            class="btn-social"
+                            id="google-login-btn"
+                            title="Đăng nhập nhanh bằng Google"
+                            data-google-login-url="@Url.Action("ExternalLoginStart", "Account", new { provider = "Google", mode = "login", popup = true })">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Google
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn-social" disabled title="Google Login chưa được cấu hình">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Google
+                        </button>
+                    }
+                    <button type="button" class="btn-social" disabled>
                         <i class="bi bi-apple"></i> Apple ID
-                    </a>
+                    </button>
                 </div>
 
                 <div class="divider">Hoặc qua Email</div>
@@ -388,5 +415,41 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        (function () {
+            var googleBtn = document.getElementById('google-login-btn');
+            if (!googleBtn) return;
+
+            googleBtn.addEventListener('click', function () {
+                var url = googleBtn.getAttribute('data-google-login-url');
+                if (!url) return;
+
+                var width = 540;
+                var height = 680;
+                var left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
+                var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
+                var features = "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top + ",resizable=yes,scrollbars=yes";
+                var popup = window.open(url, "google-auth-popup", features);
+
+                if (!popup) {
+                    window.location.href = url;
+                    return;
+                }
+
+                popup.focus();
+            });
+
+            window.addEventListener('message', function (event) {
+                if (event.origin !== window.location.origin) return;
+                if (!event.data || event.data.source !== 'google-auth') return;
+
+                if (event.data.status === 'success') {
+                    window.location.href = event.data.redirectUrl || '/';
+                } else if (event.data.status === 'error') {
+                    if (event.data.message) alert(event.data.message);
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
