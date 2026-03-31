@@ -85,7 +85,7 @@
                     </div>
 
                     <form asp-action="Manage" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
                         
                         <div class="row g-4">
                             <!-- Name Fields -->
@@ -100,10 +100,15 @@
                                 <span asp-validation-for="LastName" class="text-danger small"></span>
                             </div>
 
-                            <!-- Email and Phone -->
+                            <!-- Email and UserName -->
                             <div class="col-md-6">
                                 <label asp-for="Email" class="profile-form-label">Email</label>
                                 <input asp-for="Email" class="form-control profile-form-input" readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="UserName" class="profile-form-label">Tên đăng nhập</label>
+                                <input asp-for="UserName" class="form-control profile-form-input" placeholder="Nhập tên đăng nhập" />
+                                <span asp-validation-for="UserName" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
                                 <label asp-for="PhoneNumber" class="profile-form-label">Số điện thoại</label>
