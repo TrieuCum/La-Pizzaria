@@ -60,6 +60,13 @@ namespace LaPizzaria.Data
                 .WithMany(u => u.Orders)
                 .HasForeignKey(o => o.UserId);
 
+            // Order-Shipper relationship
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Shipper)
+                .WithMany()
+                .HasForeignKey(o => o.ShipperId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Configure many-to-many for ProductTopping
             modelBuilder.Entity<ProductTopping>()
                 .HasKey(pt => new { pt.ProductId, pt.ToppingId });

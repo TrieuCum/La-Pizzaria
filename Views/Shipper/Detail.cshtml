@@ -79,9 +79,17 @@
             </div>
 
             <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                @if (TempData["error"] != null)
+                {
+                    <div class="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">@TempData["error"]</div>
+                }
+                @if (TempData["success"] != null)
+                {
+                    <div class="mb-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">@TempData["success"]</div>
+                }
                 <a asp-controller="Shipper" asp-action="Index" class="mb-3 inline-flex w-full items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Quay về trang chủ</a>
 
-                @if (Model.OrderStatus is "Pending" or "Confirmed" or "Ready")
+                @if (Model.OrderStatus is "Preparing" or "Ready" or "Đang chế biến" or "Sẵn sàng")
                 {
                     <form asp-controller="Shipper" asp-action="Accept" asp-route-id="@Model.OrderId" method="post" class="mb-2">
                         @Html.AntiForgeryToken()

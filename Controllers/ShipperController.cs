@@ -3,6 +3,7 @@ using LaPizzaria.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LaPizzaria.Controllers
 {
@@ -33,7 +34,12 @@ namespace LaPizzaria.Controllers
                 .ToListAsync();
 
             var newOrders = await baseQuery
-                .Where(o => o.OrderStatus == "Pending" || o.OrderStatus == "Confirmed" || o.OrderStatus == "Ready")
+                .Where(o =>
+                    o.ShipperId == null &&
+                    (o.OrderStatus == "Preparing" ||
+                     o.OrderStatus == "Ready" ||
+                     o.OrderStatus == "Đang chế biến" ||
+                     o.OrderStatus == "Sẵn sàng"))
                 .OrderBy(o => o.OrderDate)
                 .Take(8)
                 .ToListAsync();
@@ -157,15 +163,56 @@ namespace LaPizzaria.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Accept(int id)
         {
-            var order = await _db.Orders.FindAsync(id);
-            if (order == null) return NotFound();
-            if (order.OrderStatus is "Pending" or "Confirmed" or "Ready")
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(shipperId))
             {
-                order.OrderStatus = "Delivering";
-                order.UpdatedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
+                TempData["error"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction(nameof(Index));
             }
+
+            var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET OrderStatus = {"Delivering"},
+    ShipperId = {shipperId},
+    UpdatedAt = {DateTime.UtcNow}
+WHERE Id = {id}
+  AND ShipperId IS NULL
+  AND (OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
+");
+
+            if (affectedRows == 0)
+            {
+                TempData["error"] = "Đơn đã được shipper khác nhận";
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["success"] = "Nhận đơn thành công. Đơn đã chuyển sang trạng thái Đang giao.";
             return RedirectToAction(nameof(Detail), new { id });
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Shipper")]
+        [Route("api/shipper/orders/{id:int}/accept")]
+        public async Task<IActionResult> AcceptApi(int id)
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(shipperId))
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+
+            var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET OrderStatus = {"Delivering"},
+    ShipperId = {shipperId},
+    UpdatedAt = {DateTime.UtcNow}
+WHERE Id = {id}
+  AND ShipperId IS NULL
+  AND (OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
+");
+
+            if (affectedRows == 0)
+                return Conflict(new { success = false, message = "Đơn đã được shipper khác nhận" });
+
+            return Ok(new { success = true, message = "Nhận đơn thành công", orderStatus = "Delivering" });
         }
 
         [HttpPost]
