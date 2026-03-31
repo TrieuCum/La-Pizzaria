@@ -115,6 +115,38 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Seed tài khoản Admin mặc định (nếu chưa có)
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    const string adminEmail = "admin@lapizzaria.com";
+    var admin = await userManager.FindByEmailAsync(adminEmail);
+    if (admin == null)
+    {
+        admin = new ApplicationUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            FirstName = "Admin",
+            LastName = "La Pizzaria",
+            EmailConfirmed = true,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        var result = await userManager.CreateAsync(admin, "Admin@123");
+        if (result.Succeeded && await roleManager.RoleExistsAsync("Admin"))
+        {
+            await userManager.AddToRoleAsync(admin, "Admin");
+        }
+    }
+    else if (!await userManager.IsInRoleAsync(admin, "Admin") && await roleManager.RoleExistsAsync("Admin"))
+    {
+        await userManager.AddToRoleAsync(admin, "Admin");
+    }
+}
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
