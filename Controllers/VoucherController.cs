@@ -33,13 +33,13 @@ namespace LaPizzaria.Controllers
 
             if (!string.IsNullOrEmpty(status))
             {
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 if (status == "Active")
-                    query = query.Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now));
+                    query = query.Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > now));
                 else if (status == "Inactive")
 					query = query.Where(v => !v.IsActive);
                 else if (status == "Expired")
-                    query = query.Where(v => v.ExpiresAtUtc != null && v.ExpiresAtUtc <= now);
+                    query = query.Where(v => v.ExpiresAt != null && v.ExpiresAt <= now);
             }
 
 			if (page < 1) page = 1;
@@ -51,11 +51,10 @@ namespace LaPizzaria.Controllers
 			if (page > totalPages) page = totalPages;
 
             var list = await query
-				.OrderByDescending(v => v.CreatedAtUtc)
+				.OrderByDescending(v => v.CreatedAt)
 				.Skip((page - 1) * pageSize)
 				.Take(pageSize)
 				.ToListAsync();
-
             ViewBag.Search = search;
             ViewBag.Status = status;
 			ViewBag.Page = page;
@@ -68,6 +67,7 @@ namespace LaPizzaria.Controllers
 		public async Task<IActionResult> Upsert(int? id)
 		{
             ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
+            ViewBag.Products = await _db.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
 			if (id == null) return View(new Voucher());
 			var v = _db.Vouchers.Find(id);
 			if (v == null) return NotFound();
@@ -81,6 +81,7 @@ namespace LaPizzaria.Controllers
 			if (!ModelState.IsValid) 
             {
                 ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
+                ViewBag.Products = await _db.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
                 return View(model);
             }
 			if (model.Id == 0)
@@ -100,9 +101,14 @@ namespace LaPizzaria.Controllers
                 existing.MinOrderValue = model.MinOrderValue;
                 existing.TargetUserId = model.TargetUserId;
 				existing.MaxUses = model.MaxUses;
-				existing.ExpiresAtUtc = model.ExpiresAtUtc;
+                existing.StartsAt = model.StartsAt;
+				existing.ExpiresAt = model.ExpiresAt;
+                existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
+                existing.StartTime = model.StartTime;
+                existing.EndTime = model.EndTime;
+                existing.TargetProductId = model.TargetProductId;
 				existing.IsActive = model.IsActive;
-				existing.UpdatedAtUtc = DateTime.UtcNow;
+				existing.UpdatedAt = DateTime.Now;
 				await _svc.UpdateAsync(existing);
 			}
 			TempData["success"] = "Lưu voucher thành công";
@@ -121,7 +127,7 @@ namespace LaPizzaria.Controllers
 		[AllowAnonymous]
 		public async Task<IActionResult> ApiList()
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
             var userId = _userManager.GetUserId(User);
             var vouchers = await _svc.ListActiveAsync();
             vouchers = (!string.IsNullOrEmpty(userId))
@@ -136,9 +142,11 @@ namespace LaPizzaria.Controllers
 				percent = v.DiscountPercent,
                 amount = v.DiscountAmount,
                 minOrderValue = v.MinOrderValue,
+				targetProductId = v.TargetProductId,
+				targetProductName = v.TargetProduct?.Name,
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
-				expiresAtUtc = v.ExpiresAtUtc,
+				expiresAt = v.ExpiresAt,
 				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds
 			});
 			return Ok(list);

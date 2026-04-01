@@ -415,13 +415,33 @@
                         <div class="voucher-card-body">
                             <div class="voucher-expiry">
                                 <i class="bi bi-clock"></i>
-                                @(v.ExpiresAtUtc.HasValue ? $"Hết hạn: {v.ExpiresAtUtc.Value:dd/MM/yyyy}" : "Không giới hạn")
+                                @if (v.StartsAt.HasValue && v.StartsAt > DateTime.Now) {
+                                    <span class="text-secondary">Bắt đầu: @v.StartsAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                } else {
+                                    @(v.ExpiresAt.HasValue ? $"Hết hạn: {v.ExpiresAt.Value:dd/MM/yyyy HH:mm}" : "Không giới hạn")
+                                }
                             </div>
-                            <p class="voucher-desc">
-                                @if (v.VoucherType == "Percentage") { <text>Giảm @FormatPercent(v.DiscountPercent)% cho đơn hàng. Min @v.MinOrderValue.ToString("N0")₫.</text> }
-                                else if (v.VoucherType == "FixedAmount") { <text>Giảm @v.DiscountAmount.ToString("N0")₫. Min đơn @v.MinOrderValue.ToString("N0")₫.</text> }
-                                else { <text>Miễn phí vận chuyển.</text> }
-                            </p>
+                            <div class="voucher-desc">
+                                <div>
+                                    @if (v.VoucherType == "Percentage") { <text>Giảm @FormatPercent(v.DiscountPercent)% cho đơn hàng. Min @v.MinOrderValue.ToString("N0")₫.</text> }
+                                    else if (v.VoucherType == "FixedAmount") { <text>Giảm @v.DiscountAmount.ToString("N0")₫. Min đơn @v.MinOrderValue.ToString("N0")₫.</text> }
+                                    else { <text>Miễn phí vận chuyển.</text> }
+                                </div>
+                                @if (v.TargetProductId.HasValue && v.TargetProduct != null)
+                                {
+                                    <div class="text-primary fw-bold mt-1 small"><i class="bi bi-patch-check"></i> Yêu cầu có món: @v.TargetProduct.Name</div>
+                                }
+                                @if (!string.IsNullOrEmpty(v.ValidDaysOfWeek))
+                                {
+                                    var dayNames = new Dictionary<string, string> { {"0","CN"},{"1","T2"},{"2","T3"},{"3","T4"},{"4","T5"},{"5","T6"},{"6","T7"} };
+                                    var activeDays = v.ValidDaysOfWeek.Split(',').Select(d => dayNames.ContainsKey(d) ? dayNames[d] : d);
+                                    <div class="text-dark mt-1 small" style="font-size: 11px;"><i class="bi bi-calendar3"></i> Áp dụng: @string.Join(", ", activeDays)</div>
+                                }
+                                @if (v.StartTime.HasValue && v.EndTime.HasValue)
+                                {
+                                    <div class="text-dark mt-1 small" style="font-size: 11px;"><i class="bi bi-alarm"></i> Khung giờ: @v.StartTime.Value.ToString(@"hh\:mm") - @v.EndTime.Value.ToString(@"hh\:mm")</div>
+                                }
+                            </div>
                             <div class="voucher-code-box @(isSaved ? "saved" : "")">
                                 <span class="voucher-code-label">MÃ ƯU ĐÃI</span>
                                 <span class="voucher-code-text">@v.Code</span>
@@ -545,7 +565,7 @@
                             <div class="voucher-title">@v.Name</div>
                         </div>
                         <div class="voucher-card-body">
-                            <div class="voucher-expiry"><i class="bi bi-clock"></i> @(v.ExpiresAtUtc.HasValue ? $"Hết hạn: {v.ExpiresAtUtc.Value:dd/MM/yyyy}" : "Không giới hạn")</div>
+                            <div class="voucher-expiry"><i class="bi bi-clock"></i> @(v.ExpiresAt.HasValue ? $"Hết hạn: {v.ExpiresAt.Value:dd/MM/yyyy HH:mm}" : "Không giới hạn")</div>
                             <p class="voucher-desc">@v.Name — Miễn phí vận chuyển.</p>
                             <div class="voucher-code-box @(isSavedFreeship ? "saved" : "")">
                                 <span class="voucher-code-label">MÃ ƯU ĐÃI</span>

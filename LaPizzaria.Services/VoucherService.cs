@@ -18,10 +18,11 @@ namespace LaPizzaria.Services
 
 		public async Task<List<Voucher>> ListActiveAsync()
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.Now;
 			return await _db.Vouchers
-				.Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now) && (v.MaxUses == 0 || v.UsedCount < v.MaxUses))
-				.OrderBy(v => v.ExpiresAtUtc)
+				.Include(v => v.TargetProduct)
+				.Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > now) && (v.MaxUses == 0 || v.UsedCount < v.MaxUses))
+				.OrderBy(v => v.ExpiresAt)
 				.ToListAsync();
 		}
 
@@ -59,12 +60,28 @@ namespace LaPizzaria.Services
 			return true;
 		}
 
-		public bool IsUsable(Voucher v, DateTime nowUtc)
+		public bool IsUsable(Voucher v, DateTime now)
 		{
 			if (!v.IsActive) return false;
-			if (v.ExpiresAtUtc != null && v.ExpiresAtUtc <= nowUtc) return false;
+			if (v.StartsAt != null && v.StartsAt > now) return false;
+			if (v.ExpiresAt != null && v.ExpiresAt <= now) return false;
 			if (v.MaxUses > 0 && v.UsedCount >= v.MaxUses) return false;
 			
+            // Use current local time for recurring checks
+            var currentTime = now.TimeOfDay;
+            
+            // Check days of week
+            if (!string.IsNullOrEmpty(v.ValidDaysOfWeek))
+            {
+                var day = ((int)now.DayOfWeek).ToString(); // 0=Sunday, 1=Monday...
+                var validDays = v.ValidDaysOfWeek.Split(',');
+                if (!validDays.Contains(day)) return false;
+            }
+
+            // Check specific time of day (Recurring)
+            if (v.StartTime.HasValue && currentTime < v.StartTime.Value) return false;
+            if (v.EndTime.HasValue && currentTime > v.EndTime.Value) return false;
+
             // Basic validity check
             if (v.VoucherType == "Percentage" && v.DiscountPercent <= 0) return false;
             if (v.VoucherType == "FixedAmount" && v.DiscountAmount <= 0) return false;
@@ -72,12 +89,45 @@ namespace LaPizzaria.Services
 			return true;
 		}
 
-		public TimeSpan? TimeRemaining(Voucher v, DateTime nowUtc)
+		public bool IsUsable(Voucher v, DateTime now, List<OrderDetail> details)
 		{
-			if (v.ExpiresAtUtc == null) return null;
-			var span = v.ExpiresAtUtc.Value - nowUtc;
+			if (!IsUsable(v, now)) return false;
+			if (v.TargetProductId.HasValue)
+			{
+				return details.Any(d => d.ProductId == v.TargetProductId.Value || d.ProductId2 == v.TargetProductId.Value);
+			}
+			return true;
+		}
+
+		public TimeSpan? TimeRemaining(Voucher v, DateTime now)
+		{
+			if (v.ExpiresAt == null) return null;
+			var span = v.ExpiresAt.Value - now;
 			if (span <= TimeSpan.Zero) return TimeSpan.Zero;
 			return span;
+		}
+
+		public decimal CalculateDiscount(Voucher v, List<OrderDetail> details, decimal subtotal)
+		{
+			// If a target product is required, check if it exists in the cart
+			if (v.TargetProductId.HasValue)
+			{
+				bool hasTarget = details.Any(d => d.ProductId == v.TargetProductId.Value || d.ProductId2 == v.TargetProductId.Value);
+				if (!hasTarget) return 0; // Condition not met
+			}
+
+			if (subtotal <= 0) return 0;
+
+			if (v.VoucherType == "Percentage")
+				return Math.Round(subtotal * (v.DiscountPercent / 100m), 0);
+			
+			if (v.VoucherType == "FixedAmount" || v.VoucherType == "FreeShipping")
+			{
+				// Limit fixed discount to the subtotal
+				return Math.Min(subtotal, v.DiscountAmount);
+			}
+
+			return 0;
 		}
 	}
 }

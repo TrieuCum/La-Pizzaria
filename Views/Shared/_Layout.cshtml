@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,6 +16,7 @@
     }
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/LaPizzaria.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -120,29 +121,48 @@
             </div>
         </div>
 
-        <!-- Global Voucher Selection Modal -->
-        <div class="modal fade modal-glass" id="globalVoucherModal" tabindex="-1" style="z-index: 1090;">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg rounded-4">
+        <!-- Global Voucher Modal -->
+        <div class="modal fade modal-premium" id="globalVoucherModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
                     <div class="modal-header border-0 pb-0">
-                        <h6 class="modal-title fw-black">Chọn mã giảm giá</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-brand-orange-light text-brand-orange rounded-3 p-2">
+                                <i class="bi bi-ticket-perforated fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="modal-title fw-800 mb-0">Kho Voucher</h5>
+                                <p class="text-muted extra-small mb-0">Săn ưu đãi cực hời cho đơn hàng của bạn</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <ul class="nav nav-pills nav-fill mb-3 bg-light p-1 rounded-3" id="globalVoucherTabs">
+                    <div class="modal-body pt-3">
+                        <div class="mb-4">
+                            <div class="input-group search-container-v w-100 shadow-sm border-0 bg-white">
+                                <span class="input-group-text bg-transparent border-0 pe-0">
+                                    <i class="bi bi-search text-brand-gray-light"></i>
+                                </span>
+                                <input type="text" id="globalVoucherCode" class="form-control border-0 ps-2" placeholder="Nhập mã giảm giá..." style="font-size: 14px; box-shadow: none;">
+                                <button class="btn btn-brand-primary rounded-3 px-4 py-2 my-1 me-1" onclick="cart.applyManualVoucher()" style="font-size: 13px;">Áp dụng</button>
+                            </div>
+                        </div>
+
+                        <ul class="nav nav-pills custom-pills mb-4 gap-2" id="voucherTabs">
                             <li class="nav-item">
-                                <a class="nav-link active small py-2 fw-bold" data-bs-toggle="pill" href="#gvAvailable">Khả dụng</a>
+                                <button class="nav-link active rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#gvAvailable">Khả dụng</button>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link small py-2 fw-bold" data-bs-toggle="pill" href="#gvIneligible">Chưa đủ điều kiện</a>
+                                <button class="nav-link rounded-pill px-4 fw-bold" data-bs-toggle="pill" data-bs-target="#gvIneligible">Chưa đủ điều kiện</button>
                             </li>
                         </ul>
-                        <div class="tab-content" style="max-height: 400px; overflow-y: auto;">
+
+                        <div class="tab-content" id="voucherTabContent">
                             <div class="tab-pane fade show active" id="gvAvailable">
-                                <div id="globalListAvailable"></div>
+                                <div id="globalListAvailable" class="voucher-list-container"></div>
                             </div>
                             <div class="tab-pane fade" id="gvIneligible">
-                                <div id="globalListIneligible"></div>
+                                <div id="globalListIneligible" class="voucher-list-container"></div>
                             </div>
                         </div>
                     </div>
@@ -201,6 +221,8 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
     <script>
         (function(){
             // Render TempData as toasts if present

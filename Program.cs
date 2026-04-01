@@ -15,6 +15,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 
+// Configure Localization
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { "vi-VN", "en-US" };
+    options.SetDefaultCulture(supportedCultures[0])
+           .AddSupportedCultures(supportedCultures)
+           .AddSupportedUICultures(supportedCultures);
+});
+
 // DI for application services
 builder.Services.AddScoped<IComboService, ComboService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
@@ -106,6 +115,12 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("vi-VN")
+    .AddSupportedCultures("vi-VN", "en-US")
+    .AddSupportedUICultures("vi-VN", "en-US");
+app.UseRequestLocalization(localizationOptions);
 app.UseStaticFiles();
 
 // Banner images: chỉ map khi cấu hình có đường dẫn (Development/local). Production để trống hoặc set trên Azure.

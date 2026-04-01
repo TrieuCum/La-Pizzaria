@@ -13,8 +13,10 @@ namespace LaPizzaria.Services
 		Task<Voucher> CreateAsync(Voucher v);
 		Task<Voucher> UpdateAsync(Voucher v);
 		Task<bool> DeleteAsync(int id);
-		bool IsUsable(Voucher v, DateTime nowUtc);
-		TimeSpan? TimeRemaining(Voucher v, DateTime nowUtc);
+		bool IsUsable(Voucher v, DateTime now);
+		bool IsUsable(Voucher v, DateTime now, List<OrderDetail> details);
+		TimeSpan? TimeRemaining(Voucher v, DateTime now);
+		decimal CalculateDiscount(Voucher v, List<OrderDetail> details, decimal subtotal);
 	}
 }
 

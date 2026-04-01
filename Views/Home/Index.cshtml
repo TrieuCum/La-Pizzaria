@@ -94,7 +94,7 @@
                                     } else if(v.VoucherType == "FreeShipping") {
                                         <span>Miễn phí giao hàng cho đơn hàng của bạn.</span>
                                     }
-                                    @(v.ExpiresAtUtc.HasValue ? $" HSD: {v.ExpiresAtUtc.Value.ToString("dd/MM/yyyy")}" : " Mã không thời hạn")
+                                    @(v.ExpiresAt.HasValue ? $" HSD: {v.ExpiresAt.Value.ToString("dd/MM/yyyy HH:mm")}" : " Mã không thời hạn")
                                 </p>
                                 <div class="bg-brand-bg rounded-3 p-3 d-flex justify-content-between align-items-center border">
                                     <span class="fw-black font-monospace fs-5 text-brand-dark">@v.Code</span>

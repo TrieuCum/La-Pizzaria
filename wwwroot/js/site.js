@@ -387,30 +387,27 @@ const Cart = {
     const formatPercent = (p) => {
       const num = Number(p);
       if (!Number.isFinite(num)) return '';
-
       const roundedInt = Math.round(num);
-      if (Math.abs(num - roundedInt) < 1e-9) return String(roundedInt); // 20.00 -> 20
-
-      // Trim any trailing zeros from non-integers like 12.5000 -> 12.5
+      if (Math.abs(num - roundedInt) < 1e-9) return String(roundedInt);
       return String(num).replace(/(\.\d*?[1-9])0+$/, '$1');
     };
 
+    const cartItems = this.get();
     available.innerHTML = ''; ineligible.innerHTML = '';
-    this._allVouchers.forEach(v => {
-        const isEligible = subtotal >= (v.minOrderValue || 0);
+    
+    this._allVouchers.forEach((v, idx) => {
+        const hasTargetProduct = !v.targetProductId || cartItems.some(i => i.id === v.targetProductId || i.id2 === v.targetProductId);
+        const isEligible = hasTargetProduct && subtotal >= (v.minOrderValue || 0);
         
         let discountLabel = '';
-        let typeLabel = 'Discount';
+        let typeLabel = 'Giảm giá';
         let icon = 'bi-ticket-perforated';
 
         if(v.type === 'Percentage') {
-            const percentText = formatPercent(v.percent);
-            discountLabel = `${percentText}%`;
-            typeLabel = 'Giảm giá';
+            discountLabel = `${formatPercent(v.percent)}%`;
             icon = 'bi-percent';
         } else if(v.type === 'FixedAmount') {
             discountLabel = `${Math.round(v.amount/1000)}k`;
-            typeLabel = 'Giảm giá';
             icon = 'bi-cash-stack';
         } else if(v.type === 'FreeShipping') {
             discountLabel = 'FREE';
@@ -418,7 +415,23 @@ const Cart = {
             icon = 'bi-truck';
         }
 
+        // Progress calculation
+        let progressHtml = '';
+        if (v.minOrderValue > 0 && subtotal < v.minOrderValue) {
+            const percentage = Math.min(100, Math.round((subtotal / v.minOrderValue) * 100));
+            const remaining = v.minOrderValue - subtotal;
+            progressHtml = `
+                <div class="ticket-progress-container">
+                    <div class="ticket-progress-bar">
+                        <div class="ticket-progress-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="ticket-progress-text">Mua thêm ${remaining.toLocaleString()}đ để dùng mã</span>
+                </div>`;
+        }
+
         const itemWrap = document.createElement('div');
+        itemWrap.className = 'stagger-item';
+        itemWrap.style.animationDelay = `${idx * 0.1}s`;
         itemWrap.innerHTML = `
             <div class="voucher-ticket ${isEligible ? '' : 'ineligible'}">
                 <div class="ticket-left">
@@ -427,26 +440,40 @@ const Cart = {
                     <div class="ticket-type">${typeLabel}</div>
                 </div>
                 <div class="ticket-right">
-                    <div>
-                        <div class="ticket-code">${v.code}</div>
-                        <div class="v-condition-toggle" onclick="cart.toggleCondition(this)">
-                            Xem điều kiện <i class="bi bi-chevron-down extra-small"></i>
+                    <div class="ticket-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="ticket-code">${v.code}</span>
+                            <button class="btn-copy-code" onclick="event.stopPropagation(); cart.copyToClipboard('${v.code}')">Sao chép</button>
                         </div>
+                        ${isEligible ? `<button class="ticket-btn-apply" onclick="cart.applyVoucherById(${v.id})">Dùng ngay</button>` : `<div class="extra-small text-muted fw-bold">${!hasTargetProduct ? 'Thiếu món' : 'Chưa đủ đ/k'}</div>`}
                     </div>
-                    <div class="d-flex justify-content-end">
-                        ${isEligible ? `<button class="ticket-btn-apply" onclick="cart.applyVoucherById(${v.id})">Áp dụng</button>` : `<div class="extra-small text-muted fst-italic">Chưa đủ đ/k</div>`}
+                    ${progressHtml}
+                    <div class="v-condition-toggle" onclick="cart.toggleCondition(this)">
+                        Chi tiết điều kiện <i class="bi bi-chevron-right extra-small"></i>
                     </div>
                 </div>
             </div>
             <div class="voucher-details-expand">
-                <div class="fw-bold mb-1">• Chi tiết ưu đãi:</div>
-                ${v.type === 'Percentage' ? `Giảm ${formatPercent(v.percent)}% tổng đơn hàng.` : (v.type === 'FreeShipping' ? `Miễn phí vận chuyển (tối đa ${(v.amount || 0).toLocaleString()}đ).` : `Giảm ${(v.amount || 0).toLocaleString()}đ cho đơn hàng.`)}
-                <div class="mt-1">• Đơn tối thiểu: ${(v.minOrderValue || 0).toLocaleString()}đ</div>
-                <div>• Hạn dùng: ${v.expiresAtUtc ? new Date(v.expiresAtUtc).toLocaleDateString('vi-VN') : 'Không thời hạn'}</div>
+                <div class="fw-bold mb-2 text-dark">• Ưu đãi:</div>
+                <p class="mb-2">${v.type === 'Percentage' ? `Giảm ${formatPercent(v.percent)}% tổng giá trị đơn hàng.` : (v.type === 'FreeShipping' ? `Miễn phí vận chuyển cho đơn hàng.` : `Giảm giá trực tiếp ${(v.amount || 0).toLocaleString()}đ.`)}</p>
+                <div class="fw-bold mb-2 text-dark">• Điều kiện áp dụng:</div>
+                <ul class="list-unstyled mb-0 px-2 extra-small">
+                    <li class="mb-1"><i class="bi bi-check2-circle text-success me-1"></i>Đơn hàng tối thiểu: ${(v.minOrderValue || 0).toLocaleString()}đ</li>
+                    ${v.targetProductId ? `<li class="mb-1"><i class="bi bi-check2-circle text-primary me-1"></i>Yêu cầu có món: <span class="fw-bold">${v.targetProductName || 'Sản phẩm chỉ định'}</span></li>` : ''}
+                    <li><i class="bi bi-clock text-warning me-1"></i>Hạn dùng: ${v.expiresAt ? new Date(v.expiresAt).toLocaleDateString('vi-VN') : 'Không giới hạn'}</li>
+                </ul>
             </div>`;
         
         if (isEligible) available.appendChild(itemWrap);
         else ineligible.appendChild(itemWrap);
+    });
+  },
+
+  copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        window.showToast('Đã sao chép mã voucher!', 'success');
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
     });
   },
 

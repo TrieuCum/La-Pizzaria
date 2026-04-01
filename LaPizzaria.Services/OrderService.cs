@@ -13,13 +13,15 @@ namespace LaPizzaria.Services
         private readonly IInventoryService _inventory;
         private readonly IComboService _comboService;
         private readonly IPricingService _pricingService;
+        private readonly IVoucherService _voucherService;
 
-        public OrderService(ApplicationDbContext db, IInventoryService inventory, IComboService comboService, IPricingService pricingService)
+        public OrderService(ApplicationDbContext db, IInventoryService inventory, IComboService comboService, IPricingService pricingService, IVoucherService voucherService)
         {
             _db = db;
             _inventory = inventory;
             _comboService = comboService;
             _pricingService = pricingService;
+            _voucherService = voucherService;
         }
 
         public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds, string? deliveryAddress = null, double? latitude = null, double? longitude = null)
@@ -119,7 +121,7 @@ namespace LaPizzaria.Services
                     UnitPrice = detail.UnitPrice,
                     Subtotal = detail.UnitPrice * moveQty,
                     Size = detail.Size, // Preserve size
-                    OrderDetailToppings = detail.OrderDetailToppings?.Select(odt => new OrderDetailTopping { ToppingId = odt.ToppingId }).ToList() // Copy toppings
+                    OrderDetailToppings = detail.OrderDetailToppings?.Select(odt => new OrderDetailTopping { ToppingId = odt.ToppingId }).ToList() ?? new List<OrderDetailTopping>() // Copy toppings
                 };
                 newOrder.OrderDetails.Add(moved);
             }
@@ -166,16 +168,16 @@ namespace LaPizzaria.Services
 
             // voucher discounts (up to 2 vouchers already attached to order)
             decimal voucherDiscount = 0m;
-            var now = System.DateTime.UtcNow;
+            var now = System.DateTime.Now;
             if (order.OrderVouchers != null)
             {
                 foreach (var ov in order.OrderVouchers.Take(2))
                 {
                     var v = ov.Voucher;
                     if (v == null) continue;
-                    if (v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now) && (v.MaxUses == 0 || v.UsedCount <= v.MaxUses))
+                    if (_voucherService.IsUsable(v, now))
                     {
-                        voucherDiscount += System.Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+                        voucherDiscount += _voucherService.CalculateDiscount(v, order.OrderDetails.ToList(), subtotal);
                     }
                 }
             }

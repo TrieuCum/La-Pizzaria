@@ -21,10 +21,20 @@ namespace LaPizzaria.Models
 
 		public int MaxUses { get; set; } = 0; // 0 => unlimited
 		public int UsedCount { get; set; } = 0;
-		public DateTime? ExpiresAtUtc { get; set; }
+		public DateTime? StartsAt { get; set; }
+		public DateTime? ExpiresAt { get; set; }
+		
+		// Recurring schedule (Optional)
+		public string? ValidDaysOfWeek { get; set; } // e.g. "1,2,3" for Mon, Tue, Wed (0=Sunday)
+		public TimeSpan? StartTime { get; set; }
+		public TimeSpan? EndTime { get; set; }
+
+		public int? TargetProductId { get; set; }
+		public virtual Product? TargetProduct { get; set; }
+
 		public bool IsActive { get; set; } = true;
-		public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
-		public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+		public DateTime CreatedAt { get; set; } = DateTime.Now;
+		public DateTime UpdatedAt { get; set; } = DateTime.Now;
 	}
 }
 

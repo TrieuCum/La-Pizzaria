@@ -161,6 +161,12 @@ namespace LaPizzaria.Data
                 .HasForeignKey(v => v.TargetUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<Voucher>()
+                .HasOne(v => v.TargetProduct)
+                .WithMany()
+                .HasForeignKey(v => v.TargetProductId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // UserSavedVoucher: user đã lưu voucher vào tài khoản
             modelBuilder.Entity<UserSavedVoucher>()
                 .HasKey(usv => new { usv.UserId, usv.VoucherId });

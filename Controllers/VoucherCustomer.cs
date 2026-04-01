@@ -29,11 +29,10 @@ namespace LaPizzaria.Controllers
             var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
 
             var vouchersQuery = _db.Vouchers
-                .Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > DateTime.UtcNow))
+                .Include(v => v.TargetProduct)
+                .Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > DateTime.Now))
                 .AsQueryable();
 
-            // Ưu đãi theo tài khoản: khách chưa đăng nhập chỉ thấy voucher public.
-            // Khách đã đăng nhập thấy voucher public + voucher dành riêng cho chính họ.
             vouchersQuery = isAuthenticated && !string.IsNullOrEmpty(userId)
                 ? vouchersQuery.Where(v => v.TargetUserId == null || v.TargetUserId == userId)
                 : vouchersQuery.Where(v => v.TargetUserId == null);
@@ -102,7 +101,7 @@ namespace LaPizzaria.Controllers
             var voucher = await _db.Vouchers.FindAsync(new object[] { voucherId }, cancellationToken);
             if (voucher == null)
                 return Json(new { success = false, message = "Mã không tồn tại." });
-            if (!voucher.IsActive || (voucher.ExpiresAtUtc.HasValue && voucher.ExpiresAtUtc.Value < DateTime.UtcNow))
+            if (!voucher.IsActive || (voucher.ExpiresAt.HasValue && voucher.ExpiresAt.Value < DateTime.Now))
                 return Json(new { success = false, message = "Mã đã hết hạn hoặc không còn hiệu lực." });
             if (!string.IsNullOrEmpty(voucher.TargetUserId) && voucher.TargetUserId != userId)
                 return Json(new { success = false, message = "Mã ưu đãi này không thuộc tài khoản của bạn." });

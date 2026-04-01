@@ -60,7 +60,7 @@ public sealed class OrderPlacementService : IOrderPlacementService
             var v = await _voucherService.GetByIdAsync(vid);
             if (v == null) continue;
 
-            if (!_voucherService.IsUsable(v, DateTime.UtcNow))
+            if (!_voucherService.IsUsable(v, DateTime.Now, details))
                 return CheckoutTotalsOutcome.Fail($"Voucher {v.Code} hiện không khả dụng.");
 
             if (subtotal < v.MinOrderValue)
@@ -156,7 +156,7 @@ public sealed class OrderPlacementService : IOrderPlacementService
             foreach (var vid in req.VoucherIds.Take(2))
             {
                 var v = await _voucherService.GetByIdAsync(vid);
-                if (v != null && _voucherService.IsUsable(v, DateTime.UtcNow))
+                if (v != null && _voucherService.IsUsable(v, DateTime.Now, details))
                 {
                     _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                     v.UsedCount += 1;

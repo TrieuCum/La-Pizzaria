@@ -53,7 +53,7 @@ namespace LaPizzaria.Controllers
                 .ToListAsync();
 
             var activeVouchers = await _db.Vouchers
-                .Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > DateTime.UtcNow))
+                .Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > DateTime.Now))
                 .OrderByDescending(v => v.DiscountPercent)
                 .Take(3)
                 .ToListAsync();

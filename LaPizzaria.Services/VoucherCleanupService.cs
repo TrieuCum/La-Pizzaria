@@ -27,9 +27,9 @@ namespace LaPizzaria.Services
 				{
 					using var scope = _serviceProvider.CreateScope();
 					var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-					var now = DateTime.UtcNow;
+					var now = DateTime.Now;
 					var toRemove = await db.Vouchers
-						.Where(v => !v.IsActive || (v.ExpiresAtUtc != null && v.ExpiresAtUtc <= now) || (v.MaxUses > 0 && v.UsedCount >= v.MaxUses))
+						.Where(v => !v.IsActive || (v.ExpiresAt != null && v.ExpiresAt <= now) || (v.MaxUses > 0 && v.UsedCount >= v.MaxUses))
 						.ToListAsync(stoppingToken);
 					if (toRemove.Count > 0)
 					{
