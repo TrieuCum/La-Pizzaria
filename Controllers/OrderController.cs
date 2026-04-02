@@ -140,20 +140,7 @@ namespace LaPizzaria.Controllers
                 }
                 else if (p1 != null)
                 {
-                    decimal p1Price = p1.Price;
-                    // Apply size modifier
-                    decimal modifier = 0;
-                    if (it.Size == "S") modifier = -30000;
-                    else if (it.Size == "L") modifier = 50000;
-
-                    decimal finalUnitPrice = p1Price + modifier;
-
-                    if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
-                    {
-                        decimal p2Price = p2.Price + modifier;
-                        finalUnitPrice = (finalUnitPrice + p2Price) / 2;
-                    }
-                    price = finalUnitPrice;
+                    price = await CalculateIngredientBasedPriceAsync(it.ProductId, it.ProductId2, it.Size, p1.Price);
                 }
                 
                 details.Add(new OrderDetail { ProductId = it.ProductId, ProductId2 = it.ProductId2, Quantity = it.Quantity, UnitPrice = price, Subtotal = price * it.Quantity, Size = it.Size });
@@ -169,7 +156,7 @@ namespace LaPizzaria.Controllers
                 foreach (var vid in req.VoucherIds.Take(2))
                 {
                     var v = await _voucherService.GetByIdAsync(vid);
-                    if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow)) vouchers.Add(v);
+                    if (v != null && await _voucherService.CanApplyToOrderAsync(v, System.DateTime.UtcNow, productIds)) vouchers.Add(v);
                 }
             }
             decimal voucherDiscount = 0m;
@@ -184,9 +171,9 @@ namespace LaPizzaria.Controllers
                     return BadRequest(new { error = $"Voucher {v.Code} không thuộc tài khoản hiện tại." });
                 }
 
-                if (!_voucherService.IsUsable(v, System.DateTime.UtcNow))
+                if (!await _voucherService.CanApplyToOrderAsync(v, System.DateTime.UtcNow, productIds))
                 {
-                    return BadRequest(new { error = $"Voucher {v.Code} hiện không khả dụng." });
+                    return BadRequest(new { error = $"Voucher {v.Code} hiện không khả dụng (khung giờ/ngày hoặc cần thêm món upsale/bán chậm)." });
                 }
 
                 if (subtotal < v.MinOrderValue)
@@ -378,23 +365,7 @@ namespace LaPizzaria.Controllers
                     var p1 = await _db.Products.FindAsync(item.ProductId);
                     if (p1 == null) continue;
 
-                    decimal p1Price = p1.Price;
-                    // Apply size modifier
-                    decimal modifier = 0;
-                    if (item.Size == "S") modifier = -30000;
-                    else if (item.Size == "L") modifier = 50000;
-
-                    decimal finalUnitPrice = p1Price + modifier;
-
-                    if (item.ProductId2.HasValue)
-                    {
-                        var p2 = await _db.Products.FindAsync(item.ProductId2.Value);
-                        if (p2 != null)
-                        {
-                            decimal p2Price = p2.Price + modifier;
-                            finalUnitPrice = (finalUnitPrice + p2Price) / 2;
-                        }
-                    }
+                    var finalUnitPrice = await CalculateIngredientBasedPriceAsync(item.ProductId, item.ProductId2, item.Size, p1.Price);
 
                     details.Add(new OrderDetail
                     {
@@ -414,10 +385,14 @@ namespace LaPizzaria.Controllers
                     var ids = req.VoucherIds.Take(2).ToList();
                     var currentUserId = _userManager.GetUserId(User);
                     var effectiveUserId = !string.IsNullOrWhiteSpace(currentUserId) ? currentUserId : req.UserId;
+                    var cartProductIds = req.Items
+                        .SelectMany(i => i.ProductId2.HasValue ? new[] { i.ProductId, i.ProductId2.Value } : new[] { i.ProductId })
+                        .Distinct()
+                        .ToList();
                     foreach (var vid in ids)
                     {
                         var v = await _voucherService.GetByIdAsync(vid);
-                        if (v != null && IsVoucherForUser(v, effectiveUserId) && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                        if (v != null && IsVoucherForUser(v, effectiveUserId) && await _voucherService.CanApplyToOrderAsync(v, System.DateTime.UtcNow, cartProductIds))
                         {
                             _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                             v.UsedCount += 1;
@@ -560,6 +535,40 @@ namespace LaPizzaria.Controllers
             if (string.IsNullOrWhiteSpace(voucher.TargetUserId)) return true; // public voucher
             if (string.IsNullOrWhiteSpace(userId)) return false;
             return string.Equals(voucher.TargetUserId, userId, StringComparison.Ordinal);
+        }
+
+        private async Task<decimal> CalculateIngredientBasedPriceAsync(int productId, int? productId2, string? size, decimal fallbackPrice)
+        {
+            var productIds = new List<int> { productId };
+            if (productId2.HasValue) productIds.Add(productId2.Value);
+
+            var mappings = await _db.ProductIngredients
+                .Where(pi => productIds.Contains(pi.ProductId))
+                .ToListAsync();
+            if (!mappings.Any()) return fallbackPrice;
+
+            var ingredientIds = mappings.Select(m => m.IngredientId).Distinct().ToList();
+            var ingredientMap = await _db.Ingredients
+                .Where(i => ingredientIds.Contains(i.Id))
+                .ToDictionaryAsync(i => i.Id);
+
+            decimal ComputePriceForProduct(int pid)
+            {
+                var productMappings = mappings.Where(m => m.ProductId == pid).ToList();
+                if (!productMappings.Any()) return fallbackPrice;
+
+                return productMappings.Sum(m =>
+                {
+                    if (!ingredientMap.TryGetValue(m.IngredientId, out var ingredient)) return 0m;
+                    var qty = ProductPricingCalculator.GetScaledQuantity(m, ingredient, size);
+                    return qty * ingredient.UnitPrice;
+                });
+            }
+
+            var p1Price = ComputePriceForProduct(productId);
+            if (!productId2.HasValue) return p1Price;
+            var p2Price = ComputePriceForProduct(productId2.Value);
+            return (p1Price + p2Price) / 2m;
         }
     }
 

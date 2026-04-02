@@ -218,6 +218,32 @@
             </div>
         </div>
 
+        <div class="section-title">
+            <i class="bi bi-clock"></i> Khung giờ (VN) & upsale
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label">Giờ bắt đầu</label>
+                <input type="time" name="windowTimeStart" class="form-control-brand" value="@ViewBag.WindowTimeStart" />
+                <span class="helper-text">Để trống cả hai = mọi giờ.</span>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Giờ kết thúc</label>
+                <input type="time" name="windowTimeEnd" class="form-control-brand" value="@ViewBag.WindowTimeEnd" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ValidDaysOfWeek" class="form-label">Ngày trong tuần</label>
+                <input asp-for="ValidDaysOfWeek" class="form-control-brand" placeholder="VD: 1,2,3,4,5" />
+                <span class="helper-text">0=CN … 6=Thứ 7. Trống = mọi ngày.</span>
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="UpsaleRequiresSlowSeller" id="upsaleCheck" />
+                    <label class="form-check-label" for="upsaleCheck">Chỉ áp dụng khi giỏ có món <strong>bán chậm</strong> (đánh dấu ở sản phẩm)</label>
+                </div>
+            </div>
+        </div>
+
         <div class="mt-5 d-flex gap-3">
             <button type="submit" class="btn-save">Lưu Voucher</button>
             <a asp-action="Index" class="btn-cancel">Hủy bỏ</a>

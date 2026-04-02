@@ -71,21 +71,31 @@ namespace LaPizzaria.Controllers
 			if (id == null) return View(new Voucher());
 			var v = _db.Vouchers.Find(id);
 			if (v == null) return NotFound();
+			ViewBag.WindowTimeStart = FormatMinutes(v.TimeStartMinute);
+			ViewBag.WindowTimeEnd = FormatMinutes(v.TimeEndMinute);
 			return View(v);
 		}
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Upsert(Voucher model)
+		public async Task<IActionResult> Upsert(Voucher model, string? windowTimeStart, string? windowTimeEnd, string? validDaysOfWeek)
 		{
+			model.TimeStartMinute = ParseTimeToMinutes(windowTimeStart);
+			model.TimeEndMinute = ParseTimeToMinutes(windowTimeEnd);
+			model.ValidDaysOfWeek = string.IsNullOrWhiteSpace(validDaysOfWeek) ? null : validDaysOfWeek.Trim();
+
 			if (!ModelState.IsValid) 
             {
                 ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
+				ViewBag.WindowTimeStart = windowTimeStart;
+				ViewBag.WindowTimeEnd = windowTimeEnd;
                 return View(model);
             }
 			if (model.Id == 0)
 			{
 				model.UsedCount = 0;
+				model.CreatedAtUtc = DateTime.UtcNow;
+				model.UpdatedAtUtc = DateTime.UtcNow;
 				await _svc.CreateAsync(model);
 			}
 			else
@@ -102,11 +112,34 @@ namespace LaPizzaria.Controllers
 				existing.MaxUses = model.MaxUses;
 				existing.ExpiresAtUtc = model.ExpiresAtUtc;
 				existing.IsActive = model.IsActive;
+				existing.TimeStartMinute = model.TimeStartMinute;
+				existing.TimeEndMinute = model.TimeEndMinute;
+				existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
+				existing.UpsaleRequiresSlowSeller = model.UpsaleRequiresSlowSeller;
 				existing.UpdatedAtUtc = DateTime.UtcNow;
 				await _svc.UpdateAsync(existing);
 			}
 			TempData["success"] = "Lưu voucher thành công";
 			return RedirectToAction(nameof(Index));
+		}
+
+		private static int? ParseTimeToMinutes(string? hhmm)
+		{
+			if (string.IsNullOrWhiteSpace(hhmm)) return null;
+			var parts = hhmm.Trim().Split(':');
+			if (parts.Length < 2) return null;
+			if (!int.TryParse(parts[0], out var h) || !int.TryParse(parts[1], out var m)) return null;
+			h = Math.Clamp(h, 0, 23);
+			m = Math.Clamp(m, 0, 59);
+			return h * 60 + m;
+		}
+
+		private static string? FormatMinutes(int? minutes)
+		{
+			if (minutes == null) return null;
+			var v = minutes.Value;
+			if (v < 0 || v > 1439) return null;
+			return $"{v / 60:D2}:{v % 60:D2}";
 		}
 
 		public async Task<IActionResult> Delete(int id)
@@ -127,6 +160,7 @@ namespace LaPizzaria.Controllers
             vouchers = (!string.IsNullOrEmpty(userId))
                 ? vouchers.Where(v => v.TargetUserId == null || v.TargetUserId == userId).ToList()
                 : vouchers.Where(v => v.TargetUserId == null).ToList();
+			vouchers = vouchers.Where(v => _svc.MatchesTimeAndDay(v, now)).ToList();
 
 			var list = vouchers.Select(v => new {
 				id = v.Id,
@@ -139,7 +173,8 @@ namespace LaPizzaria.Controllers
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
 				expiresAtUtc = v.ExpiresAtUtc,
-				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds
+				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds,
+				requiresUpsaleSlow = v.UpsaleRequiresSlowSeller
 			});
 			return Ok(list);
 		}
