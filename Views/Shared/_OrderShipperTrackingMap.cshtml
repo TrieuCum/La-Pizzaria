@@ -1,0 +1,235 @@
+@model LaPizzaria.ViewModels.OrderShipperTrackingPartialModel
+@{
+    var key = Model.GoogleMapsApiKey ?? "";
+    var hasKey = !string.IsNullOrWhiteSpace(key);
+    var wrap = string.IsNullOrWhiteSpace(Model.WrapperClass) ? "" : Model.WrapperClass;
+}
+@if (Model.ShowMap)
+{
+    <div class="shipper-tracking-root @wrap" data-order-id="@Model.OrderId">
+        @if (!hasKey)
+        {
+            <p class="text-warning small mb-0">Chưa cấu hình GoogleMaps:ApiKey — không thể hiển thị bản đồ.</p>
+        }
+        else
+        {
+            <div class="shipper-tracking-eta mb-2">
+                <div class="shipper-tracking-live"><span class="dot"></span> Theo dõi giao hàng</div>
+                <div id="shipEtaMain-@Model.OrderId" class="shipper-tracking-eta-main">Đang tải…</div>
+                <div id="shipEtaSub-@Model.OrderId" class="shipper-tracking-eta-sub text-muted small">—</div>
+            </div>
+            <div id="shipperMap-@Model.OrderId" class="shipper-tracking-map rounded overflow-hidden border"></div>
+            <script>
+                (function () {
+                    var oid = @Model.OrderId;
+                    var mapElId = 'shipperMap-' + oid;
+                    var etaMain = document.getElementById('shipEtaMain-' + oid);
+                    var etaSub = document.getElementById('shipEtaSub-' + oid);
+                    var pollMs = 8000;
+                    var pollTimer = null;
+                    var lastRouteOrigin = null;
+                    var routeDebounce = null;
+
+                    function haversineM(a, b) {
+                        if (!a || !b) return Infinity;
+                        var R = 6371000;
+                        var toRad = function (x) { return x * Math.PI / 180; };
+                        var dLat = toRad(b.lat - a.lat);
+                        var dLng = toRad(b.lng - a.lng);
+                        var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                            Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                        return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+                    }
+
+                    window['initOrderShipperMap_' + oid] = function () {
+                        var map = new google.maps.Map(document.getElementById(mapElId), {
+                            zoom: 14,
+                            center: { lat: 10.8231, lng: 106.6297 },
+                            streetViewControl: false,
+                            mapTypeControl: false
+                        });
+                        var directionsService = new google.maps.DirectionsService();
+                        var directionsRenderer = new google.maps.DirectionsRenderer({
+                            map: map,
+                            suppressMarkers: true,
+                            polylineOptions: { strokeColor: '#f48c25', strokeWeight: 5 }
+                        });
+
+                        var destLatLng = null;
+                        var destAddress = '';
+                        var shipperMarker = new google.maps.Marker({
+                            map: map,
+                            optimized: false,
+                            icon: {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23E67E22"><path d="M12 4c-2.2 0-4 1.8-4 4 0 .8.2 1.5.6 2.1l-1.7 3.4H6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2h.1l1.7-3.4c.5.3 1 .5 1.6.6V16c0 1.1.9 2 2 2h2v2h2v-2.5c1.9-.4 3.3-2 3.3-4 0-2.2-1.8-4-4-4-.9 0-1.7.3-2.4.7L13 8h4V6h-3.4l-.6-2H12V4zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>'),
+                                scaledSize: new google.maps.Size(40, 40),
+                                anchor: new google.maps.Point(20, 20)
+                            }
+                        });
+                        var customerMarker = new google.maps.Marker({
+                            map: map,
+                            label: { text: 'KH', color: '#fff', fontSize: '10px' },
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 12,
+                                fillColor: '#22c55e',
+                                fillOpacity: 1,
+                                strokeColor: '#fff',
+                                strokeWeight: 2
+                            }
+                        });
+
+                        function setEtaFromLegs(legs) {
+                            if (!legs || !legs.length) return;
+                            var sec = 0, m = 0;
+                            legs.forEach(function (leg) {
+                                sec += leg.duration.value;
+                                m += leg.distance.value;
+                            });
+                            var min = Math.round(sec / 60);
+                            var km = (m / 1000).toFixed(1);
+                            etaMain.textContent = 'Shipper dự kiến tới trong khoảng ' + min + ' phút';
+                            etaSub.textContent = 'Còn khoảng ' + km + ' km (ô tô — Google Directions)';
+                        }
+
+                        function requestRoute(origin) {
+                            if (!destLatLng) return;
+                            directionsService.route({
+                                origin: origin,
+                                destination: destLatLng,
+                                travelMode: google.maps.TravelMode.DRIVING
+                            }, function (res, status) {
+                                if (status === 'OK' && res.routes[0]) {
+                                    directionsRenderer.setDirections(res);
+                                    setEtaFromLegs(res.routes[0].legs);
+                                } else {
+                                    etaSub.textContent = 'Không lấy được lộ trình (' + status + ')';
+                                }
+                            });
+                        }
+
+                        function maybeRefreshRoute(originLatLng) {
+                            var o = { lat: originLatLng.lat(), lng: originLatLng.lng() };
+                            if (!lastRouteOrigin || haversineM(lastRouteOrigin, o) > 100) {
+                                lastRouteOrigin = o;
+                                if (routeDebounce) clearTimeout(routeDebounce);
+                                routeDebounce = setTimeout(function () { requestRoute(originLatLng); }, 400);
+                            }
+                        }
+
+                        var animRaf = null;
+                        function moveShipperSmooth(lat, lng) {
+                            var to = new google.maps.LatLng(lat, lng);
+                            var from = shipperMarker.getPosition();
+                            if (!from) {
+                                shipperMarker.setPosition(to);
+                                map.panTo(to);
+                                maybeRefreshRoute(to);
+                                return;
+                            }
+                            if (animRaf) cancelAnimationFrame(animRaf);
+                            var start = performance.now();
+                            var duration = 450;
+                            var fLat = from.lat(), fLng = from.lng();
+                            function step(now) {
+                                var u = Math.min(1, (now - start) / duration);
+                                var e = u * (2 - u);
+                                var la = fLat + (lat - fLat) * e;
+                                var ln = fLng + (lng - fLng) * e;
+                                var p = new google.maps.LatLng(la, ln);
+                                shipperMarker.setPosition(p);
+                                map.panTo(p);
+                                if (u < 1) animRaf = requestAnimationFrame(step);
+                                else maybeRefreshRoute(p);
+                            }
+                            animRaf = requestAnimationFrame(step);
+                        }
+
+                        function placeCustomerAndInitial(data) {
+                            destAddress = data.deliveryAddress || '';
+                            if (data.customerLat != null && data.customerLng != null) {
+                                destLatLng = new google.maps.LatLng(Number(data.customerLat), Number(data.customerLng));
+                                customerMarker.setPosition(destLatLng);
+                                map.setCenter(destLatLng);
+                            } else if (destAddress) {
+                                var geocoder = new google.maps.Geocoder();
+                                geocoder.geocode({ address: destAddress }, function (results, status) {
+                                    if (status === 'OK' && results[0]) {
+                                        destLatLng = results[0].geometry.location;
+                                        customerMarker.setPosition(destLatLng);
+                                        map.setCenter(destLatLng);
+                                    }
+                                });
+                            }
+                            if (data.shipperLat != null && data.shipperLng != null && data.canShowMap) {
+                                moveShipperSmooth(Number(data.shipperLat), Number(data.shipperLng));
+                            }
+                            if (!data.canShowMap) {
+                                etaMain.textContent = 'Không theo dõi được trên bản đồ';
+                                etaSub.textContent = 'Đơn chưa ở trạng thái giao hoặc chưa có shipper.';
+                                shipperMarker.setMap(null);
+                            }
+                        }
+
+                        function stopPolling() {
+                            if (pollTimer) {
+                                clearInterval(pollTimer);
+                                pollTimer = null;
+                            }
+                        }
+
+                        function pollLocation() {
+                            fetch('/api/orders/' + oid + '/shipper-location', { credentials: 'same-origin', cache: 'no-store' })
+                                .then(function (r) {
+                                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                                    return r.json();
+                                })
+                                .then(function (data) {
+                                    if (!data || data.active === false) {
+                                        stopPolling();
+                                        etaMain.textContent = 'Kết thúc theo dõi';
+                                        etaSub.textContent = 'Đơn không còn trong giai đoạn giao.';
+                                        shipperMarker.setMap(null);
+                                        return;
+                                    }
+                                    if (data.lat != null && data.lng != null) {
+                                        moveShipperSmooth(Number(data.lat), Number(data.lng));
+                                        if (data.updatedAt) {
+                                            etaSub.textContent = 'Cập nhật ' + new Date(data.updatedAt).toLocaleTimeString('vi-VN') + ' · làm mới mỗi 8 giây';
+                                        }
+                                    }
+                                })
+                                .catch(function () { etaSub.textContent = 'Lỗi tải vị trí — thử lại sau.'; });
+                        }
+
+                        fetch('/api/orders/' + oid + '/tracking', { credentials: 'same-origin', cache: 'no-store' })
+                            .then(function (r) {
+                                if (!r.ok) throw new Error('HTTP ' + r.status);
+                                return r.json();
+                            })
+                            .then(function (data) {
+                                placeCustomerAndInitial(data);
+                                if (data.canShowMap) {
+                                    etaMain.textContent = 'Đang theo dõi shipper…';
+                                    pollLocation();
+                                    pollTimer = setInterval(pollLocation, pollMs);
+                                }
+                            })
+                            .catch(function () {
+                                etaMain.textContent = 'Không tải được dữ liệu theo dõi';
+                                etaSub.textContent = 'Thử tải lại trang.';
+                            });
+
+                        window.addEventListener('beforeunload', stopPolling);
+                    };
+
+                    var s = document.createElement('script');
+                    s.async = true;
+                    s.defer = true;
+                    s.src = 'https://maps.googleapis.com/maps/api/js?key=@Uri.EscapeDataString(key)&libraries=geometry&callback=initOrderShipperMap_' + oid;
+                    document.head.appendChild(s);
+                })();
+            </script>
+        }
+    </div>
+}

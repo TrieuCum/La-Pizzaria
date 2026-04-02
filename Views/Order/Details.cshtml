@@ -1,5 +1,6 @@
 @model LaPizzaria.Models.Order
 @using LaPizzaria.Models
+@using LaPizzaria.ViewModels
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
     var orderCode = $"#PH{Model.Id}";
@@ -38,6 +39,7 @@
         if (string.IsNullOrWhiteSpace(deliveryAddress) && !string.IsNullOrWhiteSpace(Model.User.Address)) deliveryAddress = Model.User.Address;
     }
     if (string.IsNullOrWhiteSpace(deliveryAddress)) deliveryAddress = "—";
+    var shipperTracking = ViewBag.ShipperTracking as OrderShipperTrackingPartialModel;
 }
 
 @section Styles {
@@ -79,7 +81,7 @@
                     @if (isCancelled)
                     {
                         <div class="order-detail-timeline cancelled">
-                            <div class="progress-bar bg-danger" style="width: 100%"></div>
+                            <div class="order-timeline-fill order-timeline-fill--danger" style="width: 70%"></div>
                             <div class="step">
                                 <div class="step-icon active bg-danger text-white"><i class="bi bi-x-circle"></i></div>
                                 <div class="step-title text-danger">Đã hủy</div>
@@ -90,7 +92,7 @@
                     else
                     {
                         <div class="order-detail-timeline">
-                            <div class="progress-bar" style="width: @(progressPercent)%"></div>
+                            <div class="order-timeline-fill" style="width: calc(70% * @(progressPercent) / 100)"></div>
                             <div class="step">
                                 <div class="step-icon @(step >= 1 ? "active" : "pending")"><i class="bi bi-egg-fried"></i></div>
                                 <div class="step-title">Đang chuẩn bị</div>
@@ -109,6 +111,14 @@
                         </div>
                     }
                 </div>
+
+                @if (shipperTracking != null && shipperTracking.ShowMap)
+                {
+                    <div class="order-detail-card">
+                        <h3>Theo dõi giao hàng</h3>
+                        <partial name="_OrderShipperTrackingMap" model="shipperTracking" />
+                    </div>
+                }
 
                 <!-- Order items -->
                 <div class="order-detail-card order-detail-items-card">

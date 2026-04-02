@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using LaPizzaria.Data;
+using LaPizzaria.Helpers;
 using LaPizzaria.Models;
 using LaPizzaria.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace LaPizzaria.Controllers
 {
@@ -14,10 +16,12 @@ namespace LaPizzaria.Controllers
         private static readonly string[] StatusKeys = { "Pending", "Confirmed", "Preparing", "Ready", "Delivering", "Completed", "Cancelled" };
 
         private readonly ApplicationDbContext _db;
+        private readonly IConfiguration _configuration;
 
-        public OrderManagementController(ApplicationDbContext db)
+        public OrderManagementController(ApplicationDbContext db, IConfiguration configuration)
         {
             _db = db;
+            _configuration = configuration;
         }
 
         public async Task<IActionResult> Index(string? search, string? statusFilter, int page = 1)
@@ -153,6 +157,14 @@ namespace LaPizzaria.Controllers
                 .ThenInclude(od => od.Product)
                 .FirstOrDefaultAsync(o => o.Id == id);
             if (order == null) return NotFound();
+
+            ViewBag.ShipperTracking = new OrderShipperTrackingPartialModel
+            {
+                OrderId = order.Id,
+                ShowMap = OrderTrackingHelper.CanShowShipperMap(order),
+                GoogleMapsApiKey = _configuration["GoogleMaps:ApiKey"],
+                WrapperClass = ""
+            };
             return View(order);
         }
     }

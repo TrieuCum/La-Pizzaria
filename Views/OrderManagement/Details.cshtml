@@ -1,6 +1,15 @@
 @model LaPizzaria.Models.Order
+@using LaPizzaria.ViewModels
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
+    var shipperTracking = ViewBag.ShipperTracking as OrderShipperTrackingPartialModel;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-details.css" asp-append-version="true" />
+}
+
+@{
     var user = Model.User;
     var customerName = "—";
     var customerPhone = "—";
@@ -23,6 +32,16 @@
         </div>
         <a asp-controller="OrderManagement" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Quay lại</a>
     </div>
+
+    @if (shipperTracking != null && shipperTracking.ShowMap)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h6 fw-bold mb-3">Theo dõi giao hàng</h2>
+                <partial name="_OrderShipperTrackingMap" model="shipperTracking" />
+            </div>
+        </div>
+    }
 
     <div class="card shadow-sm">
         <div class="card-body">

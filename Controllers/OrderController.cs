@@ -208,6 +208,7 @@ namespace LaPizzaria.Controllers
             return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = validatedVouchers });
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
@@ -221,6 +222,20 @@ namespace LaPizzaria.Controllers
                 .ThenInclude(ov => ov.Voucher)
                 .FirstOrDefaultAsync(o => o.Id == id);
             if (order == null) return NotFound();
+
+            var userId = _userManager.GetUserId(User);
+            var isStaff = User.IsInRole("Admin") || User.IsInRole("Staff");
+            var isOwner = !string.IsNullOrEmpty(userId) && string.Equals(order.UserId, userId, StringComparison.Ordinal);
+            if (!isOwner && !isStaff)
+                return Forbid();
+
+            ViewBag.ShipperTracking = new OrderShipperTrackingPartialModel
+            {
+                OrderId = order.Id,
+                ShowMap = OrderTrackingHelper.CanShowShipperMap(order),
+                GoogleMapsApiKey = _config["GoogleMaps:ApiKey"],
+                WrapperClass = ""
+            };
             return View(order);
         }
 
@@ -503,6 +518,10 @@ namespace LaPizzaria.Controllers
         {
             try
             {
+                var currentUserId = _userManager.GetUserId(User);
+                if (!string.IsNullOrEmpty(currentUserId))
+                    req.UserId = currentUserId;
+
                 var orderId = await _orderPlacement.PlaceQrOrderAsync(req, "Cash");
                 return Ok(new { orderId });
             }
@@ -517,6 +536,10 @@ namespace LaPizzaria.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> PrepareMoMoPayment([FromBody] QrOrderRequest req, CancellationToken cancellationToken)
         {
+            var currentUserId = _userManager.GetUserId(User);
+            if (!string.IsNullOrEmpty(currentUserId))
+                req.UserId = currentUserId;
+
             var deliveryType = string.IsNullOrWhiteSpace(req.DeliveryType) ? "ship" : req.DeliveryType;
             if (string.Equals(deliveryType, "ship", StringComparison.OrdinalIgnoreCase))
             {
