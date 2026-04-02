@@ -7,17 +7,21 @@ namespace LaPizzaria.Models
     {
         public int Id { get; set; }
         public string? UserId { get; set; }
+        public string? ShipperId { get; set; }
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
         public decimal TotalPrice { get; set; }
         public string OrderStatus { get; set; } = "Pending";
         public string? DeliveryAddress { get; set; }
         public string? PaymentMethod { get; set; }
         public string? Notes { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
         public ApplicationUser? User { get; set; }
+        public ApplicationUser? Shipper { get; set; }
         public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
         public ICollection<OrderTable> OrderTables { get; set; } = new List<OrderTable>();
 		public ICollection<OrderVoucher> OrderVouchers { get; set; } = new List<OrderVoucher>();

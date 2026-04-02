@@ -22,7 +22,7 @@ namespace LaPizzaria.Services
             _pricingService = pricingService;
         }
 
-        public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds)
+        public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds, string? deliveryAddress = null, double? latitude = null, double? longitude = null)
         {
             var itemList = items.ToList();
             var ok = await _inventory.CheckAndReserveAsync(itemList);
@@ -31,15 +31,27 @@ namespace LaPizzaria.Services
                 throw new System.InvalidOperationException("Đang hết nguyên liệu");
             }
 
+            string? finalAddress = deliveryAddress;
+            ApplicationUser? userEntity = null;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                userEntity = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (userEntity != null && string.IsNullOrWhiteSpace(finalAddress) && !string.IsNullOrWhiteSpace(userEntity.Address))
+                    finalAddress = userEntity.Address;
+            }
+
             var order = new Order
             {
                 OrderStatus = "Pending",
-                OrderDetails = itemList
+                OrderDetails = itemList,
+                DeliveryAddress = finalAddress,
+                Latitude = latitude,
+                Longitude = longitude
             };
             if (!string.IsNullOrEmpty(userId))
             {
-                // link to user by Id string
-                order.User = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                order.UserId = userId;
+                order.User = userEntity;
             }
             _db.Orders.Add(order);
             await _db.SaveChangesAsync();
@@ -102,9 +114,12 @@ namespace LaPizzaria.Services
                 var moved = new OrderDetail
                 {
                     ProductId = detail.ProductId,
+                    ProductId2 = detail.ProductId2,
                     Quantity = moveQty,
                     UnitPrice = detail.UnitPrice,
-                    Subtotal = detail.UnitPrice * moveQty
+                    Subtotal = detail.UnitPrice * moveQty,
+                    Size = detail.Size, // Preserve size
+                    OrderDetailToppings = detail.OrderDetailToppings?.Select(odt => new OrderDetailTopping { ToppingId = odt.ToppingId }).ToList() // Copy toppings
                 };
                 newOrder.OrderDetails.Add(moved);
             }
@@ -121,18 +136,15 @@ namespace LaPizzaria.Services
         public async Task<decimal> CalculateTotalAsync(int orderId)
         {
             var order = await _db.Orders
-                .Include(o => o.OrderDetails)
+                .Include(o => o.OrderDetails).ThenInclude(od => od.OrderDetailToppings)
                 .Include(o => o.OrderVouchers).ThenInclude(ov => ov.Voucher)
                 .FirstAsync(o => o.Id == orderId);
-            // Apply dynamic pricing before calculating subtotals
-            var productIds = order.OrderDetails.Select(x => x.ProductId).Distinct().ToList();
-            var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
             foreach (var d in order.OrderDetails)
             {
-                if (products.TryGetValue(d.ProductId, out var product))
-                {
-                    d.UnitPrice = _pricingService.AdjustUnitPrice(product, d.UnitPrice, System.DateTime.UtcNow);
-                }
+                var basePrice = await CalculateIngredientBasedPriceAsync(d.ProductId, d.ProductId2, d.Size);
+                var p1 = await _db.Products.FindAsync(d.ProductId);
+                if (p1 != null)
+                    d.UnitPrice = _pricingService.AdjustUnitPrice(p1, basePrice, System.DateTime.UtcNow);
                 d.Subtotal = d.UnitPrice * d.Quantity;
             }
 
@@ -162,6 +174,51 @@ namespace LaPizzaria.Services
             var total = subtotal - discount - voucherDiscount;
             if (total < 0) total = 0;
             return total;
+        }
+
+        private async Task<decimal> CalculateIngredientBasedPriceAsync(int productId, int? productId2, string? size)
+        {
+            var productIds = new List<int> { productId };
+            if (productId2.HasValue) productIds.Add(productId2.Value);
+
+            var products = await _db.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+            if (!products.TryGetValue(productId, out var p1)) return 0m;
+
+            var mappings = await _db.ProductIngredients
+                .Where(pi => productIds.Contains(pi.ProductId))
+                .ToListAsync();
+            if (!mappings.Any())
+            {
+                if (productId2.HasValue && products.TryGetValue(productId2.Value, out var p2Product))
+                    return (p1.Price + p2Product.Price) / 2m;
+                return p1.Price;
+            }
+
+            var ingredientIds = mappings.Select(m => m.IngredientId).Distinct().ToList();
+            var ingredientMap = await _db.Ingredients
+                .Where(i => ingredientIds.Contains(i.Id))
+                .ToDictionaryAsync(i => i.Id);
+
+            decimal ComputePriceForProduct(int pid, decimal fallbackPrice)
+            {
+                var productMappings = mappings.Where(m => m.ProductId == pid).ToList();
+                if (!productMappings.Any()) return fallbackPrice;
+                return productMappings.Sum(m =>
+                {
+                    if (!ingredientMap.TryGetValue(m.IngredientId, out var ing)) return 0m;
+                    var qty = ProductPricingCalculator.GetScaledQuantity(m, ing, size);
+                    return qty * ing.UnitPrice;
+                });
+            }
+
+            var p1Price = ComputePriceForProduct(productId, p1.Price);
+            if (!productId2.HasValue) return p1Price;
+
+            var p2Fallback = products.TryGetValue(productId2.Value, out var p2) ? p2.Price : p1.Price;
+            var p2Price = ComputePriceForProduct(productId2.Value, p2Fallback);
+            return (p1Price + p2Price) / 2m;
         }
 
         public async Task<bool> AssignTablesAsync(int orderId, IEnumerable<int> tableIds)

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,17 +22,74 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IQrService, QrService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
-builder.Services.AddHostedService<VoucherCleanupService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IOrderPlacementService, OrderPlacementService>();
+// builder.Services.AddHostedService<VoucherCleanupService>();
 
+// --- Tích hợp MoMo (sandbox / production) ---
+// 1) appsettings.json → section "Momo": PartnerCode, AccessKey, SecretKey, MomoApiUrl (API create),
+//    ReturnUrl (redirect GET sau thanh toán), NotifyUrl (IPN POST từ MoMo).
+// 2) Configure<T> nạp các giá trị đó vào MomoOptionModel để inject vào MomoService.
+// 3) AddHttpClient() cung cấp IHttpClientFactory cho MomoService.CreatePaymentAsync.
+// 4) Đăng ký IMomoService với lifetime Scoped (mỗi request một instance, phù hợp controller).
+builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("Momo"));
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IMomoService, MomoService>();
+
+// Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options
-        .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+            sqlOptions.CommandTimeout(60);
+        })
+    .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
 );
 
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+// Add Identity
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false;
+    options.User.RequireUniqueEmail = true;
+})
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.SlidingExpiration = true;
+});
+
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    builder.Services
+        .AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            options.CallbackPath = "/signin-google";
+            options.AccessDeniedPath = "/Account/Login";
+            options.SaveTokens = true;
+            // Always show Google account chooser so users can pick any existing account.
+            options.Events.OnRedirectToAuthorizationEndpoint = context =>
+            {
+                var separator = context.RedirectUri.Contains('?') ? "&" : "?";
+                context.Response.Redirect($"{context.RedirectUri}{separator}prompt=select_account");
+                return Task.CompletedTask;
+            };
+        });
+}
 
 var app = builder.Build();
 
@@ -39,15 +97,20 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+
+// Chỉ bật redirect HTTP→HTTPS khi không phải Development: tránh lỗi khi chạy chỉ http://localhost:5081
+// (MoMo redirect về HTTP mà middleware ép sang HTTPS cổng khác → trang callback lỗi).
+if (!app.Environment.IsDevelopment())
+{
     app.UseHttpsRedirection();
 }
 app.UseStaticFiles();
 
-// Map local banner images folder to /banners for serving hero images
-var bannerPath = @"C:\\Users\\ooish\\Pictures\\LaPizzaria";
-if (Directory.Exists(bannerPath))
+// Banner images: chỉ map khi cấu hình có đường dẫn (Development/local). Production để trống hoặc set trên Azure.
+var bannerPath = builder.Configuration["BannerImagesPath"] ?? "";
+if (!string.IsNullOrWhiteSpace(bannerPath) && Directory.Exists(bannerPath))
 {
     app.UseStaticFiles(new StaticFileOptions
     {
@@ -61,50 +124,54 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Đảm bảo các role hệ thống tồn tại (seed nếu chưa có)
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    foreach (var roleName in new[] { "Admin", "User", "Staff", "Shipper", "Customer" })
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+    }
+}
+
+// Seed tài khoản Shipper để đăng nhập trang shipper (nếu chưa có)
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    const string shipperEmail = "shipper@lapizzaria.com";
+    var shipper = await userManager.FindByEmailAsync(shipperEmail);
+    if (shipper == null)
+    {
+        shipper = new ApplicationUser
+        {
+            UserName = shipperEmail,
+            Email = shipperEmail,
+            FirstName = "Shipper",
+            LastName = "La Pizzaria",
+            EmailConfirmed = true,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        var result = await userManager.CreateAsync(shipper, "Shipper@123");
+        if (result.Succeeded && await roleManager.RoleExistsAsync("Shipper"))
+            await userManager.AddToRoleAsync(shipper, "Shipper");
+    }
+    else if (!await userManager.IsInRoleAsync(shipper, "Shipper") && await roleManager.RoleExistsAsync("Shipper"))
+    {
+        await userManager.AddToRoleAsync(shipper, "Shipper");
+    }
+}
+
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
 app.MapRazorPages();
+
 app.MapHub<OrderingHub>("/hub/ordering");
-
-// Apply pending EF Core migrations and seed default admin user and role
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    const string adminRole = "Admin";
-    if (!await roleManager.RoleExistsAsync(adminRole))
-    {
-        await roleManager.CreateAsync(new IdentityRole(adminRole));
-    }
-    var adminEmail = "admin@lapizzaria.local";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-    if (adminUser == null)
-    {
-        adminUser = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            EmailConfirmed = true,
-            FirstName = "Admin",
-            LastName = "Root"
-        };
-        var createResult = await userManager.CreateAsync(adminUser, "Admin@12345!");
-        if (createResult.Succeeded)
-        {
-            await userManager.AddToRoleAsync(adminUser, adminRole);
-        }
-    }
-    else
-    {
-        if (!await userManager.IsInRoleAsync(adminUser, adminRole))
-        {
-            await userManager.AddToRoleAsync(adminUser, adminRole);
-        }
-    }
-}
 
 app.Run();

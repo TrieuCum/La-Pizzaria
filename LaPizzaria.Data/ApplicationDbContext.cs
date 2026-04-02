@@ -19,6 +19,7 @@ namespace LaPizzaria.Data
         public DbSet<Table> Tables { get; set; }
         public DbSet<OrderTable> OrderTables { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<IngredientCategory> IngredientCategories { get; set; }
         public DbSet<ProductIngredient> ProductIngredients { get; set; }
         public DbSet<Combo> Combos { get; set; }
         public DbSet<ComboItem> ComboItems { get; set; }
@@ -26,12 +27,17 @@ namespace LaPizzaria.Data
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
 		public DbSet<Voucher> Vouchers { get; set; }
 		public DbSet<OrderVoucher> OrderVouchers { get; set; }
+		public DbSet<UserSavedVoucher> UserSavedVouchers { get; set; }
+		public DbSet<Employee> Employees { get; set; }
+        public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
 
+        public DbSet<Customer> Customers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
             // Decimal precisions
             modelBuilder.Entity<Product>().Property(p => p.Price).HasPrecision(18, 2);
+            modelBuilder.Entity<Product>().Property(p => p.ProfitMarginPercent).HasPrecision(18, 2);
             modelBuilder.Entity<Topping>().Property(t => t.Price).HasPrecision(18, 2);
             modelBuilder.Entity<Order>().Property(o => o.TotalPrice).HasPrecision(18, 2);
             modelBuilder.Entity<OrderDetail>().Property(od => od.UnitPrice).HasPrecision(18, 2);
@@ -45,16 +51,25 @@ namespace LaPizzaria.Data
             modelBuilder.Entity<InvoiceItem>().Property(ii => ii.Total).HasPrecision(18, 2);
             modelBuilder.Entity<Ingredient>().Property(i => i.StockQuantity).HasPrecision(18, 2);
             modelBuilder.Entity<Ingredient>().Property(i => i.ReorderLevel).HasPrecision(18, 2);
+            modelBuilder.Entity<Ingredient>().Property(i => i.UnitPrice).HasPrecision(18, 2);
             modelBuilder.Entity<Combo>().Property(c => c.DiscountAmount).HasPrecision(18, 2);
             modelBuilder.Entity<Combo>().Property(c => c.DiscountPercent).HasPrecision(18, 2);
             modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountAmount).HasPrecision(18, 2);
             modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountPercent).HasPrecision(18, 2);
+            modelBuilder.Entity<Employee>().Property(e => e.Salary).HasPrecision(18, 2);
 
             // Order-User relationship
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.User)
                 .WithMany(u => u.Orders)
                 .HasForeignKey(o => o.UserId);
+
+            // Order-Shipper relationship
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Shipper)
+                .WithMany()
+                .HasForeignKey(o => o.ShipperId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Configure many-to-many for ProductTopping
             modelBuilder.Entity<ProductTopping>()
@@ -104,6 +119,20 @@ namespace LaPizzaria.Data
                 .WithMany(i => i.ProductIngredients)
                 .HasForeignKey(pi => pi.IngredientId);
 
+            modelBuilder.Entity<ProductIngredient>().Property(pi => pi.QuantityPerUnit).HasPrecision(18, 2);
+
+            modelBuilder.Entity<IngredientCategory>()
+                .HasOne(c => c.Parent)
+                .WithMany(c => c.Children)
+                .HasForeignKey(c => c.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Ingredient>()
+                .HasOne(i => i.Category)
+                .WithMany(c => c.Ingredients)
+                .HasForeignKey(i => i.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Configure Combo-Items
             modelBuilder.Entity<ComboItem>()
                 .HasOne(ci => ci.Combo)
@@ -136,6 +165,63 @@ namespace LaPizzaria.Data
 				.HasOne(ov => ov.Voucher)
 				.WithMany()
 				.HasForeignKey(ov => ov.VoucherId);
+
+            modelBuilder.Entity<Voucher>().Property(v => v.DiscountPercent).HasPrecision(18, 2);
+            modelBuilder.Entity<Voucher>().Property(v => v.DiscountAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<Voucher>().Property(v => v.MinOrderValue).HasPrecision(18, 2);
+
+            modelBuilder.Entity<Voucher>()
+                .HasOne(v => v.TargetUser)
+                .WithMany()
+                .HasForeignKey(v => v.TargetUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // UserSavedVoucher: user đã lưu voucher vào tài khoản
+            modelBuilder.Entity<UserSavedVoucher>()
+                .HasKey(usv => new { usv.UserId, usv.VoucherId });
+            modelBuilder.Entity<UserSavedVoucher>()
+                .HasOne(usv => usv.User)
+                .WithMany(u => u.UserSavedVouchers)
+                .HasForeignKey(usv => usv.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<UserSavedVoucher>()
+                .HasOne(usv => usv.Voucher)
+                .WithMany()
+                .HasForeignKey(usv => usv.VoucherId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Customer -> ApplicationUser (UserId)
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Loyalty transactions
+            modelBuilder.Entity<LoyaltyTransaction>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<LoyaltyTransaction>()
+                .HasIndex(t => new { t.UserId, t.CreatedAtUtc });
+            modelBuilder.Entity<LoyaltyTransaction>()
+                .HasIndex(t => new { t.UserId, t.ReferenceCode })
+                .IsUnique()
+                .HasFilter("[ReferenceCode] IS NOT NULL");
+
+            // OrderDetail relationships
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(od => od.Product)
+                .WithMany(p => p.OrderDetails)
+                .HasForeignKey(od => od.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(od => od.Product2)
+                .WithMany()
+                .HasForeignKey(od => od.ProductId2)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

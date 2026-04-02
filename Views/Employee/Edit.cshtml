@@ -1,0 +1,12 @@
+@model LaPizzaria.Models.Employee
+
+<input type="hidden" name="Id" value="@Model.Id" />
+<input type="hidden" name="EmployeeCode" value="@Model.EmployeeCode" />
+<input type="hidden" name="FullName" value="@Model.FullName" />
+<input type="hidden" name="Email" value="@Model.Email" />
+<input type="hidden" name="PhoneNumber" value="@Model.PhoneNumber" />
+<input type="hidden" name="Position" value="@Model.Position" />
+<input type="hidden" name="Salary" value="@Model.Salary" />
+<input type="hidden" name="HireDate" value="@Model.HireDate.ToString("yyyy-MM-dd")" />
+<input type="hidden" name="Status" value="@Model.Status" />
+<input type="hidden" name="CreatedAt" value="@Model.CreatedAt.ToString("o")" />

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace LaPizzaria.Controllers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -21,17 +22,18 @@ namespace LaPizzaria.Controllers
         /// </summary>
         private string? SanitizeImageUrl(string? imageUrl)
         {
-            if (string.IsNullOrEmpty(imageUrl))
-                return imageUrl;
+            if (string.IsNullOrWhiteSpace(imageUrl))
+                return imageUrl?.Trim();
 
+            var trimmed = imageUrl.Trim();
             // If it's a file:// URL, extract the filename and convert to web path
-            if (imageUrl.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+            if (trimmed.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
             {
-                var filename = System.IO.Path.GetFileName(imageUrl);
+                var filename = System.IO.Path.GetFileName(trimmed);
                 return $"/images/{filename}";
             }
 
-            return imageUrl;
+            return trimmed;
         }
         public async Task<IActionResult> Index(string? q, string? category, string? status)
         {
@@ -49,18 +51,60 @@ namespace LaPizzaria.Controllers
 
             var allProductIngredients = await _db.ProductIngredients.ToListAsync();
             var ingredientsById = await _db.Ingredients.ToDictionaryAsync(i => i.Id);
-
+            
             var outOfStockIds = new List<int>();
+            var productStockStatus = new Dictionary<int, string>(); // safe / warning / danger
+
             foreach (var p in products)
             {
                 var mappings = allProductIngredients.Where(pi => pi.ProductId == p.Id).ToList();
                 if (!mappings.Any())
                 {
+                    // Không cấu hình nguyên liệu → coi như an toàn
+                    productStockStatus[p.Id] = "safe";
                     continue;
                 }
+
+                // Tính trạng thái dựa theo từng nguyên liệu liên quan
+                // > 50  : safe (An toàn)
+                // > 20  : warning (Trung bình)
+                // <= 20 : danger (Sắp hết)
+                var aggregateStatus = "safe";
+
+                foreach (var pi in mappings)
+                {
+                    if (!ingredientsById.TryGetValue(pi.IngredientId, out var ing))
+                    {
+                        aggregateStatus = "out";
+                        break;
+                    }
+
+                    var qty = ing.StockQuantity;
+                    var ingStatus = qty <= 0 ? "out" :
+                                    qty <= 20 ? "danger" :
+                                    qty <= 50 ? "warning" : "safe";
+
+                    if (ingStatus == "out")
+                    {
+                        aggregateStatus = "out";
+                        break;
+                    }
+                    if (ingStatus == "danger" && aggregateStatus != "out")
+                    {
+                        aggregateStatus = "danger";
+                    }
+                    if (ingStatus == "warning" && aggregateStatus == "safe")
+                    {
+                        aggregateStatus = "warning";
+                    }
+                }
+
+                productStockStatus[p.Id] = aggregateStatus;
+
+                // Giữ lại danh sách hết hàng (không đủ nguyên liệu để làm 1 phần)
                 var insufficient = mappings.Any(pi =>
-                    ingredientsById.TryGetValue(pi.IngredientId, out var ing)
-                        ? ing.StockQuantity < pi.QuantityPerUnit
+                    ingredientsById.TryGetValue(pi.IngredientId, out var ing2)
+                        ? ing2.StockQuantity < pi.QuantityPerUnit
                         : true
                 );
                 if (insufficient)
@@ -91,7 +135,8 @@ namespace LaPizzaria.Controllers
             {
                 Products = products,
                 Combos = combos,
-                OutOfStockIds = outOfStockIds
+                OutOfStockIds = outOfStockIds,
+                ProductStockStatus = productStockStatus
             };
 
             ViewBag.Query = q ?? string.Empty;
@@ -128,9 +173,17 @@ namespace LaPizzaria.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ApiMenu()
         {
-            var products = await _db.Products.Where(p => p.IsActive)
-                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category })
+            var productsRaw = await _db.Products.Where(p => p.IsActive)
+                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, category = p.Category, imageUrl = p.ImageUrl })
                 .ToListAsync();
+
+            var products = productsRaw.Select(p => new {
+                p.id,
+                p.name,
+                p.price,
+                p.category,
+                imageUrl = SanitizeImageUrl(p.imageUrl)
+            }).ToList();
 
             // Materialize combos and compute price on client to avoid EF translation issues
             var combosRaw = await _db.Combos.Where(c => c.IsActive)
@@ -149,7 +202,7 @@ namespace LaPizzaria.Controllers
             var result = new List<object>();
             var productGroups = products
                 .GroupBy(p => p.category)
-                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price }) });
+                .Select(g => new { key = g.Key, type = "product", items = g.Select(x => new { id = x.id, name = x.name, price = x.price, imageUrl = x.imageUrl }) });
             result.AddRange(productGroups);
             result.Add(new { key = "Combo", type = "combo", items = combos.Select(c => new { id = c.id, name = c.name, price = c.price, items = c.items }) });
 
@@ -239,27 +292,69 @@ namespace LaPizzaria.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Upsert(int? id)
+        public async Task<IActionResult> Upsert(int? id, int ingredientPageSize = 20)
         {
-            ProductViewModel productViewModel = new ProductViewModel();
-            if (id == null || id == 0)
+            ingredientPageSize = ingredientPageSize <= 0 ? 20 : ingredientPageSize;
+            var allowedPageSizes = new[] { 10, 20, 50, 100 };
+            if (!allowedPageSizes.Contains(ingredientPageSize))
             {
-                return View(productViewModel);
+                ingredientPageSize = 20;
             }
-            var p = await _db.Products.FindAsync(id.Value);
-            if (p == null) return NotFound();
-            productViewModel = new ProductViewModel
+
+            ProductViewModel viewModel = new ProductViewModel();
+            var allIngredients = await _db.Ingredients
+                .Include(i => i.Category)!.ThenInclude(c => c!.Parent)
+                .OrderBy(i => i.Name)
+                .ToListAsync();
+            var mappings = new List<ProductIngredient>();
+
+            if (id != null && id != 0)
             {
-                Id = p.Id,
-                Name = p.Name,
-                Description = p.Description,
-                Price = p.Price,
-                ImageUrl = p.ImageUrl,
-                Category = p.Category,
-                IsActive = p.IsActive,
-                IsCustomizable = p.IsCustomizable
-            };
-            return View(productViewModel);
+                var p = await _db.Products.FindAsync(id.Value);
+                if (p == null) return NotFound();
+                
+                viewModel.Id = p.Id;
+                viewModel.Name = p.Name;
+                viewModel.Description = p.Description;
+                viewModel.Price = p.Price;
+                viewModel.ProfitMarginPercent = p.ProfitMarginPercent;
+                viewModel.IsSlowSeller = p.IsSlowSeller;
+                viewModel.ImageUrl = p.ImageUrl;
+                viewModel.Category = p.Category;
+                viewModel.IsActive = p.IsActive;
+                viewModel.IsCustomizable = p.IsCustomizable;
+
+                mappings = await _db.ProductIngredients.Where(pi => pi.ProductId == id).ToListAsync();
+            }
+
+            viewModel.Ingredients = allIngredients.Select(i => new IngredientSelectionViewModel
+            {
+                IngredientId = i.Id,
+                Name = i.Name,
+                Unit = i.Unit,
+                UnitPrice = i.UnitPrice,
+                IsDoughBase = i.IsDoughBase,
+                StockQuantity = i.StockQuantity,
+                QuantityPerUnit = mappings.FirstOrDefault(m => m.IngredientId == i.Id)?.QuantityPerUnit ?? 0m,
+                CategoryId = i.CategoryId,
+                CategoryDisplayPath = BuildIngredientCategoryPath(i)
+            }).ToList();
+
+            ViewBag.IngredientPageSize = ingredientPageSize;
+            ViewBag.IngredientCategoryTabs = await _db.IngredientCategories
+                .AsNoTracking()
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.Name)
+                .ToListAsync();
+            return View(viewModel);
+        }
+
+        private static string BuildIngredientCategoryPath(Ingredient i)
+        {
+            if (i.Category == null) return "Khác";
+            if (i.Category.Parent != null)
+                return $"{i.Category.Parent.Name} / {i.Category.Name}";
+            return i.Category.Name;
         }
 
         [HttpPost]
@@ -268,37 +363,88 @@ namespace LaPizzaria.Controllers
         {
             if (ModelState.IsValid)
             {
+                var p = productViewModel.Id == 0 ? new Product() : await _db.Products.FindAsync(productViewModel.Id);
+                if (p == null) return NotFound();
+
+                p.Name = productViewModel.Name;
+                p.Description = productViewModel.Description;
+                p.ImageUrl = productViewModel.ImageUrl;
+                p.Category = productViewModel.Category;
+                p.IsActive = productViewModel.IsActive;
+                p.IsCustomizable = productViewModel.IsCustomizable;
+                p.IsSlowSeller = productViewModel.IsSlowSeller;
+                p.ProfitMarginPercent = productViewModel.ProfitMarginPercent;
+
+                var ingredientIds = productViewModel.Ingredients?
+                    .Where(x => x.QuantityPerUnit > 0)
+                    .Select(x => x.IngredientId)
+                    .Distinct()
+                    .ToList() ?? new List<int>();
+                var ingredientPriceMap = await _db.Ingredients
+                    .Where(i => ingredientIds.Contains(i.Id))
+                    .ToDictionaryAsync(i => i.Id, i => i.UnitPrice);
+                var cost = productViewModel.Ingredients?
+                    .Where(x => x.QuantityPerUnit > 0)
+                    .Sum(x => x.QuantityPerUnit * (ingredientPriceMap.TryGetValue(x.IngredientId, out var unitPrice) ? unitPrice : 0m)) ?? 0m;
+                var margin = productViewModel.ProfitMarginPercent;
+                if (cost > 0m)
+                    p.Price = Math.Round(cost * (1 + margin / 100m), 2);
+                else
+                    p.Price = productViewModel.Price;
+
                 if (productViewModel.Id == 0)
                 {
-                    var p = new Product
-                    {
-                        Name = productViewModel.Name,
-                        Description = productViewModel.Description,
-                        Price = productViewModel.Price,
-                        ImageUrl = productViewModel.ImageUrl,
-                        Category = productViewModel.Category,
-                        IsActive = productViewModel.IsActive,
-                        IsCustomizable = productViewModel.IsCustomizable
-                    };
                     _db.Products.Add(p);
                 }
                 else
                 {
-                    var p = await _db.Products.FindAsync(productViewModel.Id);
-                    if (p == null) return NotFound();
-                    p.Name = productViewModel.Name;
-                    p.Description = productViewModel.Description;
-                    p.Price = productViewModel.Price;
-                    p.ImageUrl = productViewModel.ImageUrl;
-                    p.Category = productViewModel.Category;
-                    p.IsActive = productViewModel.IsActive;
-                    p.IsCustomizable = productViewModel.IsCustomizable;
                     _db.Products.Update(p);
+                    // Clear old mappings
+                    var oldMappings = _db.ProductIngredients.Where(pi => pi.ProductId == p.Id);
+                    _db.ProductIngredients.RemoveRange(oldMappings);
                 }
+
                 await _db.SaveChangesAsync();
+
+                // Save new mappings
+                if (productViewModel.Ingredients != null)
+                {
+                    foreach (var item in productViewModel.Ingredients)
+                    {
+                        if (item.QuantityPerUnit > 0)
+                        {
+                            _db.ProductIngredients.Add(new ProductIngredient
+                            {
+                                ProductId = p.Id,
+                                IngredientId = item.IngredientId,
+                                QuantityPerUnit = item.QuantityPerUnit
+                            });
+                        }
+                    }
+                    await _db.SaveChangesAsync();
+                }
+
                 TempData["success"] = productViewModel.Id == 0 ? "Tạo sản phẩm thành công" : "Cập nhật sản phẩm thành công";
                 return RedirectToAction("Index");
             }
+
+            // Re-fetch ingredients if model state is invalid
+            var ingredients = await _db.Ingredients.Include(i => i.Category)!.ThenInclude(c => c!.Parent).OrderBy(i => i.Name).ToListAsync();
+            foreach (var item in productViewModel.Ingredients)
+            {
+                var ing = ingredients.FirstOrDefault(i => i.Id == item.IngredientId);
+                if (ing != null)
+                {
+                    item.Name = ing.Name;
+                    item.Unit = ing.Unit;
+                    item.UnitPrice = ing.UnitPrice;
+                    item.IsDoughBase = ing.IsDoughBase;
+                    item.StockQuantity = ing.StockQuantity;
+                    item.CategoryId = ing.CategoryId;
+                    item.CategoryDisplayPath = BuildIngredientCategoryPath(ing);
+                }
+            }
+            ViewBag.IngredientCategoryTabs = await _db.IngredientCategories.AsNoTracking().OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ToListAsync();
             return View(productViewModel);
         }
 

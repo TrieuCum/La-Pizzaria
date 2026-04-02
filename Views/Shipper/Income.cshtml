@@ -1,0 +1,259 @@
+@model LaPizzaria.ViewModels.ShipperIncomeViewModel
+@{
+    Layout = null;
+    string FormatCurrency(decimal amount) => $"{amount:N0}đ";
+    string RelativeDate(DateTime dateTimeUtc)
+    {
+        var localDate = dateTimeUtc.ToLocalTime().Date;
+        var today = DateTime.Now.Date;
+        if (localDate == today) return "Hôm nay";
+        if (localDate == today.AddDays(-1)) return "Hôm qua";
+        return localDate.ToString("dd/MM/yyyy");
+    }
+
+    var chartSteps = new[] { 500000m, 1000000m, 2000000m, 3000000m, 5000000m }
+        .Where(x => x <= Model.MaxChartValue)
+        .DefaultIfEmpty(500000m)
+        .OrderByDescending(x => x)
+        .ToList();
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shipper - Thu nhập</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style>
+        body { font-family: 'Work Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+    </style>
+</head>
+<body class="bg-[#f8f7f5]">
+    @await Html.PartialAsync("_ShipperTopNav")
+    <div class="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-6 md:px-8">
+        <!-- Page heading & actions -->
+        <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div class="flex flex-col gap-1">
+                <h1 class="text-3xl font-black leading-tight tracking-tight text-[#181411] md:text-4xl">Dashboard Thu nhập</h1>
+                <p class="text-base font-normal text-[#8a7560]">Quản lý doanh thu và rút tiền nhanh chóng</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a asp-controller="Shipper"
+                   asp-action="MonthlySummary"
+                   asp-route-month="@DateTime.Now.Month"
+                   asp-route-year="@DateTime.Now.Year"
+                   class="flex h-10 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-4 text-sm font-bold text-black shadow-sm transition-colors hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white">
+                    <span class="material-symbols-outlined mr-2 text-lg">calendar_today</span>
+                    Tháng này
+                </a>
+                <a asp-controller="Shipper"
+                   asp-action="Withdraw"
+                   class="flex h-10 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-6 text-sm font-bold text-black shadow-sm transition-colors hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white">
+                    <span class="material-symbols-outlined mr-2 text-lg">payments</span>
+                    Rút tiền
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Hôm nay</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">today</span>
+                </div>
+                <p class="text-3xl font-bold leading-tight text-[#181411] group-hover:text-white">@FormatCurrency(Model.IncomeToday)</p>
+            </div>
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Tuần này</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">date_range</span>
+                </div>
+                <p class="text-3xl font-bold leading-tight text-[#181411] group-hover:text-white">@FormatCurrency(Model.IncomeThisWeek)</p>
+            </div>
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Tháng này</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">calendar_month</span>
+                </div>
+                <p class="text-3xl font-bold leading-tight text-primary group-hover:text-white">@FormatCurrency(Model.IncomeThisMonth)</p>
+            </div>
+            <div class="group flex flex-col gap-2 rounded-xl border border-[#e6e0db] bg-white p-5 text-black shadow-sm transition-all hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white hover:shadow-md">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold uppercase tracking-wider text-[#E67E22] group-hover:text-white">Đơn hoàn thành</p>
+                    <span class="material-symbols-outlined rounded-md bg-primary/10 p-1 text-primary group-hover:bg-white/20 group-hover:text-white">check_circle</span>
+                </div>
+                <p class="text-3xl font-bold leading-tight text-[#181411] group-hover:text-white">@Model.CompletedOrdersThisMonth</p>
+                <p class="text-sm font-medium text-[#E67E22] group-hover:text-white">đơn hàng tháng này</p>
+            </div>
+        </div>
+
+        <!-- Chart + table -->
+        <div class="flex flex-col gap-6 lg:gap-8">
+            <!-- Chart -->
+            <div class="rounded-xl border border-[#e6e0db] bg-white p-6 text-black shadow-sm">
+                <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-[#181411]">Xu hướng thu nhập</h3>
+                        <p class="text-sm text-[#8a7560]">7 ngày gần nhất</p>
+                    </div>
+                    <div class="text-left sm:text-right">
+                        <p class="text-xs font-semibold uppercase text-[#8a7560]">Tổng</p>
+                        <p class="text-xl font-bold text-primary">@FormatCurrency(Model.TotalLast7Days)</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="flex h-[250px] w-16 flex-col justify-between text-right text-xs font-semibold text-[#8a7560]">
+                        @foreach (var mark in chartSteps)
+                        {
+                            <span>@FormatCurrency(mark)</span>
+                        }
+                        <span>0d</span>
+                    </div>
+                    <div class="relative flex h-[250px] w-full items-end justify-between gap-2 border-b border-dashed border-[#e6e0db] pt-4 sm:gap-4">
+                        @foreach (var mark in chartSteps)
+                        {
+                            var percent = (int)Math.Round((mark / Model.MaxChartValue) * 100m);
+                            <div class="pointer-events-none absolute inset-x-0 border-t border-dashed border-[#eee8e3]" style="bottom:@percent%;"></div>
+                        }
+                        @foreach (var b in Model.Last7Days)
+                        {
+                            <div class="group relative z-10 flex h-full w-full cursor-pointer flex-col items-center justify-end gap-2">
+                                <div class="relative w-full max-w-[40px] rounded-t-sm @(b.Highlight ? "bg-[#E67E22] shadow-md shadow-[#E67E22]/25 hover:bg-[#cf6f1f]" : "bg-[#E67E22]/25 group-hover:bg-[#E67E22]/45") transition-all duration-300" style="height:@b.HeightPercent%;">
+                                    <div class="absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">@FormatCurrency(b.Value)</div>
+                                </div>
+                                <span class="text-xs font-bold @(b.Highlight ? "text-[#E67E22]" : "text-[#8a7560]")">@b.Label</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-hidden rounded-xl border border-[#e6e0db] bg-white text-black shadow-sm">
+                <div class="flex flex-col gap-3 border-b border-[#e6e0db] p-6 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 class="text-lg font-bold text-[#181411]">Chi tiết thu nhập đơn hàng</h2>
+                    <form method="get" asp-controller="Shipper" asp-action="Income" class="w-full sm:w-[320px]">
+                        <div class="flex items-center gap-2">
+                            <input type="text"
+                                   name="orderCodeSearch"
+                                   value="@Model.OrderCodeSearch"
+                                   placeholder="Tìm mã đơn hàng..."
+                                   class="h-10 w-full rounded-lg border border-[#e6e0db] px-3 text-sm outline-none focus:border-primary" />
+                            <button type="submit" class="h-10 rounded-lg border border-[#e6e0db] bg-white px-3 text-sm font-semibold text-black hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white">Tìm</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-left">
+                        <thead>
+                            <tr class="bg-[#f8f7f5] text-xs uppercase tracking-wider text-[#8a7560]">
+                                <th class="px-4 py-4 font-semibold md:px-6">Mã đơn</th>
+                                <th class="px-4 py-4 font-semibold md:px-6">Thời gian</th>
+                                <th class="px-4 py-4 font-semibold md:px-6">Chi tiết</th>
+                                <th class="px-4 py-4 text-right font-semibold md:px-6">Thu nhập</th>
+                                <th class="px-4 py-4 text-center font-semibold md:px-6">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#f0efeb]">
+                            @if (Model.RecentCompletedOrders.Any())
+                            {
+                                @foreach (var row in Model.RecentCompletedOrders)
+                                {
+                                    <tr class="transition-colors hover:bg-[#fff7f1]">
+                                        <td class="px-4 py-4 md:px-6">
+                                            <div class="flex items-center gap-3">
+                                                <div class="rounded-lg bg-primary/10 p-2 text-primary">
+                                                    <span class="material-symbols-outlined text-xl">local_pizza</span>
+                                                </div>
+                                                <span class="font-bold text-[#181411]">#PZ-@row.OrderId</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 md:px-6">
+                                            <div class="flex flex-col">
+                                                <span class="text-sm font-medium text-[#181411]">@RelativeDate(row.CompletedAt)</span>
+                                                <span class="text-xs text-[#8a7560]">@row.CompletedAt.ToLocalTime().ToString("HH:mm")</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 md:px-6">
+                                            <div class="flex max-w-[220px] flex-col gap-1">
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span class="text-[#8a7560]">Phí giao hàng (@row.DistanceText):</span>
+                                                    <span class="font-medium text-[#181411]">@FormatCurrency(row.ShippingFee)</span>
+                                                </div>
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span class="text-[#8a7560]">Tiền Tip:</span>
+                                                    <span class="font-medium text-green-600">+@FormatCurrency(row.TipAmount)</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 text-right md:px-6">
+                                            <span class="text-base font-bold text-primary">@FormatCurrency(row.TotalIncome)</span>
+                                        </td>
+                                        <td class="px-4 py-4 text-center md:px-6">
+                                            @if (row.IsCompleted)
+                                            {
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                                                    <span class="material-symbols-outlined text-[14px]">check</span>
+                                                    Đã nhận
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">
+                                                    <span class="material-symbols-outlined text-[14px]">schedule</span>
+                                                    Chờ duyệt
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">Chưa có dữ liệu thu nhập cho đơn hàng hoàn thành.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (Model.TotalPages > 1)
+                {
+                    <nav class="flex items-center justify-center gap-2 border-t border-[#f0efeb] px-4 py-4">
+                        <a asp-controller="Shipper"
+                           asp-action="Income"
+                           asp-route-page="@(Model.Page > 1 ? Model.Page - 1 : 1)"
+                           asp-route-orderCodeSearch="@Model.OrderCodeSearch"
+                           class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-2 text-sm font-semibold text-black @(Model.Page <= 1 ? "pointer-events-none opacity-40" : "hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white")">
+                            &#8592;
+                        </a>
+                        @for (var i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <a asp-controller="Shipper"
+                               asp-action="Income"
+                               asp-route-page="@i"
+                               asp-route-orderCodeSearch="@Model.OrderCodeSearch"
+                               class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-semibold @(i == Model.Page ? "bg-[#E67E22] text-white border border-[#E67E22]" : "bg-white text-black border border-[#e6e0db] hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white")">
+                                @i
+                            </a>
+                        }
+                        <a asp-controller="Shipper"
+                           asp-action="Income"
+                           asp-route-page="@(Model.Page < Model.TotalPages ? Model.Page + 1 : Model.TotalPages)"
+                           asp-route-orderCodeSearch="@Model.OrderCodeSearch"
+                           class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-[#e6e0db] bg-white px-2 text-sm font-semibold text-black @(Model.Page >= Model.TotalPages ? "pointer-events-none opacity-40" : "hover:border-[#E67E22] hover:bg-[#E67E22] hover:text-white")">
+                            &#8594;
+                        </a>
+                    </nav>
+                }
+            </div>
+        </div>
+    </div>
+</body>
+</html>

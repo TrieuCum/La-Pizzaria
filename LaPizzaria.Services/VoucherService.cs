@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
@@ -64,8 +65,44 @@ namespace LaPizzaria.Services
 			if (!v.IsActive) return false;
 			if (v.ExpiresAtUtc != null && v.ExpiresAtUtc <= nowUtc) return false;
 			if (v.MaxUses > 0 && v.UsedCount >= v.MaxUses) return false;
-			if (v.DiscountPercent <= 0) return false;
+			
+            // Basic validity check
+            if (v.VoucherType == "Percentage" && v.DiscountPercent <= 0) return false;
+            if (v.VoucherType == "FixedAmount" && v.DiscountAmount <= 0) return false;
+
 			return true;
+		}
+
+		public async Task<bool> CanApplyToOrderAsync(Voucher v, DateTime nowUtc, IReadOnlyList<int>? cartProductIds, CancellationToken cancellationToken = default)
+		{
+			if (!IsUsable(v, nowUtc)) return false;
+			if (!MatchesTimeAndDay(v, nowUtc)) return false;
+			if (v.UpsaleRequiresSlowSeller)
+			{
+				if (cartProductIds == null || cartProductIds.Count == 0) return false;
+				var ok = await _db.Products.AnyAsync(p => cartProductIds.Contains(p.Id) && p.IsSlowSeller, cancellationToken);
+				if (!ok) return false;
+			}
+			return true;
+		}
+
+		public bool MatchesTimeAndDay(Voucher v, DateTime nowUtc)
+		{
+			var local = VietnamTime.UtcNowToLocal(nowUtc);
+			if (!string.IsNullOrWhiteSpace(v.ValidDaysOfWeek))
+			{
+				var dow = (int)local.DayOfWeek;
+				var allowed = v.ValidDaysOfWeek.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+					.Select(s => int.TryParse(s, out var x) ? x : -1).Where(x => x >= 0 && x <= 6).ToHashSet();
+				if (allowed.Count > 0 && !allowed.Contains(dow)) return false;
+			}
+			if (v.TimeStartMinute == null && v.TimeEndMinute == null) return true;
+			if (v.TimeStartMinute == null || v.TimeEndMinute == null) return true;
+			var m = VietnamTime.ToMinuteOfDay(local);
+			var s = v.TimeStartMinute.Value;
+			var e = v.TimeEndMinute.Value;
+			if (s <= e) return m >= s && m <= e;
+			return m >= s || m <= e;
 		}
 
 		public TimeSpan? TimeRemaining(Voucher v, DateTime nowUtc)

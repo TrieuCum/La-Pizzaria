@@ -1,54 +1,455 @@
 @model LaPizzaria.ViewModels.LoginViewModel
-@{ ViewData["Title"] = "Đăng nhập"; }
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = null;
+}
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-5 col-md-7 col-sm-10">
-            <div class="card p-4 shadow-lg auth-card">
-                <h2 class="card-title text-center mb-3 brand-primary">Đăng nhập</h2>
-                <p class="text-center text-muted mb-4">Chào mừng bạn trở lại La Pizzaria</p>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - LaPizzaria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --brand-orange: #F97316;
+            --brand-orange-hover: #EA580C;
+            --brand-dark: #0F172A;
+            --brand-gray: #64748b;
+            --brand-white: #FFFFFF;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background-color: #f8fafc;
+        }
+
+        .auth-wrapper {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Decorative Floating Elements */
+        .floating-element {
+            position: absolute;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.6;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+        }
+
+        .el-1 { top: 10%; left: 5%; font-size: 4rem; animation: float 6s ease-in-out infinite; }
+        .el-2 { bottom: 15%; right: 10%; font-size: 3rem; animation: float 8s ease-in-out infinite alternate; }
+        .el-3 { top: 20%; right: 45%; font-size: 2.5rem; animation: float 7s ease-in-out infinite 1s; }
+
+        @@keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        /* Left Side - Image Hero */
+        .auth-hero {
+            flex: 1.2;
+            background: url('/images/auth_bg.png') no-repeat center center;
+            background-size: cover;
+            position: relative;
+            display: none;
+        }
+
+        @@media (min-width: 992px) {
+            .auth-hero { display: block; }
+        }
+
+        .auth-hero::after {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(249, 115, 22, 0.3) 100%);
+            backdrop-filter: saturate(1.2);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 140px 20px;
+            color: white;
+        }
+
+        .hero-title {
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 900;
+            font-size: 4.5rem;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            letter-spacing: -2px;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .hero-subtitle {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            max-width: 540px;
+            opacity: 1;
+            line-height: 1.8;
+            font-weight: 500;
+            letter-spacing: -0.1px;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Right Side - Form Container */
+        .auth-form-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .form-card {
+            width: 100%;
+            max-width: 480px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 56px;
+            box-shadow: var(--shadow-premium), inset 0 0 0 1px rgba(255,255,255,0.4);
+            position: relative;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none !important;
+            margin-bottom: 40px;
+        }
+
+        .brand-logo-icon { font-size: 2.25rem; filter: drop-shadow(0 4px 6px rgba(249, 115, 22, 0.3)); }
+        .brand-logo-text {
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 900;
+            font-size: 1.75rem;
+            color: var(--brand-dark);
+            letter-spacing: -1px;
+        }
+
+        .form-title {
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 800;
+            font-size: 2.25rem;
+            color: var(--brand-dark);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .form-subtitle {
+            color: var(--brand-gray);
+            margin-bottom: 32px;
+            font-size: 1rem;
+        }
+
+        /* Social Auth */
+        .social-auth {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .social-auth form {
+            flex: 1;
+            margin: 0;
+        }
+
+        .btn-social {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: var(--brand-dark);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-decoration: none;
+            width: 100%;
+        }
+
+        .btn-social:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 32px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .divider:not(:empty)::before { margin-right: 1.5em; }
+        .divider:not(:empty)::after { margin-left: 1.5em; }
+
+        /* Form Controls */
+        .form-floating > .form-control {
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 1.25rem 1rem;
+            height: calc(3.75rem + 2px);
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(5px);
+            font-weight: 500;
+        }
+
+        .form-floating > label { padding: 1.15rem 1rem; color: #94a3b8; }
+
+        .form-floating > .form-control:focus {
+            border-color: var(--brand-orange);
+            box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15);
+            background: white;
+        }
+
+        .btn-auth {
+            background: linear-gradient(135deg, var(--brand-orange) 0%, #f98e3d 100%);
+            color: white;
+            font-weight: 700;
+            border-radius: 16px;
+            padding: 16px;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 16px;
+            font-size: 1.1rem;
+            box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.4);
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 25px -5px rgba(249, 115, 22, 0.5);
+            color: white;
+        }
+
+        .auth-footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--brand-gray);
+            font-size: 0.95rem;
+        }
+
+        .auth-link {
+            color: var(--brand-orange);
+            text-decoration: none;
+            font-weight: 700;
+            position: relative;
+        }
+
+        .auth-link::after {
+            content: '';
+            position: absolute; width: 0; height: 2px;
+            bottom: -2px; left: 0; background-color: var(--brand-orange);
+            transition: width 0.3s ease;
+        }
+
+        .auth-link:hover::after { width: 100%; }
+
+        .floating-back {
+            position: absolute; top: 40px; left: 40px;
+            color: white; text-decoration: none !important;
+            z-index: 100;
+            font-weight: 700; display: flex; align-items: center; gap: 8px;
+            padding: 12px 24px; border-radius: 12px;
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+        }
+
+        .floating-back:hover { 
+            background: rgba(15, 23, 42, 0.6); 
+            transform: translateY(-2px); 
+            box-shadow: 0 15px 35px -10px rgba(0,0,0,0.4); 
+            color: white;
+        }
+
+        /* Animation */
+        @@keyframes fadeInBlur {
+            from { opacity: 0; transform: translateY(30px); filter: blur(10px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        .animate-premium {
+            animation: fadeInBlur 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-wrapper">
+        <a href="/" class="floating-back animate-premium" style="animation-delay: 0.6s;">
+            <i class="bi bi-arrow-left"></i> Trang chủ
+        </a>
+
+        <!-- Floating Elements -->
+        <span class="floating-element el-1">🍕</span>
+        <span class="floating-element el-2">🌿</span>
+        <span class="floating-element el-3">🍅</span>
+
+        <div class="auth-hero">
+            <div class="hero-content">
+                <h1 class="hero-title animate-premium">Nâng Tầm<br>Vị Giác.</h1>
+                <p class="hero-subtitle animate-premium" style="animation-delay: 0.15s;">LaPizzaria mang đến trải nghiệm pizza đẳng cấp quốc tế ngay tại bàn ăn của bạn. Hãy để chúng tôi phục vụ tâm hồn yêu ẩm thực của bạn!</p>
+            </div>
+        </div>
+        <div class="auth-form-container">
+            <div class="form-card animate-premium" style="animation-delay: 0.3s;">
+                <a href="/" class="brand-logo">
+                    <span class="brand-logo-icon">🍕</span>
+                    <span class="brand-logo-text">LaPizzaria</span>
+                </a>
+                <h2 class="form-title">Chào mừng!</h2>
+                <p class="form-subtitle">Đăng nhập để tận hưởng ưu đãi đặc quyền.</p>
+                @if (TempData["error"] != null)
+                {
+                    <div class="alert alert-danger py-2 px-3 small" role="alert">@TempData["error"]</div>
+                }
+                @if (TempData["success"] != null)
+                {
+                    <div class="alert alert-success py-2 px-3 small" role="alert">@TempData["success"]</div>
+                }
+
+                <div class="social-auth">
+                    @if (ViewBag.GoogleLoginEnabled == true)
+                    {
+                        <button
+                            type="button"
+                            class="btn-social"
+                            id="google-login-btn"
+                            title="Đăng nhập nhanh bằng Google"
+                            data-google-login-url="@Url.Action("ExternalLoginStart", "Account", new { provider = "Google", mode = "login", popup = true })">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Google
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn-social" disabled title="Google Login chưa được cấu hình">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="Google"> Google
+                        </button>
+                    }
+                    <button type="button" class="btn-social" disabled>
+                        <i class="bi bi-apple"></i> Apple ID
+                    </button>
+                </div>
+
+                <div class="divider">Hoặc qua Email</div>
+
                 <form asp-controller="Account" asp-action="Login" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                    
                     <div class="form-floating mb-3">
-                        <input asp-for="EmailOrUserName" class="form-control" placeholder="Email hoặc Tên người dùng" />
-                        <label asp-for="EmailOrUserName"></label>
-                        <span asp-validation-for="EmailOrUserName" class="text-danger"></span>
+                        <input asp-for="EmailOrUserName" class="form-control" id="userInput" placeholder="Email / Tên người dùng" />
+                        <label for="userInput">Email / Tên người dùng</label>
+                        <span asp-validation-for="EmailOrUserName" class="text-danger small"></span>
                     </div>
+
                     <div class="form-floating mb-3">
-                        <input asp-for="Password" class="form-control" placeholder="Mật khẩu" />
-                        <label asp-for="Password"></label>
-                        <span asp-validation-for="Password" class="text-danger"></span>
+                        <input asp-for="Password" type="password" class="form-control" id="passInput" placeholder="Mật khẩu" />
+                        <label for="passInput">Mật khẩu</label>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
+
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div class="form-check">
-                            <input asp-for="RememberMe" class="form-check-input" />
-                            <label class="form-check-label" asp-for="RememberMe"></label>
+                            <input asp-for="RememberMe" class="form-check-input" id="rememberMe" />
+                            <label class="form-check-label small fw-500" for="rememberMe">Ghi nhớ tôi</label>
                         </div>
-                        <a href="#" class="text-decoration-none brand-accent small">Quên mật khẩu?</a>
+                        <a href="#" class="auth-link small">Quên mật khẩu?</a>
                     </div>
-                    <div class="d-grid gap-2 mb-4">
-                        <button type="submit" class="btn btn-brand-primary btn-lg">Đăng nhập</button>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-auth">Khám phá ngay</button>
                     </div>
-                    <div class="text-center">
-                        <p class="mb-0">Chưa có tài khoản? <a asp-controller="Account" asp-action="Register" class="brand-primary-hover">Đăng ký ngay</a></p>
+
+                    <div class="auth-footer">
+                        Gia nhập đại gia đình? <a asp-controller="Account" asp-action="Register" class="auth-link">Đăng ký thành viên</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-</div>
 
-<style>
-    .auth-card { background-color: var(--light-cream); border-radius: 15px; overflow: hidden; }
-    .brand-primary { color: var(--primary-red); font-weight: bold; }
-    .brand-accent { color: var(--wood-brown); }
-    .brand-primary-hover:hover { color: var(--primary-red); }
-    .btn-brand-primary {
-        background-color: var(--primary-red); border-color: var(--primary-red);
-        color: var(--light-text-color); font-weight: bold; border-radius: 50px; padding: 10px 30px;
-        transition: background-color .3s ease-in-out, border-color .3s ease-in-out;
-    }
-    .btn-brand-primary:hover { background-color: var(--dark-brown); border-color: var(--dark-brown); }
-    .form-floating > .form-control:focus ~ label::after,
-    .form-floating > .form-control:not(:placeholder-shown) ~ label::after { background-color: var(--light-cream); }
-</style>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        (function () {
+            var googleBtn = document.getElementById('google-login-btn');
+            if (!googleBtn) return;
+
+            googleBtn.addEventListener('click', function () {
+                var url = googleBtn.getAttribute('data-google-login-url');
+                if (!url) return;
+
+                var width = 540;
+                var height = 680;
+                var left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
+                var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
+                var features = "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top + ",resizable=yes,scrollbars=yes";
+                var popup = window.open(url, "google-auth-popup", features);
+
+                if (!popup) {
+                    window.location.href = url;
+                    return;
+                }
+
+                popup.focus();
+            });
+
+            window.addEventListener('message', function (event) {
+                if (event.origin !== window.location.origin) return;
+                if (!event.data || event.data.source !== 'google-auth') return;
+
+                if (event.data.status === 'success') {
+                    window.location.href = event.data.redirectUrl || '/';
+                } else if (event.data.status === 'error') {
+                    if (event.data.message) alert(event.data.message);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

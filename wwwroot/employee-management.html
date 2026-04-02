@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý nhân viên - La Pizzaria</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/employee-management.css">
+</head>
+<body>
+    <!-- Container chính -->
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Logo -->
+                <div class="logo">
+                    <i class="fas fa-pizza-slice"></i>
+                    <span>La Pizzaria</span>
+                </div>
+
+                <!-- Menu -->
+                <nav class="menu">
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-home"></i>
+                        <span>Trang chủ</span>
+                    </a>
+                    <a href="#" class="menu-item active">
+                        <i class="fas fa-users"></i>
+                        <span>Quản lý nhân viên</span>
+                    </a>
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-box"></i>
+                        <span>Sản phẩm</span>
+                    </a>
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Đơn hàng</span>
+                    </a>
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Báo cáo</span>
+                    </a>
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Cài đặt</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Nút đăng xuất -->
+            <div class="logout">
+                <a href="#" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Đăng xuất</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Nội dung chính -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Tìm kiếm...">
+                </div>
+
+                <nav class="header-nav">
+                    <a href="#" class="nav-link">Tổng quan</a>
+                    <a href="#" class="nav-link">Thông báo</a>
+                    <a href="#" class="nav-link">Tin nhắn</a>
+                </nav>
+
+                <button class="profile-btn">
+                    <i class="fas fa-user"></i>
+                    Hồ sơ
+                </button>
+            </header>
+
+            <!-- Tiêu đề trang -->
+            <div class="page-header">
+                <h1>Quản lý nhân viên</h1>
+                <button class="add-btn">
+                    <i class="fas fa-plus"></i>
+                    Thêm nhân viên
+                </button>
+            </div>
+
+            <!-- Bảng dữ liệu -->
+            <div class="table-container">
+                <table class="employee-table">
+                    <thead>
+                        <tr>
+                            <th>Nhân viên</th>
+                            <th>Email</th>
+                            <th>Chức vụ</th>
+                            <th>Số điện thoại</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="employee-info">
+                                    <img src="https://i.pravatar.cc/150?img=1" alt="Avatar" class="avatar">
+                                    <div>
+                                        <div class="name">Nguyễn Văn An</div>
+                                        <div class="id">ID: NV001</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>nguyenvanan@email.com</td>
+                            <td><span class="badge">Quản lý</span></td>
+                            <td>0901234567</td>
+                            <td>
+                                <span class="status active">
+                                    <span class="dot"></span>
+                                    Đang làm việc
+                                </span>
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="employee-info">
+                                    <img src="https://i.pravatar.cc/150?img=2" alt="Avatar" class="avatar">
+                                    <div>
+                                        <div class="name">Trần Thị Bình</div>
+                                        <div class="id">ID: NV002</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>tranthibinh@email.com</td>
+                            <td><span class="badge">Nhân viên</span></td>
+                            <td>0912345678</td>
+                            <td>
+                                <span class="status active">
+                                    <span class="dot"></span>
+                                    Đang làm việc
+                                </span>
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="employee-info">
+                                    <img src="https://i.pravatar.cc/150?img=3" alt="Avatar" class="avatar">
+                                    <div>
+                                        <div class="name">Lê Minh Cường</div>
+                                        <div class="id">ID: NV003</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>leminhcuong@email.com</td>
+                            <td><span class="badge">Đầu bếp</span></td>
+                            <td>0923456789</td>
+                            <td>
+                                <span class="status inactive">
+                                    <span class="dot"></span>
+                                    Nghỉ phép
+                                </span>
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="employee-info">
+                                    <img src="https://i.pravatar.cc/150?img=4" alt="Avatar" class="avatar">
+                                    <div>
+                                        <div class="name">Phạm Thu Dung</div>
+                                        <div class="id">ID: NV004</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>phamthudung@email.com</td>
+                            <td><span class="badge">Phục vụ</span></td>
+                            <td>0934567890</td>
+                            <td>
+                                <span class="status active">
+                                    <span class="dot"></span>
+                                    Đang làm việc
+                                </span>
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="employee-info">
+                                    <img src="https://i.pravatar.cc/150?img=5" alt="Avatar" class="avatar">
+                                    <div>
+                                        <div class="name">Hoàng Văn Em</div>
+                                        <div class="id">ID: NV005</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>hoangvanem@email.com</td>
+                            <td><span class="badge">Thu ngân</span></td>
+                            <td>0945678901</td>
+                            <td>
+                                <span class="status active">
+                                    <span class="dot"></span>
+                                    Đang làm việc
+                                </span>
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

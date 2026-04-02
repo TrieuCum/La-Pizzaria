@@ -1,0 +1,240 @@
+@model LaPizzaria.Models.Order
+@using LaPizzaria.Models
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+    var orderCode = $"#PH{Model.Id}";
+    var subtotal = Model.OrderDetails?.Sum(d => d.Subtotal) ?? 0;
+    var voucherDiscount = 0m;
+    if (Model.OrderVouchers != null)
+    {
+        foreach (var ov in Model.OrderVouchers.Take(2))
+        {
+            var v = ov.Voucher;
+            if (v != null && v.VoucherType == "Percentage")
+                voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 0);
+            else if (v != null && v.VoucherType == "FixedAmount")
+                voucherDiscount += v.DiscountAmount;
+        }
+    }
+    var deliveryFee = 0m;
+    var isCancelled = string.Equals(Model.OrderStatus, "Cancelled", System.StringComparison.OrdinalIgnoreCase);
+    var step = 1;
+    if (!isCancelled)
+    {
+        if (Model.OrderStatus == "Ready" || Model.OrderStatus == "Delivering") step = 2;
+        else if (Model.OrderStatus == "Completed") step = 3;
+    }
+    var progressPercent = isCancelled
+        ? 100
+        : step == 1 ? 35 : step == 2 ? 70 : 100;
+    var userName = "—";
+    var userPhone = "—";
+    var deliveryAddress = Model.DeliveryAddress;
+    if (Model.User != null)
+    {
+        userName = $"{Model.User.FirstName} {Model.User.LastName}".Trim();
+        if (string.IsNullOrWhiteSpace(userName)) userName = Model.User.UserName ?? Model.User.Email ?? "Khách hàng";
+        userPhone = !string.IsNullOrWhiteSpace(Model.User.PhoneNumber) ? Model.User.PhoneNumber : "—";
+        if (string.IsNullOrWhiteSpace(deliveryAddress) && !string.IsNullOrWhiteSpace(Model.User.Address)) deliveryAddress = Model.User.Address;
+    }
+    if (string.IsNullOrWhiteSpace(deliveryAddress)) deliveryAddress = "—";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-details.css" asp-append-version="true" />
+}
+
+<div class="order-detail-page">
+    <div class="order-detail-wrap">
+        <nav class="order-detail-breadcrumb">
+            <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+            <span class="sep">/</span>
+            <a asp-controller="Order" asp-action="Index">Lịch sử đơn hàng</a>
+            <span class="sep">/</span>
+            <span class="current">Đơn hàng @orderCode</span>
+        </nav>
+
+        <div class="order-detail-head">
+            <div>
+                <h1 class="order-detail-title">Đơn hàng @orderCode</h1>
+                <div class="order-detail-meta">
+                    <span><i class="bi bi-calendar3 me-1"></i> @Model.OrderDate.ToLocalTime().ToString("HH:mm, d MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))</span>
+                    <span class="dot"></span>
+                    <span class="payment">Thanh toán: @(string.IsNullOrEmpty(Model.PaymentMethod) ? "Chưa chọn" : Model.PaymentMethod)</span>
+                </div>
+            </div>
+            <div class="order-detail-head-btns">
+                <a asp-controller="Order" asp-action="PrintInvoice" asp-route-id="@Model.Id" target="_blank" class="order-detail-btn text-decoration-none">
+                    <i class="bi bi-printer"></i> In hóa đơn
+                </a>
+                <a asp-controller="Menu" asp-action="Index" class="order-detail-btn primary">Đặt lại đơn này</a>
+            </div>
+        </div>
+
+        <div class="order-detail-grid">
+            <div>
+                <!-- Timeline -->
+                <div class="order-detail-card">
+                    <h3>Trạng thái đơn hàng</h3>
+                    @if (isCancelled)
+                    {
+                        <div class="order-detail-timeline cancelled">
+                            <div class="progress-bar bg-danger" style="width: 100%"></div>
+                            <div class="step">
+                                <div class="step-icon active bg-danger text-white"><i class="bi bi-x-circle"></i></div>
+                                <div class="step-title text-danger">Đã hủy</div>
+                                <div class="step-desc text-danger">Đơn hàng đã bị từ chối hoặc hủy @Model.OrderDate.ToLocalTime().ToString("HH:mm")</div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="order-detail-timeline">
+                            <div class="progress-bar" style="width: @(progressPercent)%"></div>
+                            <div class="step">
+                                <div class="step-icon @(step >= 1 ? "active" : "pending")"><i class="bi bi-egg-fried"></i></div>
+                                <div class="step-title">Đang chuẩn bị</div>
+                                <div class="step-desc @(step >= 1 ? "highlight" : "")">@(step >= 1 ? Model.OrderDate.ToLocalTime().ToString("HH:mm") + " - Nhà bếp đã nhận" : "Chờ xử lý")</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-icon @(step >= 2 ? "active" : "pending")"><i class="bi bi-truck"></i></div>
+                                <div class="step-title">Đang giao hàng</div>
+                                <div class="step-desc @(step >= 2 && step < 3 ? "highlight" : "")">@(step == 2 ? "Tài xế đang đến" : step >= 3 ? "Đã giao" : "Dự kiến")</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-icon @(step >= 3 ? "active" : "pending")"><i class="bi bi-check-circle"></i></div>
+                                <div class="step-title">Hoàn thành</div>
+                                <div class="step-desc">@(step >= 3 ? "Đã nhận hàng" : "Dự kiến")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Order items -->
+                <div class="order-detail-card order-detail-items-card">
+                    <div class="card-head">
+                        <h3>Danh sách món ăn</h3>
+                        <span class="count">@(Model.OrderDetails?.Count ?? 0) món</span>
+                    </div>
+                    <div class="divide-y">
+                        @if (Model.OrderDetails != null && Model.OrderDetails.Any())
+                        {
+                            @foreach (var d in Model.OrderDetails)
+                            {
+                                <div class="order-detail-item">
+                                    @{
+                                        var isMix = d.ProductId2.HasValue && d.Product2 != null;
+                                        var displayImg = isMix ? "/images/mix-default.png" : (d.Product?.ImageUrl ?? "/images/v17_1114.png");
+                                    }
+                                    <div class="order-detail-item-img position-relative overflow-hidden border">
+                                        <img src="@displayImg" class="w-100 h-100 object-fit-cover" alt="@(isMix ? "Pizza Mix" : (d.Product?.Name ?? "Product"))" />
+                                    </div>
+                                    <div class="order-detail-item-info">
+                                        @{
+                                            var itemName = d.Product?.Name ?? "Món #" + d.ProductId;
+                                            if (d.ProductId2.HasValue && d.Product2 != null)
+                                            {
+                                                itemName = $"Mix: {d.Product?.Name} / {d.Product2.Name}";
+                                            }
+                                        }
+                                        <div class="order-detail-item-name d-flex align-items-center gap-2">
+                                            @itemName
+                                            @if (!string.IsNullOrEmpty(d.Size))
+                                            {
+                                                <span class="badge bg-light text-dark border extra-small fw-bold">Size @d.Size</span>
+                                            }
+                                        </div>
+                                        <div class="order-detail-item-notes">@(d.Product?.Description != null && d.Product.Description.Length > 60 ? d.Product.Description.Substring(0, 60) + "…" : d.Product?.Description)</div>
+                                    </div>
+                                    <div class="order-detail-item-right">
+                                        <div class="order-detail-item-price">@d.UnitPrice.ToString("N0")₫</div>
+                                        <div class="order-detail-item-qty">Số lượng: @d.Quantity</div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <!-- Delivery info -->
+                <div class="order-detail-card order-detail-delivery">
+                    <div class="card-icon">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <h3 class="mb-0">Thông tin giao hàng</h3>
+                    </div>
+                    <div class="block">
+                        <div class="label">NGƯỜI NHẬN</div>
+                        <div class="value">@userName</div>
+                        <div class="value">@userPhone</div>
+                    </div>
+                    <div class="block">
+                        <div class="label">ĐỊA CHỈ</div>
+                        <div class="value">@deliveryAddress</div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                    {
+                        <div class="block border-t">
+                            <div class="label">Ghi chú cho tài xế</div>
+                            <div class="value italic">"@Model.Notes"</div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Summary -->
+                <div class="order-detail-card order-detail-summary">
+                    <div class="badge-invoice">Hóa đơn chi tiết</div>
+                    <h3>Thanh toán</h3>
+                    <div class="row-summary">
+                        <span class="muted">Tạm tính</span>
+                        <span>@subtotal.ToString("N0")₫</span>
+                    </div>
+                    @if (deliveryFee > 0)
+                    {
+                        <div class="row-summary">
+                            <span class="muted">Phí vận chuyển</span>
+                            <span>@deliveryFee.ToString("N0")₫</span>
+                        </div>
+                    }
+                    @if (voucherDiscount > 0 && Model.OrderVouchers != null)
+                    {
+                        var firstCode = Model.OrderVouchers.FirstOrDefault()?.Voucher?.Code ?? "Voucher";
+                        <div class="row-summary">
+                            <span class="muted d-flex align-items-center gap-1">
+                                Giảm giá (Voucher)
+                                <span class="badge bg-warning bg-opacity-25 text-warning px-1 rounded">@firstCode</span>
+                            </span>
+                            <span class="text-danger fw-semibold">-@voucherDiscount.ToString("N0")₫</span>
+                        </div>
+                    }
+                    <div class="row-total">
+                        <p class="total-label mb-0">Tổng cộng</p>
+                        <div>
+                            <span class="total-value">@Model.TotalPrice.ToString("N0")₫</span>
+                            <span class="total-note">(Đã bao gồm VAT)</span>
+                        </div>
+                    </div>
+                    <div class="order-detail-points">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="points-icon"><i class="bi bi-star-fill"></i></div>
+                            <div class="points-text">
+                                <span class="fw-bold">Điểm tích lũy</span>
+                                <small>Bạn đã nhận được</small>
+                            </div>
+                        </div>
+                        <span class="points-value">+@(Math.Max(0, (int)(Model.TotalPrice / 10000))) điểm</span>
+                    </div>
+                </div>
+
+                <div class="order-detail-support">
+                    <span class="support-icon"><i class="bi bi-headset"></i></span>
+                    <div>
+                        <p class="support-title mb-1">Cần hỗ trợ?</p>
+                        <p class="support-desc mb-0">Liên hệ tổng đài 1900 1234 (miễn phí)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

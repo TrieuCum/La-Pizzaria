@@ -1,42 +1,276 @@
 @model LaPizzaria.Models.Voucher
+@using LaPizzaria.Models
 
-<div class="container mt-4">
-	<h2>@(Model.Id == 0 ? "Thêm voucher" : "Sửa voucher")</h2>
-	<form method="post" class="card p-3 mt-3">
-		<input type="hidden" asp-for="Id" />
-		<div class="row g-3">
-			<div class="col-md-3">
-				<label class="form-label">Mã</label>
-				<input class="form-control" asp-for="Code" required />
-			</div>
-			<div class="col-md-5">
-				<label class="form-label">Tên</label>
-				<input class="form-control" asp-for="Name" />
-			</div>
-			<div class="col-md-2">
-				<label class="form-label">% giảm</label>
-				<input class="form-control" type="text" inputmode="numeric" pattern="[0-9]*" asp-for="DiscountPercent" />
-			</div>
-			<div class="col-md-2">
-				<label class="form-label">Số lượt tối đa</label>
-				<input class="form-control" type="text" inputmode="numeric" pattern="[0-9]*" asp-for="MaxUses" />
-			</div>
-			<div class="col-md-4">
-				<label class="form-label">Hết hạn (UTC)</label>
-				<input class="form-control" type="datetime-local" asp-for="ExpiresAtUtc" />
-			</div>
-			<div class="col-md-2 d-flex align-items-center">
-				<div class="form-check mt-4">
-					<input class="form-check-input" asp-for="IsActive" />
-					<label class="form-check-label">Active</label>
-				</div>
-			</div>
-		</div>
-		<div class="mt-3 d-flex gap-2">
-			<button class="btn btn-primary" type="submit">Lưu</button>
-			<a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
-		</div>
-	</form>
+@{
+    ViewData["Title"] = (Model.Id == 0 ? "Tạo Voucher Mới" : "Chỉnh Sửa Voucher");
+    var users = ViewBag.Users as List<ApplicationUser> ?? new List<ApplicationUser>();
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --brand-orange: #ff7a00;
+        --brand-dark: #0f172a;
+        --brand-gray: #64748b;
+        --bg-main: #f8fafc;
+    }
+
+    body {
+        background-color: var(--bg-main);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .upsert-container {
+        padding: 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--brand-dark);
+    }
+
+    .card-brand {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 2rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .form-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--brand-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control-brand {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .form-control-brand:focus {
+        border-color: var(--brand-orange);
+        box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.1);
+    }
+
+    .form-select-brand {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1.25rem;
+        padding-right: 2.5rem;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--brand-dark);
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-save {
+        background-color: var(--brand-orange);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .btn-save:hover {
+        background-color: #e66e00;
+        transform: translateY(-1px);
+    }
+
+    .btn-cancel {
+        background-color: white;
+        color: var(--brand-gray);
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        background-color: #f8fafc;
+        color: var(--brand-dark);
+    }
+
+    .helper-text {
+        font-size: 12px;
+        color: var(--brand-gray);
+        margin-top: 0.25rem;
+    }
+
+    .dynamic-field {
+        transition: all 0.3s ease;
+    }
+</style>
+
+<div class="upsert-container">
+    <div class="page-header">
+        <h1>@ViewData["Title"]</h1>
+    </div>
+
+    <form method="post" class="card-brand">
+        <input type="hidden" asp-for="Id" />
+        
+        <div class="section-title">
+            <i class="bi bi-info-circle"></i> Thông tin cơ bản
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label asp-for="Code" class="form-label">Mã Voucher</label>
+                <input asp-for="Code" class="form-control-brand" placeholder="Ví dụ: PIZZA50" required />
+                <span class="helper-text">Mã khách hàng sẽ nhập khi thanh toán.</span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Name" class="form-label">Tên Chương Trình</label>
+                <input asp-for="Name" class="form-control-brand" placeholder="Ví dụ: Giảm giá 50% dịp Giáng Sinh" required />
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-tag"></i> Loại & Mức giảm giá
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <label asp-for="VoucherType" class="form-label">Loại Voucher</label>
+                <select asp-for="VoucherType" class="form-control-brand form-select-brand" id="voucherTypeSelect">
+                    <option value="Percentage">Giảm theo phần trăm (%)</option>
+                    <option value="FixedAmount">Giảm theo số tiền cố định (VNĐ)</option>
+                    <option value="FreeShipping">Miễn phí giao hàng</option>
+                </select>
+            </div>
+            
+            <div class="col-md-6 dynamic-field" id="percentField">
+                <label asp-for="DiscountPercent" class="form-label">Phần trăm giảm (%)</label>
+                <input type="number" step="1" min="0" max="100" asp-for="DiscountPercent" class="form-control-brand" placeholder="Nhập 0-100" />
+            </div>
+
+            <div class="col-md-6 dynamic-field" id="amountField" style="display: none;">
+                <label asp-for="DiscountAmount" class="form-label">Số tiền giảm (VNĐ)</label>
+                <input type="number" step="1000" min="0" asp-for="DiscountAmount" class="form-control-brand" placeholder="Nhập số tiền" />
+                <span class="helper-text">Đối với FreeShip: Đây là số tiền tối đa được giảm.</span>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-gear"></i> Điều kiện sử dụng
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <label asp-for="MinOrderValue" class="form-label">Giá trị đơn hàng tối thiểu (VNĐ)</label>
+                <input type="number" step="1000" min="0" asp-for="MinOrderValue" class="form-control-brand" placeholder="Để 0 nếu không có điều kiện" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="TargetUserId" class="form-label">Dành riêng cho khách hàng (Tùy chọn)</label>
+                <select asp-for="TargetUserId" class="form-control-brand form-select-brand">
+                    <option value="">Tất cả khách hàng</option>
+                    @foreach(var user in users)
+                    {
+                        <option value="@user.Id">@user.Email (@user.FirstName @user.LastName)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="MaxUses" class="form-label">Giới hạn số lần sử dụng</label>
+                <input type="number" min="0" asp-for="MaxUses" class="form-control-brand" placeholder="0 = Không giới hạn" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ExpiresAtUtc" class="form-label">Ngày hết hạn (Giờ UTC)</label>
+                <input type="datetime-local" asp-for="ExpiresAtUtc" class="form-control-brand" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" asp-for="IsActive" id="isActiveCheck">
+                    <label class="form-check-label fw-600" for="isActiveCheck">Kích hoạt ngay</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-clock"></i> Khung giờ (VN) & upsale
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label">Giờ bắt đầu</label>
+                <input type="time" name="windowTimeStart" class="form-control-brand" value="@ViewBag.WindowTimeStart" />
+                <span class="helper-text">Để trống cả hai = mọi giờ.</span>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Giờ kết thúc</label>
+                <input type="time" name="windowTimeEnd" class="form-control-brand" value="@ViewBag.WindowTimeEnd" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ValidDaysOfWeek" class="form-label">Ngày trong tuần</label>
+                <input asp-for="ValidDaysOfWeek" class="form-control-brand" placeholder="VD: 1,2,3,4,5" />
+                <span class="helper-text">0=CN … 6=Thứ 7. Trống = mọi ngày.</span>
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="UpsaleRequiresSlowSeller" id="upsaleCheck" />
+                    <label class="form-check-label" for="upsaleCheck">Chỉ áp dụng khi giỏ có món <strong>bán chậm</strong> (đánh dấu ở sản phẩm)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 d-flex gap-3">
+            <button type="submit" class="btn-save">Lưu Voucher</button>
+            <a asp-action="Index" class="btn-cancel">Hủy bỏ</a>
+        </div>
+    </form>
 </div>
 
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            function toggleFields() {
+                var type = $('#voucherTypeSelect').val();
+                if (type === 'Percentage') {
+                    $('#percentField').show();
+                    $('#amountField').hide();
+                } else if (type === 'FixedAmount') {
+                    $('#percentField').hide();
+                    $('#amountField').show();
+                } else if (type === 'FreeShipping') {
+                    $('#percentField').hide();
+                    $('#amountField').show();
+                    $('#amountField label').text('Số tiền hỗ trợ tối đa (VNĐ)');
+                }
+            }
 
+            $('#voucherTypeSelect').on('change', toggleFields);
+            toggleFields(); // Initial call
+        });
+    </script>
+}

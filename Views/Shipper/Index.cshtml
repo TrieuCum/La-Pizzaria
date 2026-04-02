@@ -1,0 +1,120 @@
+@model LaPizzaria.ViewModels.ShipperIndexViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shipper - Trang chủ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Work Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+        .material-symbols-outlined.fill { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
+    </style>
+</head>
+<body class="bg-[#f8f7f5]">
+    @await Html.PartialAsync("_ShipperTopNav")
+    <main class="mx-auto max-w-6xl px-4 py-6 md:px-8">
+        @if (TempData["error"] != null)
+        {
+            <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">@TempData["error"]</div>
+        }
+        @if (TempData["success"] != null)
+        {
+            <div class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">@TempData["success"]</div>
+        }
+        <section class="mb-6 grid gap-4 md:grid-cols-2">
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                <p class="text-sm font-semibold text-gray-500">Đơn giao thành công hôm nay</p>
+                <p class="mt-2 text-3xl font-extrabold text-[#2C3E50]">@Model.DeliveredTodayCount</p>
+            </div>
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                <p class="text-sm font-semibold text-gray-500">Tổng thu hộ hôm nay</p>
+                <p class="mt-2 text-3xl font-extrabold text-[#E67E22]">@Model.IncomeToday.ToString("N0")đ</p>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-xl font-extrabold text-[#2C3E50]">Đơn đang giao</h2>
+                <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">Delivering</span>
+            </div>
+            @if (Model.ActiveOrder != null)
+            {
+                var o = Model.ActiveOrder;
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-orange-700">MÃ ĐƠN #@o.OrderId</p>
+                            <p class="mt-1 text-lg font-bold text-[#2C3E50]">@o.ItemCount x @o.ItemTitle</p>
+                            <p class="mt-2 text-sm text-gray-600">Khách: @o.CustomerName @(!string.IsNullOrWhiteSpace(o.CustomerPhone) ? $"| {o.CustomerPhone}" : "")</p>
+                            <p class="text-sm text-gray-600">Địa chỉ: @o.DeliveryAddress</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">@o.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                            <p class="mt-1 text-xl font-extrabold text-[#E67E22]">@o.TotalPrice.ToString("N0")đ</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <a asp-controller="Shipper" asp-action="Detail" asp-route-id="@o.OrderId" class="rounded-xl border border-[#E67E22] px-4 py-2 text-sm font-semibold text-[#E67E22] hover:bg-orange-50">Xem chi tiết</a>
+                        <form asp-controller="Shipper" asp-action="Complete" asp-route-id="@o.OrderId" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="rounded-xl bg-[#27AE60] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Đã giao thành công</button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="rounded-2xl bg-white p-8 text-center text-gray-500 shadow-sm ring-1 ring-gray-100">
+                    Hiện chưa có đơn nào ở trạng thái đang giao.
+                </div>
+            }
+        </section>
+
+        <section>
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-xl font-extrabold text-[#2C3E50]">Đơn hàng mới</h2>
+                <span class="text-xs font-semibold text-gray-500">Đã xác nhận / Đang chế biến / Sẵn sàng</span>
+            </div>
+            @if (Model.NewOrders.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var o in Model.NewOrders)
+                    {
+                        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <p class="text-base font-bold text-[#2C3E50]">#@o.OrderId - @o.ItemTitle</p>
+                                    <p class="text-sm text-gray-600">@o.DeliveryAddress</p>
+                                    <p class="text-xs text-gray-500">Khách: @o.CustomerName @(!string.IsNullOrWhiteSpace(o.CustomerPhone) ? $"| {o.CustomerPhone}" : "")</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <a asp-controller="Shipper" asp-action="Detail" asp-route-id="@o.OrderId" class="rounded-xl border border-[#E67E22] px-4 py-2 text-sm font-semibold text-[#E67E22] hover:bg-orange-50">Chi tiết</a>
+                                    <form asp-controller="Shipper" asp-action="Accept" asp-route-id="@o.OrderId" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="rounded-xl bg-[#E67E22] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Nhận đơn</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="rounded-2xl bg-white p-8 text-center text-gray-500 shadow-sm ring-1 ring-gray-100">
+                    Không có đơn mới cần nhận.
+                </div>
+            }
+        </section>
+    </main>
+</body>
+</html>

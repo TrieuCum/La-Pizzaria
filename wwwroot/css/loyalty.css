@@ -1,0 +1,479 @@
+/* Trang Tích điểm & Ưu đãi */
+
+.lp-loyalty-page {
+  background: #f8f7f5;
+  min-height: 60vh;
+  padding: 24px 0 64px;
+  font-family: "Work Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.material-symbols-outlined.lp-icon {
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  font-size: 20px;
+}
+
+.lp-loyalty-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+@media (min-width: 992px) {
+  .lp-loyalty-wrap {
+    padding: 0 40px;
+  }
+}
+
+.lp-loyalty-header h1 {
+  font-size: clamp(26px, 3.2vw, 32px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #181411;
+  margin-bottom: 6px;
+}
+
+.lp-loyalty-header p {
+  color: #8a7560;
+  font-size: 15px;
+  margin: 0;
+}
+
+.lp-loyalty-summary {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e6e0db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 24px 24px 20px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) 2fr minmax(140px, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+
+@media (max-width: 767.98px) {
+  .lp-loyalty-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lp-loyalty-points {
+  min-width: 240px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e6e0db;
+}
+
+@media (min-width: 768px) {
+  .lp-loyalty-points {
+    border-bottom: 0;
+    border-right: 1px solid #e6e0db;
+    padding-right: 24px;
+  }
+}
+
+.lp-loyalty-points-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8a7560;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.lp-loyalty-points-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.lp-loyalty-points-value strong {
+  font-size: 40px;
+  font-weight: 900;
+  color: #f48c25;
+}
+
+.lp-loyalty-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(244, 140, 37, 0.1);
+  color: #f48c25;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.lp-loyalty-progress {
+  flex: 1;
+}
+
+.lp-loyalty-progress-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lp-loyalty-progress-main {
+  font-size: 24px;
+  font-weight: 800;
+  color: #181411;
+}
+
+.lp-loyalty-progress-subnum {
+  font-size: 13px;
+  color: #8a7560;
+}
+
+.lp-loyalty-progress-title {
+  font-weight: 700;
+  color: #181411;
+  margin-bottom: 4px;
+}
+
+.lp-loyalty-progress-sub {
+  font-size: 13px;
+  color: #8a7560;
+  margin-bottom: 10px;
+}
+
+.lp-loyalty-bar {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: #f0edea;
+  overflow: hidden;
+}
+
+.lp-loyalty-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: var(--lp-progress, 60%);
+  background: #f48c25;
+  border-radius: 999px;
+}
+
+.lp-loyalty-bar-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8a7560;
+}
+
+.lp-loyalty-grid {
+  margin-top: 32px;
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 992px) {
+  .lp-loyalty-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.lp-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e6e0db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 20px 20px 18px;
+}
+
+.lp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.lp-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #181411;
+}
+
+.lp-card-title i {
+  color: #f48c25;
+}
+
+.lp-card-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f48c25;
+  text-decoration: none;
+}
+
+.lp-card-link:hover {
+  text-decoration: underline;
+}
+
+.lp-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.lp-tier-card {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #e6e0db;
+  background: #ffffff;
+}
+
+.lp-tier-card.current {
+  border-width: 2px;
+  border-color: #f48c25;
+  box-shadow: 0 4px 16px rgba(244, 140, 37, 0.18);
+  position: relative;
+}
+
+.lp-tier-current-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f48c25;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.lp-tier-name {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.lp-tier-range {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a7560;
+  text-transform: uppercase;
+}
+
+.lp-tier-desc {
+  font-size: 13px;
+  color: #8a7560;
+  margin-top: 4px;
+}
+
+.lp-redeem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.lp-redeem-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  border: 1px solid #e6e0db;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.lp-redeem-body {
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lp-redeem-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.lp-redeem-desc {
+  font-size: 13px;
+  color: #8a7560;
+}
+
+.lp-redeem-footer {
+  padding: 10px 16px 12px;
+  border-top: 1px solid #f5f2f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lp-pill-points {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f48c25;
+}
+
+.lp-btn-small {
+  border-radius: 999px;
+  padding: 6px 14px;
+  border: 1px solid #f48c25;
+  background: #f48c25;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lp-btn-small.outline {
+  background: transparent;
+  color: #f48c25;
+}
+
+.lp-btn-small:disabled {
+  background: #e5e5e5;
+  border-color: #e5e5e5;
+  color: #a3a3a3;
+}
+
+/* Voucher của tôi */
+.lp-voucher-card {
+  margin-top: 20px;
+}
+
+.lp-voucher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-voucher-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e0db;
+  background: #ffffff;
+}
+
+.lp-voucher-item-muted {
+  opacity: 0.7;
+}
+
+.lp-voucher-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lp-voucher-icon-green {
+  background: #ecfdf3;
+  color: #16a34a;
+}
+
+.lp-voucher-icon-gray {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.lp-voucher-icon-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.lp-voucher-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.lp-voucher-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #181411;
+}
+
+.lp-voucher-meta {
+  font-size: 11px;
+  color: #8a7560;
+  margin-top: 2px;
+}
+
+.lp-voucher-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.lp-voucher-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lp-voucher-badge-green {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.lp-voucher-badge-gray {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.lp-voucher-badge-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.lp-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.lp-history-table tr {
+  border-bottom: 1px solid #f5f2f0;
+}
+
+.lp-history-table tr:hover {
+  background: #faf9f8;
+}
+
+.lp-history-table td {
+  padding: 10px 12px;
+  vertical-align: top;
+}
+
+.lp-history-title {
+  font-weight: 700;
+  color: #181411;
+  margin-bottom: 2px;
+}
+
+.lp-history-date {
+  font-size: 11px;
+  color: #8a7560;
+}
+
+.lp-history-change {
+  font-weight: 800;
+}
+
+.lp-history-change.earn {
+  color: #16a34a;
+}
+
+.lp-history-change.spend {
+  color: #dc2626;
+}
+
+.lp-history-balance {
+  font-size: 11px;
+  color: #8a7560;
+}
+

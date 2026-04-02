@@ -4,6 +4,7 @@ using LaPizzaria.Models;
 using LaPizzaria.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace LaPizzaria.Controllers
 {
@@ -11,15 +12,25 @@ namespace LaPizzaria.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _db;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext db)
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext db, UserManager<ApplicationUser> userManager)
         {
             _logger = logger;
             _db = db;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index()
         {
+            // Shipper đã đăng nhập (cookie còn) vào Trang chủ → chuyển sang Dashboard Shipper
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null && await _userManager.IsInRoleAsync(user, "Shipper"))
+                    return RedirectToAction("Index", "Shipper");
+            }
+
             // Top ordered products by total quantity, only active ones
             // Fetch all active products in the 'Pizza' category
             var topProducts = await _db.Products
