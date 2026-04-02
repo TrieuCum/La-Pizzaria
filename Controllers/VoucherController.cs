@@ -173,6 +173,11 @@ namespace LaPizzaria.Controllers
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
 				expiresAtUtc = v.ExpiresAtUtc,
+				expiresAt = v.ExpiresAtUtc,
+				isActive = v.IsActive,
+				validDaysOfWeek = v.ValidDaysOfWeek,
+				startTime = FormatMinutes(v.TimeStartMinute),
+				endTime = FormatMinutes(v.TimeEndMinute),
 				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds,
 				requiresUpsaleSlow = v.UpsaleRequiresSlowSeller
 			});

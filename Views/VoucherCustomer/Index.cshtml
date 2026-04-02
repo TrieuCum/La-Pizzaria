@@ -227,6 +227,18 @@
         box-shadow: none;
     }
 
+    .voucher-primary-btn.unavailable {
+        background: #e2e8f0;
+        color: #64748b;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    .voucher-primary-btn.unavailable:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
     .voucher-saved-check {
         width: 44px;
         height: 44px;
@@ -406,6 +418,7 @@
                     idx++;
                     var badge = v.VoucherType == "Percentage" ? $"{FormatPercent(v.DiscountPercent)}% OFF" : v.VoucherType == "FixedAmount" ? $"{v.DiscountAmount:N0}₫" : "FREESHIP";
                     var isSaved = Model.SavedVoucherIds.Contains(v.Id);
+                    var isUnavailableToday = Model.UnavailableTodayVoucherIds.Contains(v.Id);
                     <div class="voucher-card" data-voucher-id="@v.Id">
                         <div class="voucher-card-banner">
                             <img src="~/images/@imgSrc" alt="@v.Name" />
@@ -428,7 +441,11 @@
                                 <button type="button" class="btn btn-link p-0 text-secondary voucher-copy-btn" onclick="copyVoucher('@v.Code')"><i class="bi bi-clipboard"></i></button>
                             </div>
                             <div class="voucher-btn-row">
-                                <button type="button" class="voucher-primary-btn @(isSaved ? "saved" : "")" data-voucher-id="@v.Id" data-code="@v.Code" @(isSaved ? "disabled" : "") onclick="saveVoucherCode(this)">@(isSaved ? "Đã nhận mã" : "Lưu mã")</button>
+                                <button type="button" class="voucher-primary-btn @(isSaved ? "saved" : "") @(isUnavailableToday ? "unavailable" : "")"
+                                        data-voucher-id="@v.Id"
+                                        data-code="@v.Code"
+                                        @((isSaved || isUnavailableToday) ? "disabled" : "")
+                                        onclick="saveVoucherCode(this)">@(isSaved ? "Đã nhận mã" : (isUnavailableToday ? "Không khả dụng hôm nay" : "Lưu mã"))</button>
                                 <span class="voucher-saved-check @(isSaved ? "show" : "")" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
                             </div>
                         </div>
@@ -538,6 +555,7 @@
                 @foreach (var v in freeshipVouchers)
                 {
                     var isSavedFreeship = Model.SavedVoucherIds.Contains(v.Id);
+                    var isUnavailableTodayFreeship = Model.UnavailableTodayVoucherIds.Contains(v.Id);
                     <div class="voucher-card" data-voucher-id="@v.Id">
                         <div class="voucher-card-banner">
                             <img src="~/images/@imgs[i % 2]" alt="@v.Name" />
@@ -553,7 +571,11 @@
                                 <button type="button" class="btn btn-link p-0 text-secondary voucher-copy-btn" onclick="copyVoucher('@v.Code')"><i class="bi bi-clipboard"></i></button>
                             </div>
                             <div class="voucher-btn-row">
-                                <button type="button" class="voucher-primary-btn @(isSavedFreeship ? "saved" : "")" data-voucher-id="@v.Id" data-code="@v.Code" @(isSavedFreeship ? "disabled" : "") onclick="saveVoucherCode(this)">@(isSavedFreeship ? "Đã nhận mã" : "Lưu mã")</button>
+                                <button type="button" class="voucher-primary-btn @(isSavedFreeship ? "saved" : "") @(isUnavailableTodayFreeship ? "unavailable" : "")"
+                                        data-voucher-id="@v.Id"
+                                        data-code="@v.Code"
+                                        @((isSavedFreeship || isUnavailableTodayFreeship) ? "disabled" : "")
+                                        onclick="saveVoucherCode(this)">@(isSavedFreeship ? "Đã nhận mã" : (isUnavailableTodayFreeship ? "Không khả dụng hôm nay" : "Lưu mã"))</button>
                                 <span class="voucher-saved-check @(isSavedFreeship ? "show" : "")" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
                             </div>
                         </div>
