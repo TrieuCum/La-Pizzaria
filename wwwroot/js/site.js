@@ -1,4 +1,4 @@
-// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
 // Write your JavaScript code.
@@ -10,7 +10,7 @@ window.showToast = function(message, type){
     if (!container) return alert(message);
     const toastEl = document.createElement('div');
     const theme = (type==='error'?'danger': type==='success'?'success': type==='warning'?'warning':'secondary');
-    const icon = type==='success' ? '✅' : type==='error' ? '⚠️' : type==='warning' ? '⚠️' : 'ℹ️';
+    const icon = type==='success' ? '✔' : type==='error' ? '⚠' : type==='warning' ? '⚠' : 'ℹ';
     toastEl.className = 'toast align-items-center text-bg-' + theme + ' border-0';
     toastEl.setAttribute('role','alert');
     toastEl.setAttribute('aria-live','assertive');
@@ -92,6 +92,11 @@ const Cart = {
   _storageKey: 'lapizzaria_cart',
   _voucherStorageKey: 'lapizzaria_vouchers',
   _allVouchers: [],
+
+  formatMoney(value) {
+    const n = Number(value || 0);
+    return n.toLocaleString('vi-VN') + 'đ';
+  },
 
   get() {
     try {
@@ -269,14 +274,15 @@ const Cart = {
             <div class="flex-grow-1 min-w-0">
                 <h6 class="mb-0 fw-bold text-truncate">${item.name}</h6>
                 <div class="d-flex align-items-center gap-2">
+                    <span class="extra-small text-muted">Size</span>
                     <select class="form-select form-select-sm py-0 px-1 border-0 bg-light extra-small fw-bold" 
                             style="width: auto; cursor: pointer;"
                             onchange="cart.updateSize(${item.id}, '${item.type}', this.value, ${item.id2 || 'null'}, '${item.size || 'M'}')">
-                        <option value="S" ${item.size === 'S' ? 'selected' : ''}>Size S</option>
-                        <option value="M" ${item.size === 'M' || !item.size ? 'selected' : ''}>Size M</option>
-                        <option value="L" ${item.size === 'L' ? 'selected' : ''}>Size L</option>
+                        <option value="S" ${item.size === 'S' ? 'selected' : ''}>S</option>
+                        <option value="M" ${item.size === 'M' || !item.size ? 'selected' : ''}>M</option>
+                        <option value="L" ${item.size === 'L' ? 'selected' : ''}>L</option>
                     </select>
-                    <div class="text-brand-orange fw-black small">${item.price.toLocaleString()}₫</div>
+                    <div class="text-brand-orange fw-black small">${this.formatMoney(item.price)}</div>
                 </div>
                 <div class="d-flex align-items-center gap-2 mt-2">
                     <button class="btn btn-sm btn-light p-0 rounded-circle" style="width: 24px; height: 24px;" onclick="cart.updateQuantity(${item.id}, '${item.type}', ${item.quantity - 1}, ${item.id2 || 'null'}, '${item.size || 'M'}')">-</button>
@@ -295,9 +301,9 @@ const Cart = {
     const discount = summaryData?.voucherDiscount || 0;
     const total = summaryData?.total || subtotal - discount;
 
-    if (subtotalEl) subtotalEl.textContent = subtotal.toLocaleString() + '₫';
-    if (discountEl) discountEl.textContent = '- ' + discount.toLocaleString() + '₫';
-    totalPriceEl.textContent = total.toLocaleString() + '₫';
+    if (subtotalEl) subtotalEl.textContent = this.formatMoney(subtotal);
+    if (discountEl) discountEl.textContent = '- ' + this.formatMoney(discount);
+    totalPriceEl.textContent = this.formatMoney(total);
 
     // Applied Vouchers
     if (voucherBoxes.length > 0) {
@@ -365,17 +371,92 @@ const Cart = {
 
   async loadVouchers() {
     try {
-        const res = await fetch('/api/vouchers');
-        this._allVouchers = await res.json();
-        
-        const btn = document.getElementById('openGlobalVoucherModal');
-        if (btn) {
-            btn.onclick = () => {
-                this.updateVoucherModalUI();
-                new bootstrap.Modal(document.getElementById('globalVoucherModal')).show();
-            };
-        }
+      const res = await fetch('/api/vouchers');
+      this._allVouchers = await res.json();
+
+      const btn = document.getElementById('openGlobalVoucherModal');
+      if (btn) {
+        btn.onclick = () => {
+          this.updateVoucherModalUI();
+          new bootstrap.Modal(document.getElementById('globalVoucherModal')).show();
+        };
+      }
     } catch (e) { console.error('Load vouchers failed', e); }
+  },
+
+  _parseTimeToMinutes(value) {
+    if (!value) return null;
+    const m = String(value).trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!m) return null;
+
+    const hh = Number(m[1]);
+    const mm = Number(m[2]);
+    const ss = Number(m[3] || 0);
+
+    if (!Number.isFinite(hh) || !Number.isFinite(mm) || !Number.isFinite(ss)) return null;
+    if (hh < 0 || hh > 23 || mm < 0 || mm > 59 || ss < 0 || ss > 59) return null;
+
+    return hh * 60 + mm + ss / 60;
+  },
+
+  _isWithinTimeWindow(nowMinutes, startMinutes, endMinutes) {
+    if (startMinutes == null && endMinutes == null) return true;
+    if (startMinutes != null && endMinutes != null) {
+      if (startMinutes <= endMinutes) return nowMinutes >= startMinutes && nowMinutes <= endMinutes;
+      return nowMinutes >= startMinutes || nowMinutes <= endMinutes;
+    }
+    if (startMinutes != null) return nowMinutes >= startMinutes;
+    return nowMinutes <= endMinutes;
+  },
+
+  _evaluateVoucher(v, subtotal, cartItems) {
+    const reasons = [];
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+
+    if (v.isActive === false) reasons.push('Voucher đã tắt');
+
+    if (v.startsAt) {
+      const startsAt = new Date(v.startsAt);
+      if (!Number.isNaN(startsAt.getTime()) && startsAt > now) reasons.push('Chưa tới thời gian áp dụng');
+    }
+
+    if (v.expiresAt) {
+      const expiresAt = new Date(v.expiresAt);
+      if (!Number.isNaN(expiresAt.getTime()) && expiresAt <= now) reasons.push('Voucher đã hết hạn');
+    }
+
+    if ((v.maxUses || 0) > 0 && (v.used || 0) >= v.maxUses) reasons.push('Voucher đã hết lượt');
+
+    if (v.validDaysOfWeek) {
+      const validDays = String(v.validDaysOfWeek)
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      if (validDays.length > 0 && !validDays.includes(String(now.getDay()))) {
+        reasons.push('Không áp dụng hôm nay');
+      }
+    }
+
+    const startMinutes = this._parseTimeToMinutes(v.startTime);
+    const endMinutes = this._parseTimeToMinutes(v.endTime);
+    if (!this._isWithinTimeWindow(nowMinutes, startMinutes, endMinutes)) {
+      reasons.push('Ngoài khung giờ áp dụng');
+    }
+
+    const hasTargetProduct = !v.targetProductId || cartItems.some(i => i.id === v.targetProductId || i.id2 === v.targetProductId);
+    if (!hasTargetProduct) reasons.push('Thiếu món yêu cầu');
+
+    const meetsMinOrder = subtotal >= (v.minOrderValue || 0);
+    if (!meetsMinOrder) reasons.push('Chưa đủ giá trị đơn tối thiểu');
+
+    return {
+      isEligible: reasons.length === 0,
+      hasTargetProduct,
+      meetsMinOrder,
+      reasons
+    };
   },
 
   updateVoucherModalUI() {
@@ -393,87 +474,95 @@ const Cart = {
     };
 
     const cartItems = this.get();
-    available.innerHTML = ''; ineligible.innerHTML = '';
-    
+    available.innerHTML = '';
+    ineligible.innerHTML = '';
+
     this._allVouchers.forEach((v, idx) => {
-        const hasTargetProduct = !v.targetProductId || cartItems.some(i => i.id === v.targetProductId || i.id2 === v.targetProductId);
-        const isEligible = hasTargetProduct && subtotal >= (v.minOrderValue || 0);
-        
-        let discountLabel = '';
-        let typeLabel = 'Giảm giá';
-        let icon = 'bi-ticket-perforated';
+      const evalResult = this._evaluateVoucher(v, subtotal, cartItems);
+      const isEligible = evalResult.isEligible;
 
-        if(v.type === 'Percentage') {
-            discountLabel = `${formatPercent(v.percent)}%`;
-            icon = 'bi-percent';
-        } else if(v.type === 'FixedAmount') {
-            discountLabel = `${Math.round(v.amount/1000)}k`;
-            icon = 'bi-cash-stack';
-        } else if(v.type === 'FreeShipping') {
-            discountLabel = 'FREE';
-            typeLabel = 'Vận chuyển';
-            icon = 'bi-truck';
-        }
+      let discountLabel = '';
+      let typeLabel = 'Giảm giá';
+      let icon = 'bi-ticket-perforated';
 
-        // Progress calculation
-        let progressHtml = '';
-        if (v.minOrderValue > 0 && subtotal < v.minOrderValue) {
-            const percentage = Math.min(100, Math.round((subtotal / v.minOrderValue) * 100));
-            const remaining = v.minOrderValue - subtotal;
-            progressHtml = `
-                <div class="ticket-progress-container">
-                    <div class="ticket-progress-bar">
-                        <div class="ticket-progress-fill" style="width: ${percentage}%"></div>
-                    </div>
-                    <span class="ticket-progress-text">Mua thêm ${remaining.toLocaleString()}đ để dùng mã</span>
-                </div>`;
-        }
+      if (v.type === 'Percentage') {
+        discountLabel = `${formatPercent(v.percent)}%`;
+        icon = 'bi-percent';
+      } else if (v.type === 'FixedAmount') {
+        discountLabel = `${Math.round((v.amount || 0) / 1000)}k`;
+        icon = 'bi-cash-stack';
+      } else if (v.type === 'FreeShipping') {
+        discountLabel = 'FREE';
+        typeLabel = 'Vận chuyển';
+        icon = 'bi-truck';
+      }
 
-        const itemWrap = document.createElement('div');
-        itemWrap.className = 'stagger-item';
-        itemWrap.style.animationDelay = `${idx * 0.1}s`;
-        itemWrap.innerHTML = `
-            <div class="voucher-ticket ${isEligible ? '' : 'ineligible'}">
-                <div class="ticket-left">
-                    <i class="bi ${icon}"></i>
-                    <div class="ticket-percent">${discountLabel}</div>
-                    <div class="ticket-type">${typeLabel}</div>
-                </div>
-                <div class="ticket-right">
-                    <div class="ticket-header">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="ticket-code">${v.code}</span>
-                            <button class="btn-copy-code" onclick="event.stopPropagation(); cart.copyToClipboard('${v.code}')">Sao chép</button>
-                        </div>
-                        ${isEligible ? `<button class="ticket-btn-apply" onclick="cart.applyVoucherById(${v.id})">Dùng ngay</button>` : `<div class="extra-small text-muted fw-bold">${!hasTargetProduct ? 'Thiếu món' : 'Chưa đủ đ/k'}</div>`}
-                    </div>
-                    ${progressHtml}
-                    <div class="v-condition-toggle" onclick="cart.toggleCondition(this)">
-                        Chi tiết điều kiện <i class="bi bi-chevron-right extra-small"></i>
-                    </div>
-                </div>
+      let progressHtml = '';
+      if (v.minOrderValue > 0 && !evalResult.meetsMinOrder) {
+        const percentage = Math.min(100, Math.round((subtotal / v.minOrderValue) * 100));
+        const remaining = Math.max(0, v.minOrderValue - subtotal);
+        progressHtml = `
+          <div class="ticket-progress-container">
+            <div class="ticket-progress-bar">
+              <div class="ticket-progress-fill" style="width: ${percentage}%"></div>
             </div>
-            <div class="voucher-details-expand">
-                <div class="fw-bold mb-2 text-dark">• Ưu đãi:</div>
-                <p class="mb-2">${v.type === 'Percentage' ? `Giảm ${formatPercent(v.percent)}% tổng giá trị đơn hàng.` : (v.type === 'FreeShipping' ? `Miễn phí vận chuyển cho đơn hàng.` : `Giảm giá trực tiếp ${(v.amount || 0).toLocaleString()}đ.`)}</p>
-                <div class="fw-bold mb-2 text-dark">• Điều kiện áp dụng:</div>
-                <ul class="list-unstyled mb-0 px-2 extra-small">
-                    <li class="mb-1"><i class="bi bi-check2-circle text-success me-1"></i>Đơn hàng tối thiểu: ${(v.minOrderValue || 0).toLocaleString()}đ</li>
-                    ${v.targetProductId ? `<li class="mb-1"><i class="bi bi-check2-circle text-primary me-1"></i>Yêu cầu có món: <span class="fw-bold">${v.targetProductName || 'Sản phẩm chỉ định'}</span></li>` : ''}
-                    <li><i class="bi bi-clock text-warning me-1"></i>Hạn dùng: ${v.expiresAt ? new Date(v.expiresAt).toLocaleDateString('vi-VN') : 'Không giới hạn'}</li>
-                </ul>
-            </div>`;
-        
-        if (isEligible) available.appendChild(itemWrap);
-        else ineligible.appendChild(itemWrap);
+            <span class="ticket-progress-text">Mua thêm ${remaining.toLocaleString()}đ để dùng mã</span>
+          </div>`;
+      }
+
+      const itemWrap = document.createElement('div');
+      itemWrap.className = 'stagger-item';
+      itemWrap.style.animationDelay = `${idx * 0.1}s`;
+      itemWrap.innerHTML = `
+        <div class="voucher-ticket ${isEligible ? '' : 'ineligible'}">
+          <div class="ticket-left">
+            <i class="bi ${icon}"></i>
+            <div class="ticket-percent">${discountLabel}</div>
+            <div class="ticket-type">${typeLabel}</div>
+          </div>
+          <div class="ticket-right">
+            <div class="ticket-header">
+              <div class="d-flex align-items-center gap-2">
+                <span class="ticket-code">${v.code}</span>
+                <button class="btn-copy-code" onclick="event.stopPropagation(); cart.copyToClipboard('${v.code}')">Sao chép</button>
+              </div>
+              ${isEligible
+                ? `<button class="ticket-btn-apply" onclick="cart.applyVoucherById(${v.id})">Dùng ngay</button>`
+                : `<div class="extra-small text-muted fw-bold">${evalResult.reasons[0] || 'Chưa đủ điều kiện'}</div>`}
+            </div>
+            ${progressHtml}
+            <div class="v-condition-toggle" onclick="cart.toggleCondition(this)">
+              Chi tiết điều kiện <i class="bi bi-chevron-right extra-small"></i>
+            </div>
+          </div>
+        </div>
+        <div class="voucher-details-expand">
+          <div class="fw-bold mb-2 text-dark">• Ưu đãi:</div>
+          <p class="mb-2">${v.type === 'Percentage'
+            ? `Giảm ${formatPercent(v.percent)}% tổng giá trị đơn hàng.`
+            : (v.type === 'FreeShipping'
+              ? 'Miễn phí vận chuyển cho đơn hàng.'
+              : `Giảm giá trực tiếp ${(v.amount || 0).toLocaleString()}đ.`)}</p>
+          <div class="fw-bold mb-2 text-dark">• Điều kiện áp dụng:</div>
+          <ul class="list-unstyled mb-0 px-2 extra-small">
+            <li class="mb-1"><i class="bi bi-check2-circle text-success me-1"></i>Đơn hàng tối thiểu: ${(v.minOrderValue || 0).toLocaleString()}đ</li>
+            ${v.targetProductId ? `<li class="mb-1"><i class="bi bi-check2-circle text-primary me-1"></i>Yêu cầu có món: <span class="fw-bold">${v.targetProductName || 'Sản phẩm chỉ định'}</span></li>` : ''}
+            ${v.validDaysOfWeek ? `<li class="mb-1"><i class="bi bi-calendar-week text-info me-1"></i>Ngày áp dụng: ${v.validDaysOfWeek}</li>` : ''}
+            ${(v.startTime || v.endTime) ? `<li class="mb-1"><i class="bi bi-alarm text-warning me-1"></i>Khung giờ: ${v.startTime || '--:--'} - ${v.endTime || '--:--'}</li>` : ''}
+            <li><i class="bi bi-clock text-warning me-1"></i>Hạn dùng: ${v.expiresAt ? new Date(v.expiresAt).toLocaleDateString('vi-VN') : 'Không giới hạn'}</li>
+          </ul>
+        </div>`;
+
+      if (isEligible) available.appendChild(itemWrap);
+      else ineligible.appendChild(itemWrap);
     });
   },
 
   copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
-        window.showToast('Đã sao chép mã voucher!', 'success');
+      window.showToast('Đã sao chép mã voucher!', 'success');
     }).catch(err => {
-        console.error('Failed to copy: ', err);
+      console.error('Failed to copy: ', err);
     });
   },
 
@@ -481,11 +570,10 @@ const Cart = {
     const ticket = el.closest('.voucher-ticket');
     const panel = ticket.nextElementSibling;
     const isShowing = panel.style.display === 'block';
-    
-    // Rotate icon
+
     const icon = el.querySelector('.bi-chevron-down') || el.querySelector('.bi-chevron-up');
-    if(icon) {
-        icon.className = isShowing ? 'bi bi-chevron-down extra-small' : 'bi bi-chevron-up extra-small';
+    if (icon) {
+      icon.className = isShowing ? 'bi bi-chevron-down extra-small' : 'bi bi-chevron-up extra-small';
     }
 
     panel.style.display = isShowing ? 'none' : 'block';
@@ -495,7 +583,15 @@ const Cart = {
     const ids = this.getVoucherIds();
     if (ids.includes(id)) return;
     if (ids.length >= 1) return window.showToast('Chỉ áp dụng được tối đa 1 mã!', 'warning');
-    
+
+    const v = this._allVouchers.find(x => x.id === id);
+    if (!v) return window.showToast('Mã không tồn tại!', 'error');
+
+    const evalResult = this._evaluateVoucher(v, this.totalPrice(), this.get());
+    if (!evalResult.isEligible) {
+      return window.showToast(evalResult.reasons[0] || 'Voucher chưa đủ điều kiện.', 'warning');
+    }
+
     ids.push(id);
     this.saveVoucherIds(ids);
     const m = bootstrap.Modal.getInstance(document.getElementById('globalVoucherModal'));
@@ -503,20 +599,27 @@ const Cart = {
   },
 
   applyManualVoucher() {
-    const code = document.getElementById('globalVoucherCode').value.trim().toUpperCase();
+    const codeInput = document.getElementById('globalVoucherCode');
+    const code = (codeInput?.value || '').trim().toUpperCase();
     if (!code) return;
-    const v = this._allVouchers.find(x => x.code.toUpperCase() === code);
+
+    const v = this._allVouchers.find(x => (x.code || '').toUpperCase() === code);
     if (!v) return window.showToast('Mã không tồn tại!', 'error');
-    if (this.totalPrice() < (v.minOrderValue || 0)) return window.showToast(`Chưa đủ điều kiện! Đơn hàng cần đạt tối thiểu ${v.minOrderValue.toLocaleString()}đ`, 'warning');
+
+    const evalResult = this._evaluateVoucher(v, this.totalPrice(), this.get());
+    if (!evalResult.isEligible) {
+      return window.showToast(evalResult.reasons[0] || 'Voucher chưa đủ điều kiện.', 'warning');
+    }
+
     this.applyVoucherById(v.id);
-    document.getElementById('globalVoucherCode').value = '';
+    if (codeInput) codeInput.value = '';
   },
 
   removeVoucher(idx) {
     const ids = this.getVoucherIds();
     ids.splice(idx, 1);
     this.saveVoucherIds(ids);
-  }
+  },
 };
 
 // Initialize header badge on load
@@ -531,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.addEventListener('cart-updated', updateBadge);
-  updateBadge(); // Initial update
+  updateBadge();
   Cart.loadVouchers();
   Cart.updateSummary();
 });
@@ -578,7 +681,7 @@ const PizzaSlider = {
         if (this.autoScrollEnabled && !this.isHovered && !this.isManualMoving) {
             this.currentOffset -= this.speed;
         }
-        
+
         this.updatePosition(false);
         this.rafId = requestAnimationFrame(() => this.animate());
     },
@@ -595,7 +698,7 @@ const PizzaSlider = {
         this.autoScrollEnabled = false; // Disable auto-scroll permanently on manual interaction
         if (this.isManualMoving) return;
         this.isManualMoving = true;
-        
+
         this.currentOffset += delta;
         this.content.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
         this.updatePosition(true);
@@ -664,3 +767,4 @@ document.addEventListener('DOMContentLoaded', () => {
         initSidebar();
     }
 })();
+

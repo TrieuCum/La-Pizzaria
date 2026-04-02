@@ -144,9 +144,14 @@ namespace LaPizzaria.Controllers
                 minOrderValue = v.MinOrderValue,
 				targetProductId = v.TargetProductId,
 				targetProductName = v.TargetProduct?.Name,
+				isActive = v.IsActive,
+				startsAt = v.StartsAt,
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
 				expiresAt = v.ExpiresAt,
+				validDaysOfWeek = v.ValidDaysOfWeek,
+				startTime = v.StartTime,
+				endTime = v.EndTime,
 				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds
 			});
 			return Ok(list);

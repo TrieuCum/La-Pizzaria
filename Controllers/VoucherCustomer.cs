@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
+using LaPizzaria.Services;
 using LaPizzaria.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,11 +13,16 @@ namespace LaPizzaria.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IVoucherService _voucherService;
 
-        public VoucherCustomerController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        public VoucherCustomerController(
+            ApplicationDbContext db,
+            UserManager<ApplicationUser> userManager,
+            IVoucherService voucherService)
         {
             _db = db;
             _userManager = userManager;
+            _voucherService = voucherService;
         }
 
         /// <param name="category">All | Pizza | Drink | Side Dish | Combo — bộ lọc loại món</param>
@@ -41,6 +47,12 @@ namespace LaPizzaria.Controllers
                 .OrderByDescending(v => v.DiscountPercent)
                 .ToListAsync();
 
+            var now = DateTime.Now;
+            var unavailableTodayVoucherIds = vouchers
+                .Where(v => !_voucherService.IsUsable(v, now))
+                .Select(v => v.Id)
+                .ToList();
+
             var productsQuery = _db.Products.Where(p => p.IsActive);
             if (currentCategory != "All" && currentCategory != "Combo")
                 productsQuery = productsQuery.Where(p => p.Category == currentCategory);
@@ -64,13 +76,12 @@ namespace LaPizzaria.Controllers
             };
 
             var savedVoucherIds = new List<int>();
-            if (isAuthenticated)
+            if (isAuthenticated && !string.IsNullOrEmpty(userId))
             {
-                if (!string.IsNullOrEmpty(userId))
-                    savedVoucherIds = await _db.UserSavedVouchers
-                        .Where(usv => usv.UserId == userId)
-                        .Select(usv => usv.VoucherId)
-                        .ToListAsync();
+                savedVoucherIds = await _db.UserSavedVouchers
+                    .Where(usv => usv.UserId == userId)
+                    .Select(usv => usv.VoucherId)
+                    .ToListAsync();
             }
 
             var vm = new VoucherCustomerIndexViewModel
@@ -82,6 +93,7 @@ namespace LaPizzaria.Controllers
                 CurrentTab = currentTab,
                 CategoryFilters = categoryFilters,
                 SavedVoucherIds = savedVoucherIds,
+                UnavailableTodayVoucherIds = unavailableTodayVoucherIds,
                 IsAuthenticated = isAuthenticated
             };
 
@@ -101,8 +113,13 @@ namespace LaPizzaria.Controllers
             var voucher = await _db.Vouchers.FindAsync(new object[] { voucherId }, cancellationToken);
             if (voucher == null)
                 return Json(new { success = false, message = "Mã không tồn tại." });
+
             if (!voucher.IsActive || (voucher.ExpiresAt.HasValue && voucher.ExpiresAt.Value < DateTime.Now))
                 return Json(new { success = false, message = "Mã đã hết hạn hoặc không còn hiệu lực." });
+
+            if (!_voucherService.IsUsable(voucher, DateTime.Now))
+                return Json(new { success = false, message = "Mã này không khả dụng hôm nay." });
+
             if (!string.IsNullOrEmpty(voucher.TargetUserId) && voucher.TargetUserId != userId)
                 return Json(new { success = false, message = "Mã ưu đãi này không thuộc tài khoản của bạn." });
 
