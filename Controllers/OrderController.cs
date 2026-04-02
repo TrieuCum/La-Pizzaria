@@ -417,6 +417,7 @@ namespace LaPizzaria.Controllers
                     var effectiveUserId = !string.IsNullOrWhiteSpace(currentUserId) ? currentUserId : req.UserId;
                     foreach (var vid in ids)
                     {
+                        var v = await _voucherService.GetByIdAsync(vid);
                         if (v != null && IsVoucherForUser(v, effectiveUserId) && _voucherService.IsUsable(v, DateTime.Now, details))
                         {
                             _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
@@ -503,70 +504,8 @@ namespace LaPizzaria.Controllers
         {
             try
             {
-<<<<<<< HEAD
                 var orderId = await _orderPlacement.PlaceQrOrderAsync(req, "Cash");
                 return Ok(new { orderId });
-=======
-                var details = new List<OrderDetail>();
-                if (req.Items != null)
-                {
-                    var productIds = req.Items.Select(i => i.ProductId).Distinct().ToList();
-                    var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
-
-                    foreach (var it in req.Items)
-                    {
-                        decimal price = it.UnitPrice ?? 0m; // Default to 0 if UnitPrice is null
-                        if (it.UnitPrice == null && products.TryGetValue(it.ProductId, out var p1))
-                        {
-                            decimal p1Price = p1.Price;
-                            // Apply size modifier
-                            decimal modifier = 0;
-                            if (it.Size == "S") modifier = -30000;
-                            else if (it.Size == "L") modifier = 50000;
-
-                            decimal finalUnitPrice = p1Price + modifier;
-
-                            if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
-                            {
-                                decimal p2Price = p2.Price + modifier;
-                                finalUnitPrice = (finalUnitPrice + p2Price) / 2;
-                            }
-                            price = finalUnitPrice;
-                        }
-
-                        details.Add(new OrderDetail
-                        {
-                            ProductId = it.ProductId,
-                            ProductId2 = it.ProductId2,
-                            Quantity = it.Quantity,
-                            UnitPrice = price,
-                            Subtotal = price * it.Quantity,
-                            Size = it.Size
-                        });
-                    }
-                }
-                var tableIds = new List<int>();
-                if (!string.IsNullOrWhiteSpace(req.TableCode))
-                {
-                    var t = await _db.Tables.FirstOrDefaultAsync(x => x.Code == req.TableCode);
-                    if (t != null) tableIds.Add(t.Id);
-                }
-                var order = await _orderService.CreateOrderAsync(req.UserId, details, tableIds, req.DeliveryAddress, req.Latitude, req.Longitude);
-                if (req.VoucherIds != null && req.VoucherIds.Count > 0)
-                {
-                    foreach (var vid in req.VoucherIds.Take(2))
-                    {
-                        var v = await _voucherService.GetByIdAsync(vid);
-                        if (v != null && _voucherService.IsUsable(v, System.DateTime.Now, details))
-                        {
-                            _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
-                            v.UsedCount += 1;
-                        }
-                    }
-                    await _db.SaveChangesAsync();
-                }
-                return Ok(new { orderId = order.Id });
->>>>>>> e04f25f (Voucher)
             }
             catch (System.InvalidOperationException ex)
             {
