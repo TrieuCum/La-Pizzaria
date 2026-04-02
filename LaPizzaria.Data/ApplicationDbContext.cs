@@ -40,6 +40,7 @@ namespace LaPizzaria.Data
             modelBuilder.Entity<Product>().Property(p => p.ProfitMarginPercent).HasPrecision(18, 2);
             modelBuilder.Entity<Topping>().Property(t => t.Price).HasPrecision(18, 2);
             modelBuilder.Entity<Order>().Property(o => o.TotalPrice).HasPrecision(18, 2);
+            modelBuilder.Entity<Order>().Property(o => o.ShipperLocationIp).HasMaxLength(100);
             modelBuilder.Entity<OrderDetail>().Property(od => od.UnitPrice).HasPrecision(18, 2);
             modelBuilder.Entity<OrderDetail>().Property(od => od.Subtotal).HasPrecision(18, 2);
             modelBuilder.Entity<Invoice>().Property(i => i.Subtotal).HasPrecision(18, 2);
