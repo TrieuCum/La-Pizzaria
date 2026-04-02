@@ -25,6 +25,15 @@ namespace LaPizzaria.Models
 		public bool IsActive { get; set; } = true;
 		public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 		public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+
+		/// <summary>Phút trong ngày (0–1439) giờ VN — bắt đầu khung giờ. Null = không giới hạn giờ.</summary>
+		public int? WindowTimeStartMinute { get; set; }
+		/// <summary>Phút trong ngày kết thúc khung (có thể &lt; start nếu qua nửa đêm).</summary>
+		public int? WindowTimeEndMinute { get; set; }
+		/// <summary>Ngày áp dụng: "0,1,…,6" — 0=CN … 6=Thứ 7 (DayOfWeek). Rỗng/null = mọi ngày.</summary>
+		public string? ValidDaysOfWeek { get; set; }
+		/// <summary>Chỉ áp dụng khi giỏ có ít nhất một sản phẩm <see cref="Product.IsSlowSeller"/>.</summary>
+		public bool UpsaleRequiresSlowSeller { get; set; }
 	}
 }
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Hosting;
 using LaPizzaria.Models;
 using LaPizzaria.ViewModels;
 using System.Security.Claims;
@@ -10,15 +11,24 @@ namespace LaPizzaria.Controllers
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IWebHostEnvironment _env;
         private readonly bool _googleLoginEnabled;
+
+        private const long MaxAvatarBytes = 2 * 1024 * 1024;
+        private static readonly HashSet<string> AllowedAvatarExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".gif", ".webp"
+        };
 
         public AccountController(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
+            IWebHostEnvironment env,
             IConfiguration configuration)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _env = env;
             _googleLoginEnabled =
                 !string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientId"]) &&
                 !string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientSecret"]);
@@ -293,7 +303,7 @@ namespace LaPizzaria.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Manage(ManageAccountViewModel model)
+        public async Task<IActionResult> Manage(ManageAccountViewModel model, IFormFile? avatarFile)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login");
@@ -301,6 +311,36 @@ namespace LaPizzaria.Controllers
             {
                 ViewData["ShipperNav"] = "Profile";
             }
+
+            if (avatarFile is { Length: > 0 })
+            {
+                if (avatarFile.Length > MaxAvatarBytes)
+                {
+                    ModelState.AddModelError(string.Empty, "Ảnh đại diện tối đa 2 MB.");
+                }
+                else
+                {
+                    var ext = Path.GetExtension(avatarFile.FileName);
+                    if (string.IsNullOrEmpty(ext) || !AllowedAvatarExtensions.Contains(ext))
+                    {
+                        ModelState.AddModelError(string.Empty, "Chỉ chấp nhận ảnh JPG, PNG, GIF hoặc WebP.");
+                    }
+                    else
+                    {
+                        var avatarsDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
+                        Directory.CreateDirectory(avatarsDir);
+                        DeleteStoredAvatarIfLocal(user.AvatarUrl);
+                        var fileName = $"{user.Id}_{Guid.NewGuid():N}{ext}";
+                        var physicalPath = Path.Combine(avatarsDir, fileName);
+                        await using (var stream = System.IO.File.Create(physicalPath))
+                        {
+                            await avatarFile.CopyToAsync(stream);
+                        }
+                        model.AvatarUrl = "/uploads/avatars/" + fileName;
+                    }
+                }
+            }
+
             if (!ModelState.IsValid) return View(model);
 
             // Update profile fields
@@ -315,7 +355,7 @@ namespace LaPizzaria.Controllers
                     return View(model);
                 }
             }
-            user.AvatarUrl = string.IsNullOrWhiteSpace(model.AvatarUrl) ? null : model.AvatarUrl;
+            user.AvatarUrl = string.IsNullOrWhiteSpace(model.AvatarUrl) ? null : model.AvatarUrl.Trim();
             user.PhoneNumber = model.PhoneNumber;
             user.Birthday = model.Birthday;
             user.Gender = model.Gender;
@@ -351,6 +391,23 @@ namespace LaPizzaria.Controllers
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
             return RedirectToAction("Login");
+        }
+
+        private void DeleteStoredAvatarIfLocal(string? avatarUrl)
+        {
+            if (string.IsNullOrWhiteSpace(avatarUrl)) return;
+            if (!avatarUrl.StartsWith("/uploads/avatars/", StringComparison.OrdinalIgnoreCase)) return;
+            var relative = avatarUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var full = Path.Combine(_env.WebRootPath, relative);
+            try
+            {
+                if (System.IO.File.Exists(full))
+                    System.IO.File.Delete(full);
+            }
+            catch
+            {
+                // ignore IO errors when replacing avatar
+            }
         }
 
         private IActionResult RedirectToLocal(string? returnUrl)

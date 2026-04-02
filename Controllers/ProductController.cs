@@ -4,6 +4,7 @@ using LaPizzaria.Models; // Assuming you might need direct access to models late
 using LaPizzaria.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using LaPizzaria.Services;
 
 namespace LaPizzaria.Controllers
 {
@@ -295,7 +296,7 @@ namespace LaPizzaria.Controllers
         public async Task<IActionResult> Upsert(int? id)
         {
             ProductViewModel viewModel = new ProductViewModel();
-            var allIngredients = await _db.Ingredients.OrderBy(i => i.Name).ToListAsync();
+            var allIngredients = await _db.Ingredients.Include(i => i.Category).OrderBy(i => i.Name).ToListAsync();
             var mappings = new List<ProductIngredient>();
 
             if (id != null && id != 0)
@@ -311,9 +312,15 @@ namespace LaPizzaria.Controllers
                 viewModel.Category = p.Category;
                 viewModel.IsActive = p.IsActive;
                 viewModel.IsCustomizable = p.IsCustomizable;
+                viewModel.ProfitMarginPercent = p.ProfitMarginPercent;
+                viewModel.IsSlowSeller = p.IsSlowSeller;
 
                 mappings = await _db.ProductIngredients.Where(pi => pi.ProductId == id).ToListAsync();
             }
+
+            var categories = await _db.IngredientCategories.AsNoTracking().OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ToListAsync();
+            ViewBag.IngredientCategoryRoots = categories.Where(c => c.ParentId == null).ToList();
+            ViewBag.AllIngredientCategories = categories;
 
             viewModel.Ingredients = allIngredients.Select(i => new IngredientSelectionViewModel
             {
@@ -321,16 +328,50 @@ namespace LaPizzaria.Controllers
                 Name = i.Name,
                 Unit = i.Unit,
                 StockQuantity = i.StockQuantity,
+                UnitPrice = i.UnitPrice,
+                CategoryId = i.CategoryId,
+                TabRootCategoryId = ResolveTabRootCategoryId(i.CategoryId, categories),
                 QuantityPerUnit = mappings.FirstOrDefault(m => m.IngredientId == i.Id)?.QuantityPerUnit ?? 0m
-            }).ToList();
+            }).OrderBy(x => x.TabRootCategoryId ?? int.MaxValue).ThenBy(x => x.Name).ToList();
 
             return View(viewModel);
+        }
+
+        private static int? ResolveTabRootCategoryId(int? categoryId, List<IngredientCategory> all)
+        {
+            if (categoryId == null || all.Count == 0) return null;
+            var map = all.ToDictionary(c => c.Id);
+            if (!map.TryGetValue(categoryId.Value, out var cur)) return null;
+            while (cur.ParentId != null && map.TryGetValue(cur.ParentId.Value, out var parent))
+                cur = parent;
+            return cur.Id;
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Upsert(ProductViewModel productViewModel)
         {
+            var ingredientDict = await _db.Ingredients.AsNoTracking().ToDictionaryAsync(i => i.Id);
+            decimal ingredientCost = 0m;
+            if (productViewModel.Ingredients != null)
+            {
+                foreach (var line in productViewModel.Ingredients.Where(x => x.QuantityPerUnit > 0))
+                {
+                    if (ingredientDict.TryGetValue(line.IngredientId, out var ing))
+                        ingredientCost += line.QuantityPerUnit * ing.UnitPrice;
+                }
+            }
+
+            if (ingredientCost > 0m)
+            {
+                productViewModel.Price = ProductPricingCalculator.SalePriceFromCost(ingredientCost, productViewModel.ProfitMarginPercent);
+                ModelState.Remove(nameof(ProductViewModel.Price));
+            }
+            else if (productViewModel.Price < 0.01m)
+            {
+                ModelState.AddModelError(nameof(ProductViewModel.Price), "Nhập giá bán hoặc định lượng nguyên liệu (có đơn giá trên đơn vị).");
+            }
+
             if (ModelState.IsValid)
             {
                 var p = productViewModel.Id == 0 ? new Product() : await _db.Products.FindAsync(productViewModel.Id);
@@ -339,10 +380,12 @@ namespace LaPizzaria.Controllers
                 p.Name = productViewModel.Name;
                 p.Description = productViewModel.Description;
                 p.Price = productViewModel.Price;
+                p.ProfitMarginPercent = productViewModel.ProfitMarginPercent;
                 p.ImageUrl = productViewModel.ImageUrl;
                 p.Category = productViewModel.Category;
                 p.IsActive = productViewModel.IsActive;
                 p.IsCustomizable = productViewModel.IsCustomizable;
+                p.IsSlowSeller = productViewModel.IsSlowSeller;
 
                 if (productViewModel.Id == 0)
                 {
@@ -380,16 +423,24 @@ namespace LaPizzaria.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Re-fetch ingredients if model state is invalid
-            var ingredients = await _db.Ingredients.OrderBy(i => i.Name).ToListAsync();
-            foreach (var item in productViewModel.Ingredients)
+            var ingredients = await _db.Ingredients.Include(i => i.Category).OrderBy(i => i.Name).ToListAsync();
+            var categories = await _db.IngredientCategories.AsNoTracking().OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ToListAsync();
+            ViewBag.IngredientCategoryRoots = categories.Where(c => c.ParentId == null).ToList();
+            ViewBag.AllIngredientCategories = categories;
+            if (productViewModel.Ingredients != null)
             {
-                var ing = ingredients.FirstOrDefault(i => i.Id == item.IngredientId);
-                if (ing != null)
+                foreach (var item in productViewModel.Ingredients)
                 {
-                    item.Name = ing.Name;
-                    item.Unit = ing.Unit;
-                    item.StockQuantity = ing.StockQuantity;
+                    var ing = ingredients.FirstOrDefault(i => i.Id == item.IngredientId);
+                    if (ing != null)
+                    {
+                        item.Name = ing.Name;
+                        item.Unit = ing.Unit;
+                        item.StockQuantity = ing.StockQuantity;
+                        item.UnitPrice = ing.UnitPrice;
+                        item.CategoryId = ing.CategoryId;
+                        item.TabRootCategoryId = ResolveTabRootCategoryId(ing.CategoryId, categories);
+                    }
                 }
             }
             return View(productViewModel);

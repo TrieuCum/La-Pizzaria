@@ -60,8 +60,8 @@ public sealed class OrderPlacementService : IOrderPlacementService
             var v = await _voucherService.GetByIdAsync(vid);
             if (v == null) continue;
 
-            if (!_voucherService.IsUsable(v, DateTime.UtcNow))
-                return CheckoutTotalsOutcome.Fail($"Voucher {v.Code} hiện không khả dụng.");
+            if (!await _voucherService.CanApplyToOrderAsync(v, productIds, DateTime.UtcNow))
+                return CheckoutTotalsOutcome.Fail($"Voucher {v.Code} hiện không khả dụng (khung giờ/ngày hoặc upsale món bán chậy).");
 
             if (subtotal < v.MinOrderValue)
                 return CheckoutTotalsOutcome.Fail($"Đơn hàng chưa đạt giá trị tối thiểu ({v.MinOrderValue:N0}đ) để sử dụng mã {v.Code}.");
@@ -104,6 +104,11 @@ public sealed class OrderPlacementService : IOrderPlacementService
 
     public async Task<int> PlaceQrOrderAsync(QrOrderRequest req, string? paymentMethod = null)
     {
+        var outcome = await ComputeTotalsAsync(req);
+        if (!outcome.Success || outcome.Totals == null)
+            throw new InvalidOperationException(outcome.Error ?? "Không tính được tổng tiền đơn hàng.");
+        var totals = outcome.Totals;
+
         var details = new List<OrderDetail>();
         if (req.Items != null)
         {
@@ -153,10 +158,13 @@ public sealed class OrderPlacementService : IOrderPlacementService
 
         if (req.VoucherIds != null && req.VoucherIds.Count > 0)
         {
+            var cartProductIds = req.Items?
+                .SelectMany(i => new[] { i.ProductId }.Concat(i.ProductId2.HasValue ? new[] { i.ProductId2.Value } : Array.Empty<int>()))
+                .Distinct().ToList() ?? new List<int>();
             foreach (var vid in req.VoucherIds.Take(2))
             {
                 var v = await _voucherService.GetByIdAsync(vid);
-                if (v != null && _voucherService.IsUsable(v, DateTime.UtcNow))
+                if (v != null && await _voucherService.CanApplyToOrderAsync(v, cartProductIds, DateTime.UtcNow))
                 {
                     _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                     v.UsedCount += 1;
@@ -168,8 +176,12 @@ public sealed class OrderPlacementService : IOrderPlacementService
         if (!string.IsNullOrWhiteSpace(paymentMethod))
         {
             order.PaymentMethod = paymentMethod;
-            await _db.SaveChangesAsync();
         }
+
+        order.TotalPrice = totals.GrandTotal;
+        order.ShipFee = totals.ShipFee;
+        order.VatAmount = totals.Vat;
+        await _db.SaveChangesAsync();
 
         return order.Id;
     }

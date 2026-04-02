@@ -4,6 +4,9 @@
 @{
     ViewData["Title"] = (Model.Id == 0 ? "Tạo Voucher Mới" : "Chỉnh Sửa Voucher");
     var users = ViewBag.Users as List<ApplicationUser> ?? new List<ApplicationUser>();
+    var weekSel = ViewBag.WeekDaysSelected as HashSet<int> ?? new HashSet<int>();
+    var ts = ViewBag.WindowTimeStart as string;
+    var te = ViewBag.WindowTimeEnd as string;
 }
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -214,6 +217,40 @@
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" asp-for="IsActive" id="isActiveCheck">
                     <label class="form-check-label fw-600" for="isActiveCheck">Kích hoạt ngay</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-clock"></i> Khung giờ (giờ Việt Nam) &amp; Upsale
+        </div>
+        <p class="helper-text mb-3">Để trống giờ bắt đầu/kết thúc nếu không giới hạn theo khung giờ. Ngày trong tuần: 0 = Chủ nhật … 6 = Thứ bảy.</p>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label">Giờ bắt đầu (VN)</label>
+                <input type="time" name="windowTimeStart" class="form-control-brand" value="@(ts ?? "")" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Giờ kết thúc (VN)</label>
+                <input type="time" name="windowTimeEnd" class="form-control-brand" value="@(te ?? "")" />
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Ngày áp dụng trong tuần</label>
+                <div class="d-flex flex-wrap gap-3">
+                    @{ var dayLabels = new[] { "CN", "T2", "T3", "T4", "T5", "T6", "T7" }; }
+                    @for (var d = 0; d <= 6; d++)
+                    {
+                        <label class="form-check d-flex align-items-center gap-1 mb-0">
+                            <input type="checkbox" name="weekDays" value="@d" class="form-check-input" @(weekSel.Contains(d) ? "checked" : null) />
+                            <span class="small">@dayLabels[d]</span>
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="UpsaleRequiresSlowSeller" id="upsaleSlow" />
+                    <label class="form-check-label" for="upsaleSlow">Chỉ áp dụng khi giỏ có ít nhất một món <strong>bán chạy</strong> (đánh dấu ở sản phẩm)</label>
                 </div>
             </div>
         </div>

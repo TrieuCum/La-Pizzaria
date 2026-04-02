@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Identity
 @using LaPizzaria.Models
+@using LaPizzaria.ViewModels
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
@@ -9,10 +10,16 @@
     <li class="nav-item d-flex align-items-center gap-2">
         @{
             var user = await UserManager.GetUserAsync(User);
-            var avatar = string.IsNullOrWhiteSpace(user?.AvatarUrl) ? "/images/default-avatar.png" : user!.AvatarUrl;
         }
         <div class="d-flex align-items-center gap-2">
-            <img src="@avatar" alt="avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border: 2px solid var(--brand-orange-light)" />
+            @await Html.PartialAsync("_UserAvatar", new UserAvatarViewModel
+            {
+                AvatarUrl = user?.AvatarUrl,
+                FirstName = user?.FirstName,
+                LastName = user?.LastName,
+                UserName = user?.UserName,
+                ElementClass = "nav-user-avatar"
+            })
             <a id="manage" class="btn-profile-v" asp-controller="Account" asp-action="Manage" title="Manage">
                 <i class="bi bi-person-fill"></i>
                 Hồ sơ

@@ -57,8 +57,7 @@ namespace LaPizzaria.ViewModels
         [Display(Name = "Tên")]
         public string? LastName { get; set; }
 
-        [Url]
-        [Display(Name = "Ảnh đại diện (URL)")]
+        [Display(Name = "Ảnh đại diện")]
         public string? AvatarUrl { get; set; }
 
         [EmailAddress]

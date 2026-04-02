@@ -1,5 +1,6 @@
 @model LaPizzaria.ViewModels.ManageAccountViewModel
 @using Microsoft.AspNetCore.Identity
+@using LaPizzaria.ViewModels
 @inject UserManager<LaPizzaria.Models.ApplicationUser> UserManager
 
 @{
@@ -20,7 +21,16 @@
             <div class="col-lg-3">
                 <div class="profile-card profile-sidebar">
                     <div class="profile-avatar-wrapper">
-                        <img id="avatarPreview" src="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "/images/default-avatar.png" : Model.AvatarUrl)" alt="avatar" class="profile-avatar" />
+                        @await Html.PartialAsync("_UserAvatar", new UserAvatarViewModel
+                        {
+                            AvatarUrl = Model.AvatarUrl,
+                            FirstName = Model.FirstName,
+                            LastName = Model.LastName,
+                            UserName = Model.UserName,
+                            ElementClass = "profile-avatar",
+                            ImgElementId = "avatarPreviewImg",
+                            InitialElementId = "avatarPreviewInitial"
+                        })
                         <div class="profile-rank-badge">
                             <i class="bi bi-star-fill" style="font-size: 10px;"></i>
                         </div>
@@ -84,7 +94,7 @@
                         <p class="profile-subtitle">Quản lý thông tin hồ sơ của bạn để bảo mật tài khoản</p>
                     </div>
 
-                    <form asp-action="Manage" method="post">
+                    <form asp-action="Manage" method="post" enctype="multipart/form-data">
                         <div asp-validation-summary="All" class="text-danger mb-3"></div>
                         
                         <div class="row g-4">
@@ -144,11 +154,12 @@
                                 <span asp-validation-for="Address" class="text-danger small"></span>
                             </div>
 
-                            <!-- Avatar URL -->
+                            <!-- Avatar upload -->
                             <div class="col-12">
-                                <label asp-for="AvatarUrl" class="profile-form-label">Ảnh đại diện (URL)</label>
-                                <input asp-for="AvatarUrl" class="form-control profile-form-input" placeholder="Dán link ảnh tại đây" id="AvatarUrl" />
-                                <small class="text-muted">Ảnh sẽ được cập nhật ngay lập tức ở khung bên trái.</small>
+                                <label class="profile-form-label" for="avatarFile">Ảnh đại diện</label>
+                                <input type="hidden" asp-for="AvatarUrl" />
+                                <input type="file" name="avatarFile" id="avatarFile" class="form-control profile-form-input" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp" />
+                                <small class="text-muted">Chọn ảnh từ máy (JPG, PNG, GIF, WebP), tối đa 2 MB. Ảnh xem trước bên trái khi chọn file.</small>
                             </div>
 
                             <hr class="my-4 opacity-5">
@@ -187,13 +198,29 @@
 
 @section Scripts {
     <script>
-        document.getElementById('AvatarUrl')?.addEventListener('input', function(e) {
-            const val = e.target.value?.trim();
-            const preview = document.getElementById('avatarPreview');
-            if (preview) {
-                preview.src = val || '/images/default-avatar.png';
-            }
-        });
+        (function () {
+            var maxBytes = 2 * 1024 * 1024;
+            var input = document.getElementById('avatarFile');
+            var previewImg = document.getElementById('avatarPreviewImg');
+            var previewInitial = document.getElementById('avatarPreviewInitial');
+            if (!input || !previewImg) return;
+            input.addEventListener('change', function () {
+                var f = input.files && input.files[0];
+                if (!f) return;
+                if (f.size > maxBytes) {
+                    alert('Ảnh tối đa 2 MB.');
+                    input.value = '';
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function (ev) {
+                    if (previewInitial) previewInitial.classList.add('d-none');
+                    previewImg.classList.remove('d-none');
+                    previewImg.src = ev.target.result;
+                };
+                reader.readAsDataURL(f);
+            });
+        })();
     </script>
 }
 

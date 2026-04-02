@@ -80,8 +80,15 @@
                                     <td class="ps-4 py-3">
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
-                                                <img src="@(string.IsNullOrWhiteSpace(item.User.AvatarUrl) ? "/images/default-avatar.png" : item.User.AvatarUrl)" 
-                                                     class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #F1F5F9;">
+                                                @await Html.PartialAsync("_UserAvatar", new LaPizzaria.ViewModels.UserAvatarViewModel
+                                                {
+                                                    AvatarUrl = item.User.AvatarUrl,
+                                                    FirstName = item.User.FirstName,
+                                                    LastName = item.User.LastName,
+                                                    UserName = item.User.UserName,
+                                                    ElementClass = "rounded-circle",
+                                                    ElementStyle = "width: 40px; height: 40px; object-fit: cover; border: 2px solid #F1F5F9;"
+                                                })
                                             </div>
                                             <div>
                                                 <div class="fw-bold" style="color: #0F172A;">@item.User.FirstName @item.User.LastName</div>

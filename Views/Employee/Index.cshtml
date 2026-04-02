@@ -36,7 +36,14 @@
                     <tr>
                         <td>
                             <div class="employee-info">
-                                <img src="@(item.User.AvatarUrl ?? "/images/default-avatar.png")" alt="Avatar" class="employee-avatar">
+                                @await Html.PartialAsync("_UserAvatar", new LaPizzaria.ViewModels.UserAvatarViewModel
+                                {
+                                    AvatarUrl = item.User.AvatarUrl,
+                                    FirstName = item.User.FirstName,
+                                    LastName = item.User.LastName,
+                                    UserName = item.User.UserName,
+                                    ElementClass = "employee-avatar"
+                                })
                                 <div>
                                     <div class="employee-name">@item.User.FirstName @item.User.LastName</div>
                                     <div class="employee-id">ID: @item.User.Id.Substring(0, 8)</div>

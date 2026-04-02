@@ -160,6 +160,20 @@ namespace LaPizzaria.Controllers
             }
 
             var subtotal = details.Sum(d => d.Subtotal);
+            if (details.Count == 0)
+            {
+                return Ok(new
+                {
+                    subtotal = 0m,
+                    discount = 0m,
+                    voucherDiscount = 0m,
+                    total = 0m,
+                    shipFee = 0m,
+                    vat = 0m,
+                    grandTotal = 0m,
+                    vouchers = Array.Empty<object>()
+                });
+            }
             // Combo is now selected like normal products in QR; no automatic combo discount
             var discount = 0m;
             // Apply voucher discounts (up to 2)
@@ -169,7 +183,8 @@ namespace LaPizzaria.Controllers
                 foreach (var vid in req.VoucherIds.Take(2))
                 {
                     var v = await _voucherService.GetByIdAsync(vid);
-                    if (v != null && _voucherService.IsUsable(v, System.DateTime.UtcNow)) vouchers.Add(v);
+                    if (v != null && await _voucherService.CanApplyToOrderAsync(v, productIds, System.DateTime.UtcNow))
+                        vouchers.Add(v);
                 }
             }
             decimal voucherDiscount = 0m;
@@ -184,9 +199,9 @@ namespace LaPizzaria.Controllers
                     return BadRequest(new { error = $"Voucher {v.Code} không thuộc tài khoản hiện tại." });
                 }
 
-                if (!_voucherService.IsUsable(v, System.DateTime.UtcNow))
+                if (!await _voucherService.CanApplyToOrderAsync(v, productIds, System.DateTime.UtcNow))
                 {
-                    return BadRequest(new { error = $"Voucher {v.Code} hiện không khả dụng." });
+                    return BadRequest(new { error = $"Voucher {v.Code} hiện không khả dụng (khung giờ/ngày hoặc điều kiện upsale món bán chậy)." });
                 }
 
                 if (subtotal < v.MinOrderValue)
@@ -204,8 +219,21 @@ namespace LaPizzaria.Controllers
                     voucherDiscount += v.DiscountAmount; // Store max shipping discount in DiscountAmount
             }
 
-            var total = Math.Max(0, subtotal - voucherDiscount);
-            return Ok(new { subtotal, discount, voucherDiscount, total, vouchers = validatedVouchers });
+            var checkout = await _orderPlacement.ComputeTotalsAsync(req);
+            if (!checkout.Success || checkout.Totals == null)
+                return BadRequest(new { error = checkout.Error ?? "Không tính được tổng thanh toán." });
+            var t = checkout.Totals;
+            return Ok(new
+            {
+                subtotal,
+                discount,
+                voucherDiscount,
+                total = t.GrandTotal,
+                shipFee = t.ShipFee,
+                vat = t.Vat,
+                grandTotal = t.GrandTotal,
+                vouchers = validatedVouchers
+            });
         }
 
         [HttpGet]
@@ -243,18 +271,23 @@ namespace LaPizzaria.Controllers
                 foreach (var ov in order.OrderVouchers.Take(5))
                 {
                     var v = ov.Voucher;
-                    if (v != null && v.VoucherType == "Percentage")
+                    if (v == null) continue;
+                    if (v.VoucherType == "Percentage")
                         voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 0);
-                    else if (v != null && v.VoucherType == "FixedAmount")
+                    else if (v.VoucherType == "FixedAmount")
+                        voucherDiscount += v.DiscountAmount;
+                    else if (v.VoucherType == "FreeShipping")
                         voucherDiscount += v.DiscountAmount;
                 }
             }
-            var deliveryFee = 20000m;
+            var deliveryFee = order.ShipFee;
+            var taxPercent = 5m;
+            var taxAmount = order.VatAmount > 0
+                ? order.VatAmount
+                : Math.Round(Math.Max(0, subtotal - voucherDiscount) * (taxPercent / 100m), 0);
             var totalBeforeTax = subtotal + deliveryFee - voucherDiscount;
             if (totalBeforeTax < 0) totalBeforeTax = 0;
-            var taxPercent = 10m;
-            var taxAmount = Math.Round(totalBeforeTax * (taxPercent / 100m), 0);
-            var grandTotal = totalBeforeTax + taxAmount;
+            var grandTotal = order.TotalPrice > 0 ? order.TotalPrice : Math.Max(0, totalBeforeTax + taxAmount);
 
             var buyerName = "—";
             var buyerPhone = "—";
@@ -414,10 +447,13 @@ namespace LaPizzaria.Controllers
                     var ids = req.VoucherIds.Take(2).ToList();
                     var currentUserId = _userManager.GetUserId(User);
                     var effectiveUserId = !string.IsNullOrWhiteSpace(currentUserId) ? currentUserId : req.UserId;
+                    var cartProductIds = req.Items?
+                        .SelectMany(i => new[] { i.ProductId }.Concat(i.ProductId2.HasValue ? new[] { i.ProductId2.Value } : System.Array.Empty<int>()))
+                        .Distinct().ToList() ?? new List<int>();
                     foreach (var vid in ids)
                     {
                         var v = await _voucherService.GetByIdAsync(vid);
-                        if (v != null && IsVoucherForUser(v, effectiveUserId) && _voucherService.IsUsable(v, System.DateTime.UtcNow))
+                        if (v != null && IsVoucherForUser(v, effectiveUserId) && await _voucherService.CanApplyToOrderAsync(v, cartProductIds, System.DateTime.UtcNow))
                         {
                             _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                             v.UsedCount += 1;

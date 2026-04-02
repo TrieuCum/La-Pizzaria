@@ -746,7 +746,13 @@
                 const response = await fetch('/Order/Preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ items, voucherIds })
+                    body: JSON.stringify({
+                        items,
+                        voucherIds,
+                        userId: window.checkoutUser && window.checkoutUser.userId ? window.checkoutUser.userId : null,
+                        deliveryType: deliveryType,
+                        travelDistanceMeters: deliveryType === 'ship' && travelDistance >= 0 ? travelDistance : null
+                    })
                 });
 
                 if (response.ok) {
@@ -761,16 +767,10 @@
                     }
 
                     const subtotal = data.subtotal || 0;
-                    
-                    let shipFeeVal = 0;
-                    if (deliveryType === 'ship' && travelDistance > 0) {
-                        const distKm = travelDistance / 1000;
-                        if (distKm <= 2) shipFeeVal = 15000;
-                        else shipFeeVal = 25000;
-                    }
+                    const shipFeeVal = typeof data.shipFee === 'number' ? data.shipFee : 0;
                     const discountVal = data.voucherDiscount || 0;
-                    const vatVal = Math.round((subtotal - discountVal) * 0.05); // 5% demo tax
-                    const total = subtotal + shipFeeVal - discountVal + vatVal;
+                    const vatVal = typeof data.vat === 'number' ? data.vat : 0;
+                    const total = typeof data.grandTotal === 'number' ? data.grandTotal : (subtotal + shipFeeVal - discountVal + vatVal);
 
                     document.getElementById('subtotal').textContent = subtotal.toLocaleString() + 'đ';
                     document.getElementById('shipFee').textContent = shipFeeVal.toLocaleString() + 'đ';

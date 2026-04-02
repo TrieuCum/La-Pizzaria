@@ -14,7 +14,7 @@ namespace LaPizzaria.Models
         // (UserId, CustomerCode, LoyaltyPoints, Status, CreatedAt, UpdatedAt)
 
         [Required]
-        [StringLength(900)]
+        [StringLength(450)]
         public string UserId { get; set; } = string.Empty;
 
         [StringLength(100)]

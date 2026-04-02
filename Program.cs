@@ -9,12 +9,35 @@ using System.IO;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// IIS / reverse proxy: nhận đúng X-Forwarded-Proto (HTTPS ở edge) để cookie / redirect nhất quán
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// IIS / publish: nếu thiếu chuỗi kết nối, UseSqlServer(null) hoặc seed DB sẽ lỗi → HTTP 500.30
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(defaultConnection))
+{
+    throw new InvalidOperationException(
+        "Thiếu ConnectionStrings:DefaultConnection. Trên IIS hãy đặt ASPNETCORE_ENVIRONMENT=Production và cấu hình chuỗi kết nối trong appsettings.Production.json hoặc biến môi trường.");
+}
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
+
+// Cookie antiforgery: cùng chính sách Secure với đăng nhập (tránh POST lỗi trên HTTP)
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
 
 // DI for application services
 builder.Services.AddScoped<IComboService, ComboService>();
@@ -40,7 +63,7 @@ builder.Services.AddScoped<IMomoService, MomoService>();
 // Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        defaultConnection,
         sqlOptions =>
         {
             sqlOptions.EnableRetryOnFailure(
@@ -61,12 +84,19 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
+// Always + site chỉ HTTP => trình duyệt không gửi cookie đăng nhập → vẫn thấy Register/Login, đặt món báo chưa đăng nhập.
+// SameAsRequest: HTTPS thì cookie Secure; HTTP thì vẫn hoạt động (phù hợp host chưa SSL).
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.SlidingExpiration = true;
+});
+
+builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ExternalScheme, options =>
+{
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
@@ -96,16 +126,21 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
+// Chỉ bật HSTS + chuyển sang HTTPS khi host thật sự có SSL (xem appsettings "Hosting:EnforceHttps").
+// Site chỉ HTTP (nhiều gói share host) — nếu bật ép HTTPS sẽ lỗi hoặc vòng redirect.
+var enforceHttps = app.Configuration.GetValue("Hosting:EnforceHttps", defaultValue: false);
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    if (enforceHttps)
+    {
+        app.UseHsts();
+    }
 }
 
-// Chỉ bật redirect HTTP→HTTPS khi không phải Development: tránh lỗi khi chạy chỉ http://localhost:5081
-// (MoMo redirect về HTTP mà middleware ép sang HTTPS cổng khác → trang callback lỗi).
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && enforceHttps)
 {
     app.UseHttpsRedirection();
 }

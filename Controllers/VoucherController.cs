@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -71,16 +72,48 @@ namespace LaPizzaria.Controllers
 			if (id == null) return View(new Voucher());
 			var v = _db.Vouchers.Find(id);
 			if (v == null) return NotFound();
+			ViewBag.WindowTimeStart = FormatMinute(v.WindowTimeStartMinute);
+			ViewBag.WindowTimeEnd = FormatMinute(v.WindowTimeEndMinute);
+			ViewBag.WeekDaysSelected = string.IsNullOrEmpty(v.ValidDaysOfWeek)
+				? new HashSet<int>()
+				: v.ValidDaysOfWeek.Split(',').Select(s => int.TryParse(s.Trim(), out var x) ? x : -1).Where(x => x >= 0 && x <= 6).ToHashSet();
 			return View(v);
+		}
+
+		private static string? FormatMinute(int? m)
+		{
+			if (m == null) return null;
+			var x = Math.Clamp(m.Value, 0, 1439);
+			return $"{x / 60:D2}:{x % 60:D2}";
+		}
+
+		private static int? ParseTimeToMinute(string? s)
+		{
+			if (string.IsNullOrWhiteSpace(s)) return null;
+			var p = s.Trim().Split(':', StringSplitOptions.RemoveEmptyEntries);
+			if (p.Length < 2) return null;
+			if (!int.TryParse(p[0], out var h) || !int.TryParse(p[1], out var min)) return null;
+			var total = h * 60 + min;
+			if (total < 0 || total > 1439) return null;
+			return total;
 		}
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Upsert(Voucher model)
+		public async Task<IActionResult> Upsert(Voucher model, string? windowTimeStart, string? windowTimeEnd, [FromForm] int[]? weekDays)
 		{
+			model.WindowTimeStartMinute = ParseTimeToMinute(windowTimeStart);
+			model.WindowTimeEndMinute = ParseTimeToMinute(windowTimeEnd);
+			model.ValidDaysOfWeek = weekDays != null && weekDays.Length > 0
+				? string.Join(",", weekDays.Distinct().Where(d => d >= 0 && d <= 6).OrderBy(d => d))
+				: null;
+
 			if (!ModelState.IsValid) 
             {
                 ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
+                ViewBag.WindowTimeStart = windowTimeStart;
+                ViewBag.WindowTimeEnd = windowTimeEnd;
+                ViewBag.WeekDaysSelected = weekDays != null ? weekDays.ToHashSet() : new HashSet<int>();
                 return View(model);
             }
 			if (model.Id == 0)
@@ -102,6 +135,10 @@ namespace LaPizzaria.Controllers
 				existing.MaxUses = model.MaxUses;
 				existing.ExpiresAtUtc = model.ExpiresAtUtc;
 				existing.IsActive = model.IsActive;
+				existing.WindowTimeStartMinute = model.WindowTimeStartMinute;
+				existing.WindowTimeEndMinute = model.WindowTimeEndMinute;
+				existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
+				existing.UpsaleRequiresSlowSeller = model.UpsaleRequiresSlowSeller;
 				existing.UpdatedAtUtc = DateTime.UtcNow;
 				await _svc.UpdateAsync(existing);
 			}
@@ -127,6 +164,7 @@ namespace LaPizzaria.Controllers
             vouchers = (!string.IsNullOrEmpty(userId))
                 ? vouchers.Where(v => v.TargetUserId == null || v.TargetUserId == userId).ToList()
                 : vouchers.Where(v => v.TargetUserId == null).ToList();
+            vouchers = vouchers.Where(v => _svc.MatchesTimeAndDay(v, now)).ToList();
 
 			var list = vouchers.Select(v => new {
 				id = v.Id,

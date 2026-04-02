@@ -4,6 +4,7 @@ using LaPizzaria.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaPizzaria.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260402203529_AddIngredientUnitPriceAndProductProfitMargin")]
+    partial class AddIngredientUnitPriceAndProductProfitMargin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -211,8 +214,8 @@ namespace LaPizzaria.Data.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(900)
+                        .HasColumnType("nvarchar(900)");
 
                     b.HasKey("Id");
 
@@ -285,13 +288,7 @@ namespace LaPizzaria.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsSecondary")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
@@ -316,34 +313,7 @@ namespace LaPizzaria.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
-
                     b.ToTable("Ingredients");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientCategory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentId");
-
-                    b.ToTable("IngredientCategories");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Invoice", b =>
@@ -510,10 +480,6 @@ namespace LaPizzaria.Data.Migrations
                     b.Property<string>("PaymentMethod")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("ShipFee")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("ShipperId")
                         .HasColumnType("nvarchar(450)");
 
@@ -538,10 +504,6 @@ namespace LaPizzaria.Data.Migrations
 
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<decimal>("VatAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -667,9 +629,6 @@ namespace LaPizzaria.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsCustomizable")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsSlowSeller")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
@@ -849,24 +808,12 @@ namespace LaPizzaria.Data.Migrations
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("UpsaleRequiresSlowSeller")
-                        .HasColumnType("bit");
-
                     b.Property<int>("UsedCount")
                         .HasColumnType("int");
-
-                    b.Property<string>("ValidDaysOfWeek")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VoucherType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("WindowTimeEndMinute")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("WindowTimeStartMinute")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -1036,26 +983,6 @@ namespace LaPizzaria.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.Ingredient", b =>
-                {
-                    b.HasOne("LaPizzaria.Models.IngredientCategory", "Category")
-                        .WithMany("Ingredients")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientCategory", b =>
-                {
-                    b.HasOne("LaPizzaria.Models.IngredientCategory", "Parent")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Invoice", b =>
@@ -1331,13 +1258,6 @@ namespace LaPizzaria.Data.Migrations
             modelBuilder.Entity("LaPizzaria.Models.Ingredient", b =>
                 {
                     b.Navigation("ProductIngredients");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientCategory", b =>
-                {
-                    b.Navigation("Children");
-
-                    b.Navigation("Ingredients");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Invoice", b =>

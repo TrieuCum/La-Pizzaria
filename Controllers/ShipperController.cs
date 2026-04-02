@@ -862,7 +862,7 @@ WHERE Id = {id}
                 return 0m;
             }
 
-            return 20000m;
+            return order.ShipFee > 0 ? order.ShipFee : 25000m;
         }
 
         private static DateTime? ParseDateDdMmYyyy(string? input, out bool invalid)

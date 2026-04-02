@@ -10,13 +10,17 @@
         foreach (var ov in Model.OrderVouchers.Take(2))
         {
             var v = ov.Voucher;
-            if (v != null && v.VoucherType == "Percentage")
+            if (v == null) continue;
+            if (v.VoucherType == "Percentage")
                 voucherDiscount += Math.Round(subtotal * (v.DiscountPercent / 100m), 0);
-            else if (v != null && v.VoucherType == "FixedAmount")
+            else if (v.VoucherType == "FixedAmount")
+                voucherDiscount += v.DiscountAmount;
+            else if (v.VoucherType == "FreeShipping")
                 voucherDiscount += v.DiscountAmount;
         }
     }
-    var deliveryFee = 0m;
+    var deliveryFee = Model.ShipFee;
+    var vatDisplay = Model.VatAmount;
     var isCancelled = string.Equals(Model.OrderStatus, "Cancelled", System.StringComparison.OrdinalIgnoreCase);
     var step = 1;
     if (!isCancelled)
@@ -190,13 +194,6 @@
                         <span class="muted">Tạm tính</span>
                         <span>@subtotal.ToString("N0")₫</span>
                     </div>
-                    @if (deliveryFee > 0)
-                    {
-                        <div class="row-summary">
-                            <span class="muted">Phí vận chuyển</span>
-                            <span>@deliveryFee.ToString("N0")₫</span>
-                        </div>
-                    }
                     @if (voucherDiscount > 0 && Model.OrderVouchers != null)
                     {
                         var firstCode = Model.OrderVouchers.FirstOrDefault()?.Voucher?.Code ?? "Voucher";
@@ -208,11 +205,25 @@
                             <span class="text-danger fw-semibold">-@voucherDiscount.ToString("N0")₫</span>
                         </div>
                     }
+                    @if (deliveryFee > 0)
+                    {
+                        <div class="row-summary">
+                            <span class="muted">Phí vận chuyển</span>
+                            <span>@deliveryFee.ToString("N0")₫</span>
+                        </div>
+                    }
+                    @if (vatDisplay > 0)
+                    {
+                        <div class="row-summary">
+                            <span class="muted">Thuế VAT (5%)</span>
+                            <span>@vatDisplay.ToString("N0")₫</span>
+                        </div>
+                    }
                     <div class="row-total">
-                        <p class="total-label mb-0">Tổng cộng</p>
+                        <p class="total-label mb-0">Tổng thanh toán</p>
                         <div>
                             <span class="total-value">@Model.TotalPrice.ToString("N0")₫</span>
-                            <span class="total-note">(Đã bao gồm VAT)</span>
+                            <span class="total-note">@(vatDisplay > 0 || deliveryFee > 0 ? "(Đã gồm phí ship & VAT khi áp dụng)" : "(Đã bao gồm VAT nếu có)")</span>
                         </div>
                     </div>
                     <div class="order-detail-points">

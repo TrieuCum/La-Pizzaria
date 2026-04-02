@@ -13,8 +13,11 @@ namespace LaPizzaria.ViewModels
         [StringLength(500, ErrorMessage = "Mô tả không được vượt quá 500 ký tự.")]
         public string? Description { get; set; }
 
-        [Required(ErrorMessage = "Giá là bắt buộc.")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Giá phải lớn hơn 0.")]
+        /// <summary>% lời cộng trên giá vốn nguyên liệu (áp khi có định lượng) — 30–50%.</summary>
+        [Range(30, 50, ErrorMessage = "% lời từ 30 đến 50.")]
+        public decimal ProfitMarginPercent { get; set; } = 30m;
+
+        [Range(0, double.MaxValue, ErrorMessage = "Giá không hợp lệ.")]
         public decimal Price { get; set; }
 
         [Url(ErrorMessage = "URL Hình ảnh không hợp lệ.")]
@@ -27,6 +30,8 @@ namespace LaPizzaria.ViewModels
 
         public bool IsCustomizable { get; set; } = false;
 
+        public bool IsSlowSeller { get; set; }
+
         public List<IngredientSelectionViewModel> Ingredients { get; set; } = new ();
     }
 
@@ -37,5 +42,12 @@ namespace LaPizzaria.ViewModels
         public string Unit { get; set; } = string.Empty;
         public decimal StockQuantity { get; set; }
         public decimal QuantityPerUnit { get; set; } // selected qty
+
+        /// <summary>Đơn giá nguyên liệu (₫/đơn vị) — chỉ hiển thị, lấy từ DB khi lưu.</summary>
+        public decimal UnitPrice { get; set; }
+
+        public int? CategoryId { get; set; }
+        /// <summary>Id nhóm gốc (tab) để lọc giao diện.</summary>
+        public int? TabRootCategoryId { get; set; }
     }
 }

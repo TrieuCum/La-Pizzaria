@@ -18,6 +18,10 @@ namespace LaPizzaria.Models
         public string? ShipperLocationIp { get; set; }
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
         public decimal TotalPrice { get; set; }
+        /// <summary>Phí giao hàng đã áp khi đặt (khớp trang thanh toán).</summary>
+        public decimal ShipFee { get; set; }
+        /// <summary>VAT (5%) đã áp khi đặt.</summary>
+        public decimal VatAmount { get; set; }
         public string OrderStatus { get; set; } = "Pending";
         public string? DeliveryAddress { get; set; }
         public string? PaymentMethod { get; set; }

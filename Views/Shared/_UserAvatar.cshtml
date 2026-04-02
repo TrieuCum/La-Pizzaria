@@ -1,0 +1,26 @@
+@model LaPizzaria.ViewModels.UserAvatarViewModel
+@using LaPizzaria.Helpers
+@{
+    var initial = UserDisplayHelper.GetAvatarInitial(Model.FirstName, Model.LastName, Model.UserName);
+    var hasPhoto = !string.IsNullOrWhiteSpace(Model.AvatarUrl);
+    var dual = !string.IsNullOrEmpty(Model.ImgElementId) && !string.IsNullOrEmpty(Model.InitialElementId);
+}
+@if (dual)
+{
+    <img id="@Model.ImgElementId"
+         src="@(hasPhoto ? Model.AvatarUrl : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E")"
+         alt=""
+         class="@Model.ElementClass @(hasPhoto ? "" : "d-none")"
+         style="@Model.ElementStyle" />
+    <div id="@Model.InitialElementId"
+         class="@Model.ElementClass user-avatar-initial @(hasPhoto ? "d-none" : "")"
+         style="@Model.ElementStyle">@initial</div>
+}
+else if (hasPhoto)
+{
+    <img src="@Model.AvatarUrl" alt="" class="@Model.ElementClass" style="@Model.ElementStyle" />
+}
+else
+{
+    <div class="@Model.ElementClass user-avatar-initial" style="@Model.ElementStyle">@initial</div>
+}

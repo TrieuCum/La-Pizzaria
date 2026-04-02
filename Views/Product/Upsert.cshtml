@@ -1,5 +1,8 @@
 @model LaPizzaria.ViewModels.ProductViewModel
-@{ ViewData["Title"] = Model.Id == 0 ? "Thêm Món ăn Mới" : "Sửa Món ăn"; }
+@using LaPizzaria.Models
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm Món ăn Mới" : "Sửa Món ăn";
+   var ingRoots = ViewBag.IngredientCategoryRoots as List<IngredientCategory> ?? new List<IngredientCategory>();
+}
 
 <div class="product-upsert-wrapper">
     <div class="container-fluid px-4 py-4">
@@ -51,11 +54,21 @@
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <div class="form-group-v">
-                                        <label asp-for="Price" class="form-label-v">Giá bán (₫) <span class="text-danger">*</span></label>
-                                        <input asp-for="Price" type="number" class="form-control-v" placeholder="0">
+                                        <label asp-for="Price" class="form-label-v">Giá bán (₫)</label>
+                                        <input asp-for="Price" type="number" class="form-control-v" placeholder="0" id="priceInput" step="1" min="0">
+                                        <span class="extra-small text-brand-gray d-block mt-1">Có định lượng nguyên liệu + đơn giá: giá sẽ tự tính = vốn × (1 + % lời).</span>
                                         <span asp-validation-for="Price" class="text-danger extra-small"></span>
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-v">
+                                        <label asp-for="ProfitMarginPercent" class="form-label-v">% Lời (trên giá vốn)</label>
+                                        <input asp-for="ProfitMarginPercent" type="number" class="form-control-v" step="0.1" min="30" max="50" id="profitMarginPercent" />
+                                        <span asp-validation-for="ProfitMarginPercent" class="text-danger extra-small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
                                 <div class="col-md-6">
                                     <div class="form-group-v">
                                         <label asp-for="Category" class="form-label-v">Danh mục <span class="text-danger">*</span></label>
@@ -95,6 +108,10 @@
                                     <input asp-for="IsCustomizable" class="check-input-v" type="checkbox" id="isCustCheck">
                                     <label class="check-label-v" for="isCustCheck">Cho phép thêm Topping</label>
                                 </div>
+                                <div class="form-check-v">
+                                    <input asp-for="IsSlowSeller" class="check-input-v" type="checkbox" id="isSlowSeller">
+                                    <label class="check-label-v" for="isSlowSeller">Món bán chạy (upsale voucher)</label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -103,11 +120,21 @@
                 <!-- Right Column: Ingredient Selection -->
                 <div class="col-lg-7">
                     <div class="upsert-card h-100 d-flex flex-column">
-                        <div class="card-header-v d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-basket3-fill"></i> Định lượng nguyên liệu</span>
-                            <div class="search-box-v">
-                                <i class="bi bi-search"></i>
-                                <input type="text" id="ingSearch" placeholder="Tìm nguyên liệu...">
+                        <div class="card-header-v flex-column align-items-stretch gap-2">
+                            <div class="d-flex justify-content-between align-items-center w-100">
+                                <span><i class="bi bi-basket3-fill"></i> Định lượng nguyên liệu</span>
+                                <div class="search-box-v">
+                                    <i class="bi bi-search"></i>
+                                    <input type="text" id="ingSearch" placeholder="Tìm nguyên liệu...">
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1" id="ingCategoryTabs">
+                                <button type="button" class="btn btn-sm rounded-pill px-3 active" data-cat="all" style="border:1px solid #e5e7eb;background:#181411;color:white;font-size:0.7rem;">Tất cả</button>
+                                @foreach (var r in ingRoots)
+                                {
+                                    <button type="button" class="btn btn-sm rounded-pill px-3" data-cat="@r.Id" style="border:1px solid #e5e7eb;background:white;font-size:0.7rem;">@r.Name</button>
+                                }
+                                <button type="button" class="btn btn-sm rounded-pill px-3" data-cat="none" style="border:1px solid #e5e7eb;background:white;font-size:0.7rem;">Khác</button>
                             </div>
                         </div>
                         <div class="card-body-v flex-grow-1 overflow-hidden d-flex flex-column">
@@ -119,14 +146,16 @@
                                         <tr>
                                             <th>Nguyên liệu</th>
                                             <th class="text-center">Đơn vị</th>
+                                            <th class="text-end">Đơn giá (₫)</th>
                                             <th class="text-center">Tồn kho</th>
-                                            <th class="text-end" style="width: 150px;">Số lượng / Phần</th>
+                                            <th class="text-end" style="min-width: 120px;">SL / phần</th>
+                                            <th class="text-end">Thành tiền</th>
                                         </tr>
                                     </thead>
                                     <tbody id="ingTableBody">
                                         @for (int i = 0; i < Model.Ingredients.Count; i++)
                                         {
-                                            <tr class="ing-row" data-name="@Model.Ingredients[i].Name.ToLower()">
+                                            <tr class="ing-row" data-name="@Model.Ingredients[i].Name.ToLower()" data-tab-root="@(Model.Ingredients[i].TabRootCategoryId?.ToString() ?? "none")" data-unit-price="@Model.Ingredients[i].UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)">
                                                 <td>
                                                     <input type="hidden" asp-for="@Model.Ingredients[i].IngredientId" />
                                                     <input type="hidden" asp-for="@Model.Ingredients[i].Name" />
@@ -137,6 +166,7 @@
                                                 <td class="text-center">
                                                     <span class="badge bg-light text-brand-gray border py-1 px-2 fw-bold extra-small">@Model.Ingredients[i].Unit</span>
                                                 </td>
+                                                <td class="text-end small fw-bold ing-unit-price-cell">@Model.Ingredients[i].UnitPrice.ToString("N2")</td>
                                                 <td class="text-center">
                                                     <span class="small fw-bold @(Model.Ingredients[i].StockQuantity < 10 ? "text-danger" : "text-brand-dark")">
                                                         @Model.Ingredients[i].StockQuantity.ToString("N1")
@@ -147,13 +177,20 @@
                                                            class="form-control-v form-control-sm text-end fw-bold ing-qty-input @(Model.Ingredients[i].QuantityPerUnit > 0 ? "active" : "")" 
                                                            step="0.01" min="0" placeholder="0.00" />
                                                 </td>
+                                                <td class="text-end small fw-bold ing-line-total">0</td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <div class="card-footer-v bg-light border-top p-4 d-flex justify-content-between align-items-center">
+                        <div class="card-footer-v bg-light border-top p-4">
+                            <div class="mb-2 extra-small text-brand-gray">
+                                <span class="fw-bold text-brand-dark">Ước tính:</span>
+                                Giá vốn <span id="sumCost" class="fw-bold text-brand-dark">0</span> ₫
+                                · Giá bán (vốn × (1 + %/100)) <span id="sumSale" class="fw-bold text-brand-orange">0</span> ₫
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
                             <div class="selected-count extra-small fw-bold text-brand-orange" id="selectedCount">
                                 0 nguyên liệu được chọn
                             </div>
@@ -161,6 +198,7 @@
                                 <button type="submit" class="btn btn-brand-orange rounded-pill px-5 py-2 fw-black shadow-sm transition-all hover-scale">
                                     <i class="bi bi-check2-circle me-2"></i> Lưu dữ liệu
                                 </button>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -419,13 +457,23 @@
                 updatePreview($(this).val().trim());
             });
 
-            // Ingredient Search logic
-            $('#ingSearch').on('input', function() {
-                const q = $(this).val().toLowerCase();
+            let currentCat = 'all';
+            function applyIngFilters() {
+                const q = $('#ingSearch').val().toLowerCase();
                 $('.ing-row').each(function() {
                     const name = $(this).data('name');
-                    $(this).toggle(name.indexOf(q) > -1);
+                    const tab = $(this).data('tab-root');
+                    const okName = name.indexOf(q) > -1;
+                    const okCat = currentCat === 'all' || String(tab) === String(currentCat);
+                    $(this).toggle(okName && okCat);
                 });
+            }
+            $('#ingSearch').on('input', applyIngFilters);
+            $('#ingCategoryTabs button').on('click', function () {
+                $('#ingCategoryTabs button').removeClass('active').css({ background: 'white', color: 'inherit', border: '1px solid #e5e7eb' });
+                $(this).addClass('active').css({ background: '#181411', color: 'white', border: 'none' });
+                currentCat = $(this).data('cat');
+                applyIngFilters();
             });
 
             // Selected count tracking
@@ -447,8 +495,39 @@
                 });
             }
 
-            $('.ing-qty-input').on('input', updateSelectedCount);
-            updateSelectedCount(); // init
+            function parseMoney(s) {
+                const n = parseFloat(s);
+                return isNaN(n) ? 0 : n;
+            }
+
+            function recalcPricing() {
+                let cost = 0;
+                $('.ing-row').each(function () {
+                    const unitP = parseMoney($(this).data('unit-price'));
+                    const q = parseMoney($(this).find('.ing-qty-input').val());
+                    const line = Math.round(unitP * q * 10000) / 10000;
+                    cost += line;
+                    $(this).find('.ing-line-total').text(line > 0 ? line.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : '0');
+                });
+                let margin = parseMoney($('#profitMarginPercent').val());
+                if (margin < 30) margin = 30;
+                if (margin > 50) margin = 50;
+                const raw = cost > 0 ? cost * (1 + margin / 100) : 0;
+                const sale = cost > 0 ? Math.round(raw / 1000) * 1000 : 0;
+                $('#sumCost').text(cost > 0 ? Math.round(cost).toLocaleString('vi-VN') : '0');
+                $('#sumSale').text(sale > 0 ? sale.toLocaleString('vi-VN') : '0');
+                if (sale > 0) {
+                    $('#priceInput').val(sale);
+                }
+            }
+
+            $('.ing-qty-input').on('input', function () {
+                updateSelectedCount();
+                recalcPricing();
+            });
+            $('#profitMarginPercent').on('input', recalcPricing);
+            updateSelectedCount();
+            recalcPricing();
         });
     </script>
 }
