@@ -33,35 +33,27 @@ public sealed class OrderPlacementService : IOrderPlacementService
             if (it.UnitPrice != null)
                 price = it.UnitPrice.Value;
             else if (p1 != null)
-            {
-                decimal p1Price = p1.Price;
-                decimal modifier = 0;
-                if (it.Size == "S") modifier = -30000;
-                else if (it.Size == "L") modifier = 50000;
-
-                decimal finalUnitPrice = p1Price + modifier;
-
-                if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
-                {
-                    decimal p2Price = p2.Price + modifier;
-                    finalUnitPrice = (finalUnitPrice + p2Price) / 2;
-                }
-                price = finalUnitPrice;
-            }
+                price = await CalculateIngredientBasedPriceAsync(it.ProductId, it.ProductId2, it.Size, p1.Price);
 
             details.Add(new OrderDetail { ProductId = it.ProductId, ProductId2 = it.ProductId2, Quantity = it.Quantity, UnitPrice = price, Subtotal = price * it.Quantity, Size = it.Size });
         }
 
         var subtotal = details.Sum(d => d.Subtotal);
         decimal voucherDiscount = 0m;
+        var cartProductIds = items
+            .SelectMany(i => i.ProductId2.HasValue
+                ? new[] { i.ProductId, i.ProductId2.Value }
+                : new[] { i.ProductId })
+            .Distinct()
+            .ToList();
 
         foreach (var vid in req.VoucherIds?.Take(2) ?? new List<int>())
         {
             var v = await _voucherService.GetByIdAsync(vid);
             if (v == null) continue;
 
-            if (!_voucherService.IsUsable(v, DateTime.UtcNow))
-                return CheckoutTotalsOutcome.Fail($"Voucher {v.Code} hiện không khả dụng.");
+            if (!await _voucherService.CanApplyToOrderAsync(v, DateTime.UtcNow, cartProductIds))
+                return CheckoutTotalsOutcome.Fail($"Voucher {v.Code} hiện không khả dụng (khung giờ/ngày hoặc điều kiện upsale).");
 
             if (subtotal < v.MinOrderValue)
                 return CheckoutTotalsOutcome.Fail($"Đơn hàng chưa đạt giá trị tối thiểu ({v.MinOrderValue:N0}đ) để sử dụng mã {v.Code}.");
@@ -114,21 +106,7 @@ public sealed class OrderPlacementService : IOrderPlacementService
             {
                 decimal price = it.UnitPrice ?? 0m;
                 if (it.UnitPrice == null && products.TryGetValue(it.ProductId, out var p1))
-                {
-                    decimal p1Price = p1.Price;
-                    decimal modifier = 0;
-                    if (it.Size == "S") modifier = -30000;
-                    else if (it.Size == "L") modifier = 50000;
-
-                    decimal finalUnitPrice = p1Price + modifier;
-
-                    if (it.ProductId2.HasValue && products.TryGetValue(it.ProductId2.Value, out var p2))
-                    {
-                        decimal p2Price = p2.Price + modifier;
-                        finalUnitPrice = (finalUnitPrice + p2Price) / 2;
-                    }
-                    price = finalUnitPrice;
-                }
+                    price = await CalculateIngredientBasedPriceAsync(it.ProductId, it.ProductId2, it.Size, p1.Price);
 
                 details.Add(new OrderDetail
                 {
@@ -153,10 +131,16 @@ public sealed class OrderPlacementService : IOrderPlacementService
 
         if (req.VoucherIds != null && req.VoucherIds.Count > 0)
         {
+            var cartIds = (req.Items ?? new List<QrOrderItem>())
+                .SelectMany(i => i.ProductId2.HasValue
+                    ? new[] { i.ProductId, i.ProductId2.Value }
+                    : new[] { i.ProductId })
+                .Distinct()
+                .ToList();
             foreach (var vid in req.VoucherIds.Take(2))
             {
                 var v = await _voucherService.GetByIdAsync(vid);
-                if (v != null && _voucherService.IsUsable(v, DateTime.UtcNow))
+                if (v != null && await _voucherService.CanApplyToOrderAsync(v, DateTime.UtcNow, cartIds))
                 {
                     _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                     v.UsedCount += 1;
@@ -172,5 +156,39 @@ public sealed class OrderPlacementService : IOrderPlacementService
         }
 
         return order.Id;
+    }
+
+    private async Task<decimal> CalculateIngredientBasedPriceAsync(int productId, int? productId2, string? size, decimal fallbackPrice)
+    {
+        var productIds = new List<int> { productId };
+        if (productId2.HasValue) productIds.Add(productId2.Value);
+
+        var mappings = await _db.ProductIngredients
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+        if (!mappings.Any()) return fallbackPrice;
+
+        var ingredientIds = mappings.Select(m => m.IngredientId).Distinct().ToList();
+        var ingredientMap = await _db.Ingredients
+            .Where(i => ingredientIds.Contains(i.Id))
+            .ToDictionaryAsync(i => i.Id);
+
+        decimal ComputePriceForProduct(int pid)
+        {
+            var productMappings = mappings.Where(m => m.ProductId == pid).ToList();
+            if (!productMappings.Any()) return fallbackPrice;
+
+            return productMappings.Sum(m =>
+            {
+                if (!ingredientMap.TryGetValue(m.IngredientId, out var ingredient)) return 0m;
+                var qty = ProductPricingCalculator.GetScaledQuantity(m, ingredient, size);
+                return qty * ingredient.UnitPrice;
+            });
+        }
+
+        var p1Price = ComputePriceForProduct(productId);
+        if (!productId2.HasValue) return p1Price;
+        var p2Price = ComputePriceForProduct(productId2.Value);
+        return (p1Price + p2Price) / 2m;
     }
 }

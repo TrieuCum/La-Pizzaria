@@ -1,7 +1,15 @@
 @model IEnumerable<LaPizzaria.Models.Ingredient>
+@using System.Linq
 @{
     ViewData["Title"] = "Quản lý Nguyên liệu";
     Layout = "_Layout";
+    var catList = ViewBag.Categories as List<LaPizzaria.Models.IngredientCategory> ?? new List<LaPizzaria.Models.IngredientCategory>();
+    string IngPath(LaPizzaria.Models.Ingredient i)
+    {
+        if (i.Category == null) return "Khác";
+        if (i.Category.Parent != null) return $"{i.Category.Parent.Name} / {i.Category.Name}";
+        return i.Category.Name;
+    }
 }
 
 <style>
@@ -343,6 +351,67 @@
             </div>
         </div>
 
+        @if (TempData["success"] != null)
+        {
+            <div class="alert alert-success" style="max-width:1400px;margin:0 auto 16px;">@TempData["success"]</div>
+        }
+        @if (TempData["error"] != null)
+        {
+            <div class="alert alert-danger" style="max-width:1400px;margin:0 auto 16px;">@TempData["error"]</div>
+        }
+
+        <div style="max-width:1400px;margin:0 auto 20px;background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+            <p style="font-weight:700;margin:0 0 10px;font-size:14px;">Thêm nhóm nguyên liệu</p>
+            <form asp-action="AddCategory" method="post" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label style="font-size:12px;color:#64748b;">Tên nhóm</label>
+                    <input name="name" class="form-control" placeholder="VD: Nấm, Hải sản..." style="min-width:200px;" required />
+                </div>
+                <div>
+                    <label style="font-size:12px;color:#64748b;">Thuộc nhóm cha (tùy chọn)</label>
+                    <select name="parentId" class="form-select" style="min-width:200px;">
+                        <option value="">— Nhóm chính —</option>
+                        @foreach (var pc in catList.Where(c => c.ParentId == null).OrderBy(c => c.SortOrder))
+                        {
+                            <option value="@pc.Id">@pc.Name</option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn-add-ingredient" style="padding:8px 16px;">Thêm nhóm</button>
+            </form>
+            @if (catList.Any())
+            {
+                <p style="margin:12px 0 6px;font-size:12px;color:#64748b;">Nhóm đã có:</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    @foreach (var c in catList.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+                    {
+                        <span style="background:#f8fafc;border-radius:8px;padding:4px 10px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                            @(c.ParentId.HasValue ? "↳ " : "")@c.Name
+                            <form asp-action="DeleteCategory" asp-route-id="@c.Id" method="post" class="d-inline" onsubmit="return confirm('Xóa nhóm này? Nguyên liệu sẽ về mục Khác.');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" style="border:none;background:none;color:#ef4444;cursor:pointer;padding:0;line-height:1;">×</button>
+                            </form>
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+
+        <div style="max-width:1400px;margin:0 auto 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <span style="font-weight:700;font-size:14px;">Lọc theo nhóm:</span>
+            @{
+                var q = ViewBag.Query as string ?? "";
+            }
+            <a href="@Url.Action("Index", new { q })" style="padding:6px 12px;border-radius:8px;text-decoration:none;font-size:13px;@(ViewBag.CategoryId == null ? "background:#181411;color:#fff;" : "background:#f1f5f9;color:#334155;")">Tất cả</a>
+            <a href="@Url.Action("Index", new { categoryId = 0, q })" style="padding:6px 12px;border-radius:8px;text-decoration:none;font-size:13px;@(ViewBag.CategoryId as int? == 0 ? "background:#181411;color:#fff;" : "background:#f1f5f9;color:#334155;")">Khác</a>
+            @foreach (var c in catList.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+            {
+                var sel = ViewBag.CategoryId as int? == c.Id;
+                <a href="@Url.Action("Index", new { categoryId = c.Id, q })" style="padding:6px 12px;border-radius:8px;text-decoration:none;font-size:13px;@(sel ? "background:#f48c25;color:#fff;" : "background:#f1f5f9;color:#334155;")">@c.Name</a>
+            }
+        </div>
+
         <!-- Filter Tabs -->
         <div class="filter-tabs">
             <div class="search-wrapper">
@@ -363,7 +432,9 @@
                 <thead>
                     <tr>
                         <th>TÊN NGUYÊN LIỆU</th>
+                        <th>NHÓM</th>
                         <th>ĐƠN VỊ TÍNH</th>
+                        <th>GIÁ / ĐƠN VỊ</th>
                         <th>SỐ LƯỢNG TỒN KHO</th>
                         <th>TRẠNG THÁI</th>
                         <th>HÀNH ĐỘNG</th>
@@ -389,7 +460,13 @@
                             </div>
                         </td>
                         <td>
-                            <span class="unit-text">kg</span>
+                            <span class="unit-text" style="font-size:13px;color:#64748b;">@IngPath(ing)</span>
+                        </td>
+                        <td>
+                            <span class="unit-text">@ing.Unit</span>
+                        </td>
+                        <td>
+                            <span class="stock-number">@ing.UnitPrice.ToString("N0")₫</span>
                         </td>
                         <td>
                             <span class="stock-number">@ing.StockQuantity.ToString("N1")</span>

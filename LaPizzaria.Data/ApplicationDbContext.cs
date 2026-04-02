@@ -19,6 +19,7 @@ namespace LaPizzaria.Data
         public DbSet<Table> Tables { get; set; }
         public DbSet<OrderTable> OrderTables { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<IngredientCategory> IngredientCategories { get; set; }
         public DbSet<ProductIngredient> ProductIngredients { get; set; }
         public DbSet<Combo> Combos { get; set; }
         public DbSet<ComboItem> ComboItems { get; set; }
@@ -36,6 +37,7 @@ namespace LaPizzaria.Data
             base.OnModelCreating(modelBuilder);
             // Decimal precisions
             modelBuilder.Entity<Product>().Property(p => p.Price).HasPrecision(18, 2);
+            modelBuilder.Entity<Product>().Property(p => p.ProfitMarginPercent).HasPrecision(18, 2);
             modelBuilder.Entity<Topping>().Property(t => t.Price).HasPrecision(18, 2);
             modelBuilder.Entity<Order>().Property(o => o.TotalPrice).HasPrecision(18, 2);
             modelBuilder.Entity<OrderDetail>().Property(od => od.UnitPrice).HasPrecision(18, 2);
@@ -49,6 +51,7 @@ namespace LaPizzaria.Data
             modelBuilder.Entity<InvoiceItem>().Property(ii => ii.Total).HasPrecision(18, 2);
             modelBuilder.Entity<Ingredient>().Property(i => i.StockQuantity).HasPrecision(18, 2);
             modelBuilder.Entity<Ingredient>().Property(i => i.ReorderLevel).HasPrecision(18, 2);
+            modelBuilder.Entity<Ingredient>().Property(i => i.UnitPrice).HasPrecision(18, 2);
             modelBuilder.Entity<Combo>().Property(c => c.DiscountAmount).HasPrecision(18, 2);
             modelBuilder.Entity<Combo>().Property(c => c.DiscountPercent).HasPrecision(18, 2);
             modelBuilder.Entity<ComboItem>().Property(ci => ci.ItemDiscountAmount).HasPrecision(18, 2);
@@ -117,6 +120,18 @@ namespace LaPizzaria.Data
                 .HasForeignKey(pi => pi.IngredientId);
 
             modelBuilder.Entity<ProductIngredient>().Property(pi => pi.QuantityPerUnit).HasPrecision(18, 2);
+
+            modelBuilder.Entity<IngredientCategory>()
+                .HasOne(c => c.Parent)
+                .WithMany(c => c.Children)
+                .HasForeignKey(c => c.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Ingredient>()
+                .HasOne(i => i.Category)
+                .WithMany(c => c.Ingredients)
+                .HasForeignKey(i => i.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Configure Combo-Items
             modelBuilder.Entity<ComboItem>()

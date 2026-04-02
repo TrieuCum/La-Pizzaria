@@ -292,10 +292,20 @@ namespace LaPizzaria.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Upsert(int? id)
+        public async Task<IActionResult> Upsert(int? id, int ingredientPageSize = 20)
         {
+            ingredientPageSize = ingredientPageSize <= 0 ? 20 : ingredientPageSize;
+            var allowedPageSizes = new[] { 10, 20, 50, 100 };
+            if (!allowedPageSizes.Contains(ingredientPageSize))
+            {
+                ingredientPageSize = 20;
+            }
+
             ProductViewModel viewModel = new ProductViewModel();
-            var allIngredients = await _db.Ingredients.OrderBy(i => i.Name).ToListAsync();
+            var allIngredients = await _db.Ingredients
+                .Include(i => i.Category)!.ThenInclude(c => c!.Parent)
+                .OrderBy(i => i.Name)
+                .ToListAsync();
             var mappings = new List<ProductIngredient>();
 
             if (id != null && id != 0)
@@ -307,6 +317,8 @@ namespace LaPizzaria.Controllers
                 viewModel.Name = p.Name;
                 viewModel.Description = p.Description;
                 viewModel.Price = p.Price;
+                viewModel.ProfitMarginPercent = p.ProfitMarginPercent;
+                viewModel.IsSlowSeller = p.IsSlowSeller;
                 viewModel.ImageUrl = p.ImageUrl;
                 viewModel.Category = p.Category;
                 viewModel.IsActive = p.IsActive;
@@ -320,11 +332,29 @@ namespace LaPizzaria.Controllers
                 IngredientId = i.Id,
                 Name = i.Name,
                 Unit = i.Unit,
+                UnitPrice = i.UnitPrice,
+                IsDoughBase = i.IsDoughBase,
                 StockQuantity = i.StockQuantity,
-                QuantityPerUnit = mappings.FirstOrDefault(m => m.IngredientId == i.Id)?.QuantityPerUnit ?? 0m
+                QuantityPerUnit = mappings.FirstOrDefault(m => m.IngredientId == i.Id)?.QuantityPerUnit ?? 0m,
+                CategoryId = i.CategoryId,
+                CategoryDisplayPath = BuildIngredientCategoryPath(i)
             }).ToList();
 
+            ViewBag.IngredientPageSize = ingredientPageSize;
+            ViewBag.IngredientCategoryTabs = await _db.IngredientCategories
+                .AsNoTracking()
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.Name)
+                .ToListAsync();
             return View(viewModel);
+        }
+
+        private static string BuildIngredientCategoryPath(Ingredient i)
+        {
+            if (i.Category == null) return "Khác";
+            if (i.Category.Parent != null)
+                return $"{i.Category.Parent.Name} / {i.Category.Name}";
+            return i.Category.Name;
         }
 
         [HttpPost]
@@ -338,11 +368,29 @@ namespace LaPizzaria.Controllers
 
                 p.Name = productViewModel.Name;
                 p.Description = productViewModel.Description;
-                p.Price = productViewModel.Price;
                 p.ImageUrl = productViewModel.ImageUrl;
                 p.Category = productViewModel.Category;
                 p.IsActive = productViewModel.IsActive;
                 p.IsCustomizable = productViewModel.IsCustomizable;
+                p.IsSlowSeller = productViewModel.IsSlowSeller;
+                p.ProfitMarginPercent = productViewModel.ProfitMarginPercent;
+
+                var ingredientIds = productViewModel.Ingredients?
+                    .Where(x => x.QuantityPerUnit > 0)
+                    .Select(x => x.IngredientId)
+                    .Distinct()
+                    .ToList() ?? new List<int>();
+                var ingredientPriceMap = await _db.Ingredients
+                    .Where(i => ingredientIds.Contains(i.Id))
+                    .ToDictionaryAsync(i => i.Id, i => i.UnitPrice);
+                var cost = productViewModel.Ingredients?
+                    .Where(x => x.QuantityPerUnit > 0)
+                    .Sum(x => x.QuantityPerUnit * (ingredientPriceMap.TryGetValue(x.IngredientId, out var unitPrice) ? unitPrice : 0m)) ?? 0m;
+                var margin = productViewModel.ProfitMarginPercent;
+                if (cost > 0m)
+                    p.Price = Math.Round(cost * (1 + margin / 100m), 2);
+                else
+                    p.Price = productViewModel.Price;
 
                 if (productViewModel.Id == 0)
                 {
@@ -381,7 +429,7 @@ namespace LaPizzaria.Controllers
             }
 
             // Re-fetch ingredients if model state is invalid
-            var ingredients = await _db.Ingredients.OrderBy(i => i.Name).ToListAsync();
+            var ingredients = await _db.Ingredients.Include(i => i.Category)!.ThenInclude(c => c!.Parent).OrderBy(i => i.Name).ToListAsync();
             foreach (var item in productViewModel.Ingredients)
             {
                 var ing = ingredients.FirstOrDefault(i => i.Id == item.IngredientId);
@@ -389,9 +437,14 @@ namespace LaPizzaria.Controllers
                 {
                     item.Name = ing.Name;
                     item.Unit = ing.Unit;
+                    item.UnitPrice = ing.UnitPrice;
+                    item.IsDoughBase = ing.IsDoughBase;
                     item.StockQuantity = ing.StockQuantity;
+                    item.CategoryId = ing.CategoryId;
+                    item.CategoryDisplayPath = BuildIngredientCategoryPath(ing);
                 }
             }
+            ViewBag.IngredientCategoryTabs = await _db.IngredientCategories.AsNoTracking().OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ToListAsync();
             return View(productViewModel);
         }
 

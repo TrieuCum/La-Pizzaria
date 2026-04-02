@@ -38,7 +38,8 @@ namespace LaPizzaria.Controllers
             var newOrders = await baseQuery
                 .Where(o =>
                     o.ShipperId == null &&
-                    (o.OrderStatus == "Preparing" ||
+                    (o.OrderStatus == "Confirmed" ||
+                     o.OrderStatus == "Preparing" ||
                      o.OrderStatus == "Ready" ||
                      o.OrderStatus == "Đang chế biến" ||
                      o.OrderStatus == "Sẵn sàng"))
@@ -392,7 +393,7 @@ SET OrderStatus = {"Delivering"},
     UpdatedAt = {DateTime.UtcNow}
 WHERE Id = {id}
   AND ShipperId IS NULL
-  AND (OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
+  AND (OrderStatus = {"Confirmed"} OR OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
 ");
 
             if (affectedRows == 0)
@@ -421,7 +422,7 @@ SET OrderStatus = {"Delivering"},
     UpdatedAt = {DateTime.UtcNow}
 WHERE Id = {id}
   AND ShipperId IS NULL
-  AND (OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
+  AND (OrderStatus = {"Confirmed"} OR OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
 ");
 
             if (affectedRows == 0)
