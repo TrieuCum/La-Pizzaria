@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace LaPizzaria.Models
 {
@@ -34,6 +35,7 @@ namespace LaPizzaria.Models
 		public string? ValidDaysOfWeek { get; set; }
 		/// <summary>Chỉ áp dụng khi giỏ có ít nhất một sản phẩm <see cref="Product.IsSlowSeller"/>.</summary>
 		public bool UpsaleRequiresSlowSeller { get; set; }
+		public ICollection<VoucherProduct> VoucherProducts { get; set; } = new List<VoucherProduct>();
 	}
 }
 

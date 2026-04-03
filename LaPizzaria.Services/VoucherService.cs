@@ -108,6 +108,16 @@ namespace LaPizzaria.Services
 		{
 			if (!IsUsable(v, utcNow)) return false;
 			if (!MatchesTimeAndDay(v, utcNow)) return false;
+			var targetedProductIds = await _db.VoucherProducts
+				.AsNoTracking()
+				.Where(vp => vp.VoucherId == v.Id)
+				.Select(vp => vp.ProductId)
+				.ToListAsync(ct);
+			if (targetedProductIds.Count > 0)
+			{
+				if (cartProductIds == null || cartProductIds.Count == 0) return false;
+				if (!cartProductIds.Intersect(targetedProductIds).Any()) return false;
+			}
 			if (v.UpsaleRequiresSlowSeller)
 			{
 				if (cartProductIds == null || cartProductIds.Count == 0) return false;

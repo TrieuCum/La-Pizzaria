@@ -28,6 +28,7 @@ namespace LaPizzaria.Data
 		public DbSet<Voucher> Vouchers { get; set; }
 		public DbSet<OrderVoucher> OrderVouchers { get; set; }
 		public DbSet<UserSavedVoucher> UserSavedVouchers { get; set; }
+		public DbSet<VoucherProduct> VoucherProducts { get; set; }
 		public DbSet<Employee> Employees { get; set; }
         public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
 
@@ -177,6 +178,17 @@ namespace LaPizzaria.Data
                 .WithMany()
                 .HasForeignKey(v => v.TargetUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<VoucherProduct>()
+                .HasKey(vp => new { vp.VoucherId, vp.ProductId });
+            modelBuilder.Entity<VoucherProduct>()
+                .HasOne(vp => vp.Voucher)
+                .WithMany(v => v.VoucherProducts)
+                .HasForeignKey(vp => vp.VoucherId);
+            modelBuilder.Entity<VoucherProduct>()
+                .HasOne(vp => vp.Product)
+                .WithMany(p => p.VoucherProducts)
+                .HasForeignKey(vp => vp.ProductId);
 
             // UserSavedVoucher: user đã lưu voucher vào tài khoản
             modelBuilder.Entity<UserSavedVoucher>()
