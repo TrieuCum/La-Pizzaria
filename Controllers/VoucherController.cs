@@ -130,48 +130,59 @@ namespace LaPizzaria.Controllers
 				return View(model);
 			}
 
-			await using var tx = await _db.Database.BeginTransactionAsync();
-			if (model.Id == 0)
+			var voucherMissing = false;
+			var strategy = _db.Database.CreateExecutionStrategy();
+			await strategy.ExecuteAsync(async () =>
 			{
-				model.UsedCount = 0;
-				model.UpsaleRequiresSlowSeller = false;
-				await _svc.CreateAsync(model);
-				await ReplaceVoucherProductsAsync(model.Id, selectedProductIds);
-			}
-			else
-			{
-				var existing = await _svc.GetByIdAsync(model.Id);
-				if (existing == null) return NotFound();
+				await using var tx = await _db.Database.BeginTransactionAsync();
+				if (model.Id == 0)
+				{
+					model.UsedCount = 0;
+					model.UpsaleRequiresSlowSeller = false;
+					await _svc.CreateAsync(model);
+					await ReplaceVoucherProductsAsync(model.Id, selectedProductIds);
+				}
+				else
+				{
+					var existing = await _svc.GetByIdAsync(model.Id);
+					if (existing == null)
+					{
+						voucherMissing = true;
+						await tx.RollbackAsync();
+						return;
+					}
 
-				existing.Code = model.Code;
-				existing.Name = model.Name;
-				existing.VoucherType = model.VoucherType;
-				existing.DiscountPercent = model.DiscountPercent;
-				existing.DiscountAmount = model.DiscountAmount;
-				existing.MinOrderValue = model.MinOrderValue;
-				existing.TargetUserId = model.TargetUserId;
-				existing.MaxUses = model.MaxUses;
-				existing.ExpiresAtUtc = model.ExpiresAtUtc;
-				existing.IsActive = model.IsActive;
-				existing.WindowTimeStartMinute = model.WindowTimeStartMinute;
-				existing.WindowTimeEndMinute = model.WindowTimeEndMinute;
-				existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
-				existing.UpsaleRequiresSlowSeller = false;
-				existing.UpdatedAtUtc = DateTime.UtcNow;
+					existing.Code = model.Code;
+					existing.Name = model.Name;
+					existing.VoucherType = model.VoucherType;
+					existing.DiscountPercent = model.DiscountPercent;
+					existing.DiscountAmount = model.DiscountAmount;
+					existing.MinOrderValue = model.MinOrderValue;
+					existing.TargetUserId = model.TargetUserId;
+					existing.MaxUses = model.MaxUses;
+					existing.ExpiresAtUtc = model.ExpiresAtUtc;
+					existing.IsActive = model.IsActive;
+					existing.WindowTimeStartMinute = model.WindowTimeStartMinute;
+					existing.WindowTimeEndMinute = model.WindowTimeEndMinute;
+					existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
+					existing.UpsaleRequiresSlowSeller = false;
+					existing.UpdatedAtUtc = DateTime.UtcNow;
 
-				await _svc.UpdateAsync(existing);
-				await ReplaceVoucherProductsAsync(existing.Id, selectedProductIds);
-			}
+					await _svc.UpdateAsync(existing);
+					await ReplaceVoucherProductsAsync(existing.Id, selectedProductIds);
+				}
 
-			await tx.CommitAsync();
-			TempData["success"] = "LÆ°u voucher thĂ nh cĂ´ng";
+				await tx.CommitAsync();
+			});
+			if (voucherMissing) return NotFound();
+			TempData["success"] = "L\u01b0u voucher th\u00e0nh c\u00f4ng";
 			return RedirectToAction(nameof(Index));
 		}
 
 		public async Task<IActionResult> Delete(int id)
 		{
 			await _svc.DeleteAsync(id);
-			TempData["success"] = "ÄĂ£ xoĂ¡ voucher";
+			TempData["success"] = "\u0110\u00e3 x\u00f3a voucher";
 			return RedirectToAction(nameof(Index));
 		}
 
