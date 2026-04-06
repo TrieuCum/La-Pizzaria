@@ -12,6 +12,7 @@ namespace LaPizzaria.ViewModels
     {
         public int OrderId { get; set; }
         public string OrderStatus { get; set; } = string.Empty;
+        public string DeliveryStatus { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
         public string? CustomerPhone { get; set; }
         public string DeliveryAddress { get; set; } = string.Empty;
@@ -19,12 +20,15 @@ namespace LaPizzaria.ViewModels
         public int ItemCount { get; set; }
         public DateTime OrderDate { get; set; }
         public decimal TotalPrice { get; set; }
+        public DateTime? AssignedAt { get; set; }
+        public DateTime? DeliveredAt { get; set; }
     }
 
     public class ShipperOrderDetailViewModel
     {
         public int OrderId { get; set; }
         public string OrderStatus { get; set; } = string.Empty;
+        public string DeliveryStatus { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
         public string? CustomerPhone { get; set; }
         public string DeliveryAddress { get; set; } = string.Empty;
@@ -32,8 +36,14 @@ namespace LaPizzaria.ViewModels
         public string? PaymentMethod { get; set; }
         public DateTime OrderDate { get; set; }
         public decimal TotalPrice { get; set; }
+        public DateTime? AssignedAt { get; set; }
+        public DateTime? DeliveredAt { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+        public double? ShipperLatitude { get; set; }
+        public double? ShipperLongitude { get; set; }
+        public DateTime? ShipperLocationUpdatedAt { get; set; }
+        public string? ShipperLocationIp { get; set; }
         public List<ShipperOrderItemViewModel> Items { get; set; } = new();
     }
 

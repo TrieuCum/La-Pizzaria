@@ -1,11 +1,11 @@
 using System.Globalization;
-using System.Security.Claims;
 using LaPizzaria.Data;
 using LaPizzaria.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace LaPizzaria.Controllers
 {
@@ -13,6 +13,9 @@ namespace LaPizzaria.Controllers
     public class ShipperController : Controller
     {
         private readonly ApplicationDbContext _db;
+        private static readonly string[] KitchenReadyStatuses = { "Confirmed", "Preparing", "Ready", "Đang chế biến", "Sẵn sàng" };
+        private static readonly string[] ActiveDeliveryStatuses = { "assigned", "delivering" };
+        private static readonly string[] HistoryDeliveryStatuses = { "delivered", "failed" };
 
         public ShipperController(ApplicationDbContext db)
         {
@@ -22,6 +25,12 @@ namespace LaPizzaria.Controllers
         public async Task<IActionResult> Index()
         {
             ViewData["ShipperNav"] = "Index";
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+            {
+                TempData["error"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction("Login", "Account");
+            }
 
             var baseQuery = _db.Orders
                 .Include(o => o.User)
@@ -30,7 +39,7 @@ namespace LaPizzaria.Controllers
                 .Where(o => !string.IsNullOrWhiteSpace(o.DeliveryAddress));
 
             var activeOrders = await baseQuery
-                .Where(o => o.OrderStatus == "Delivering")
+                .Where(o => o.ShipperId == shipperId && ActiveDeliveryStatuses.Contains(o.DeliveryStatus ?? ""))
                 .OrderByDescending(o => o.OrderDate)
                 .Take(1)
                 .ToListAsync();
@@ -38,19 +47,18 @@ namespace LaPizzaria.Controllers
             var newOrders = await baseQuery
                 .Where(o =>
                     o.ShipperId == null &&
-                    (o.OrderStatus == "Preparing" ||
-                     o.OrderStatus == "Ready" ||
-                     o.OrderStatus == "Đang chế biến" ||
-                     o.OrderStatus == "Sẵn sàng"))
+                    KitchenReadyStatuses.Contains(o.OrderStatus))
                 .OrderBy(o => o.OrderDate)
                 .Take(8)
                 .ToListAsync();
 
             var today = DateTime.UtcNow.Date;
             var todaysDelivered = await _db.Orders
-                .Where(o => o.OrderStatus == "Completed"
+                .Where(o => o.ShipperId == shipperId
+                    && o.DeliveryStatus == "delivered"
                     && !string.IsNullOrWhiteSpace(o.DeliveryAddress)
-                    && o.UpdatedAt.Date == today)
+                    && o.DeliveredAt.HasValue
+                    && o.DeliveredAt.Value.Date == today)
                 .ToListAsync();
 
             var vm = new ShipperIndexViewModel
@@ -64,44 +72,64 @@ namespace LaPizzaria.Controllers
             return View(vm);
         }
 
-        public async Task<IActionResult> History(string status = "All", DateTime? fromDate = null, DateTime? toDate = null, int page = 1)
+        public async Task<IActionResult> History(string status = "All", string? fromDate = null, string? toDate = null, int page = 1)
         {
             ViewData["ShipperNav"] = "History";
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+            {
+                TempData["error"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction("Login", "Account");
+            }
             if (page < 1) page = 1;
             const int pageSize = 9;
+            var parsedFromDate = ParseDateDdMmYyyy(fromDate, out var fromDateInvalid);
+            var parsedToDate = ParseDateDdMmYyyy(toDate, out var toDateInvalid);
+            if (fromDateInvalid || toDateInvalid)
+            {
+                ViewData["DateFilterError"] = "Ngày lọc không hợp lệ. Vui lòng nhập theo định dạng dd/MM/yyyy.";
+            }
+
+            // Keep filter usable even when user enters reversed date range.
+            if (parsedFromDate.HasValue && parsedToDate.HasValue && parsedFromDate > parsedToDate)
+            {
+                (parsedFromDate, parsedToDate) = (parsedToDate, parsedFromDate);
+            }
 
             var query = _db.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(d => d.Product)
-                .Where(o => !string.IsNullOrWhiteSpace(o.DeliveryAddress));
+                .Where(o => o.ShipperId == shipperId
+                    && HistoryDeliveryStatuses.Contains(o.DeliveryStatus ?? "")
+                    && !string.IsNullOrWhiteSpace(o.DeliveryAddress));
 
             if (!string.Equals(status, "All", StringComparison.OrdinalIgnoreCase))
             {
-                query = query.Where(o => o.OrderStatus == status);
+                query = query.Where(o => o.DeliveryStatus == status);
             }
 
-            if (fromDate.HasValue)
+            if (parsedFromDate.HasValue)
             {
-                var from = fromDate.Value.Date;
-                query = query.Where(o => o.UpdatedAt >= from);
+                var from = parsedFromDate.Value.Date;
+                query = query.Where(o => (o.DeliveredAt ?? o.UpdatedAt) >= from);
             }
 
-            if (toDate.HasValue)
+            if (parsedToDate.HasValue)
             {
-                var toExclusive = toDate.Value.Date.AddDays(1);
-                query = query.Where(o => o.UpdatedAt < toExclusive);
+                var toExclusive = parsedToDate.Value.Date.AddDays(1);
+                query = query.Where(o => (o.DeliveredAt ?? o.UpdatedAt) < toExclusive);
             }
 
             var totalCount = await query.CountAsync();
             var list = await query
-                .OrderByDescending(o => o.UpdatedAt)
+                .OrderByDescending(o => o.DeliveredAt ?? o.UpdatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
             var completedForIncome = await query
-                .Where(o => o.OrderStatus == "Completed")
+                .Where(o => o.DeliveryStatus == "delivered")
                 .ToListAsync();
             var income = completedForIncome.Sum(GetShipperIncomeForOrder);
 
@@ -109,8 +137,8 @@ namespace LaPizzaria.Controllers
             {
                 Orders = list.Select(MapToSummary).ToList(),
                 Status = status,
-                FromDate = fromDate,
-                ToDate = toDate,
+                FromDate = parsedFromDate,
+                ToDate = parsedToDate,
                 Page = page,
                 PageSize = pageSize,
                 TotalCount = totalCount,
@@ -339,6 +367,13 @@ namespace LaPizzaria.Controllers
         [HttpGet]
         public async Task<IActionResult> Detail(int id)
         {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+            {
+                TempData["error"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction("Login", "Account");
+            }
+
             var order = await _db.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderDetails)
@@ -348,10 +383,18 @@ namespace LaPizzaria.Controllers
             if (order == null || string.IsNullOrWhiteSpace(order.DeliveryAddress))
                 return NotFound();
 
+            var canViewOrder = order.ShipperId == null || order.ShipperId == shipperId;
+            if (!canViewOrder)
+            {
+                TempData["error"] = "Bạn không có quyền truy cập đơn này.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var vm = new ShipperOrderDetailViewModel
             {
                 OrderId = order.Id,
                 OrderStatus = order.OrderStatus,
+                DeliveryStatus = order.DeliveryStatus ?? string.Empty,
                 CustomerName = GetCustomerName(order),
                 CustomerPhone = order.User?.PhoneNumber,
                 DeliveryAddress = order.DeliveryAddress ?? string.Empty,
@@ -359,8 +402,14 @@ namespace LaPizzaria.Controllers
                 PaymentMethod = order.PaymentMethod,
                 OrderDate = order.OrderDate,
                 TotalPrice = order.TotalPrice,
+                AssignedAt = order.AssignedAt,
+                DeliveredAt = order.DeliveredAt,
                 Latitude = order.Latitude,
                 Longitude = order.Longitude,
+                ShipperLatitude = order.ShipperLatitude,
+                ShipperLongitude = order.ShipperLongitude,
+                ShipperLocationUpdatedAt = order.ShipperLocationUpdatedAt,
+                ShipperLocationIp = order.ShipperLocationIp,
                 Items = order.OrderDetails.Select(d => new ShipperOrderItemViewModel
                 {
                     ProductName = d.Product?.Name ?? "Sản phẩm",
@@ -389,10 +438,13 @@ namespace LaPizzaria.Controllers
 UPDATE Orders
 SET OrderStatus = {"Delivering"},
     ShipperId = {shipperId},
+    DeliveryStatus = {"assigned"},
+    AssignedAt = {DateTime.UtcNow},
+    DeliveredAt = {null},
     UpdatedAt = {DateTime.UtcNow}
 WHERE Id = {id}
   AND ShipperId IS NULL
-  AND (OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
+  AND (OrderStatus = {"Confirmed"} OR OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
 ");
 
             if (affectedRows == 0)
@@ -408,6 +460,7 @@ WHERE Id = {id}
         [HttpPost]
         [Authorize(Roles = "Shipper")]
         [Route("api/shipper/orders/{id:int}/accept")]
+        [Route("orders/{id:int}/accept")]
         public async Task<IActionResult> AcceptApi(int id)
         {
             var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -418,46 +471,359 @@ WHERE Id = {id}
 UPDATE Orders
 SET OrderStatus = {"Delivering"},
     ShipperId = {shipperId},
+    DeliveryStatus = {"assigned"},
+    AssignedAt = {DateTime.UtcNow},
+    DeliveredAt = {null},
     UpdatedAt = {DateTime.UtcNow}
 WHERE Id = {id}
   AND ShipperId IS NULL
-  AND (OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
+  AND (OrderStatus = {"Confirmed"} OR OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
 ");
 
             if (affectedRows == 0)
                 return Conflict(new { success = false, message = "Đơn đã được shipper khác nhận" });
 
-            return Ok(new { success = true, message = "Nhận đơn thành công", orderStatus = "Delivering" });
+            return Ok(new { success = true, message = "Nhận đơn thành công", orderStatus = "Delivering", deliveryStatus = "assigned" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StartDelivery(int id, double? latitude, double? longitude)
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+            {
+                TempData["error"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!latitude.HasValue || !longitude.HasValue
+                || latitude.Value < -90 || latitude.Value > 90
+                || longitude.Value < -180 || longitude.Value > 180)
+            {
+                TempData["error"] = "Bạn phải bật định vị và cho phép trình duyệt truy cập vị trí trước khi bắt đầu giao hàng.";
+                return RedirectToAction(nameof(Detail), new { id });
+            }
+
+            var now = DateTime.UtcNow;
+            var clientIp = GetClientIp(HttpContext);
+            var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET DeliveryStatus = {"delivering"},
+    ShipperLatitude = {latitude},
+    ShipperLongitude = {longitude},
+    ShipperLocationUpdatedAt = {now},
+    ShipperLocationIp = {clientIp},
+    UpdatedAt = {now}
+WHERE Id = {id}
+  AND ShipperId = {shipperId}
+  AND DeliveryStatus = {"assigned"};
+");
+
+            TempData[affectedRows == 1 ? "success" : "error"] =
+                affectedRows == 1 ? "Đơn đã chuyển sang trạng thái đang giao." : "Không thể cập nhật trạng thái đơn.";
+            return RedirectToAction(nameof(Detail), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Complete(int id)
         {
-            var order = await _db.Orders.FindAsync(id);
-            if (order == null) return NotFound();
-            if (order.OrderStatus == "Delivering")
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
             {
-                order.OrderStatus = "Completed";
-                order.UpdatedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
+                TempData["error"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction(nameof(Index));
             }
+
+            var now = DateTime.UtcNow;
+            var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET DeliveryStatus = {"delivered"},
+    OrderStatus = {"Completed"},
+    DeliveredAt = {now},
+    UpdatedAt = {now}
+WHERE Id = {id}
+  AND ShipperId = {shipperId}
+  AND DeliveryStatus = {"delivering"};
+");
+
+            TempData[affectedRows == 1 ? "success" : "error"] =
+                affectedRows == 1 ? "Đã xác nhận giao thành công." : "Không thể hoàn tất đơn. Hãy kiểm tra lại trạng thái.";
             return RedirectToAction(nameof(Detail), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ReturnOrder(int id)
+        public async Task<IActionResult> Fail(int id)
         {
-            var order = await _db.Orders.FindAsync(id);
-            if (order == null) return NotFound();
-            if (order.OrderStatus != "Completed")
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
             {
-                order.OrderStatus = "Cancelled";
-                order.UpdatedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
+                TempData["error"] = "Phiên đăng nhập không hợp lệ.";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            var now = DateTime.UtcNow;
+            var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET DeliveryStatus = {"failed"},
+    OrderStatus = {"Cancelled"},
+    DeliveredAt = {now},
+    UpdatedAt = {now}
+WHERE Id = {id}
+  AND ShipperId = {shipperId}
+  AND (DeliveryStatus = {"assigned"} OR DeliveryStatus = {"delivering"});
+");
+
+            TempData[affectedRows == 1 ? "success" : "error"] =
+                affectedRows == 1 ? "Đã cập nhật đơn thành giao thất bại." : "Không thể cập nhật giao thất bại.";
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+
+        [HttpGet]
+        [Route("orders/available")]
+        public async Task<IActionResult> AvailableOrders(int page = 1, int pageSize = 10)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var query = _db.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
+                .Where(o => o.ShipperId == null
+                    && KitchenReadyStatuses.Contains(o.OrderStatus)
+                    && !string.IsNullOrWhiteSpace(o.DeliveryAddress));
+
+            var totalCount = await query.CountAsync();
+            var orderEntities = await query.OrderBy(o => o.OrderDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var orders = orderEntities.Select(MapToSummary).ToList();
+
+            return Ok(new { page, pageSize, totalCount, items = orders });
+        }
+
+        [HttpGet]
+        [Route("orders/my")]
+        public async Task<IActionResult> MyOrders()
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+
+            var orderEntities = await _db.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
+                .Where(o => o.ShipperId == shipperId && ActiveDeliveryStatuses.Contains(o.DeliveryStatus ?? ""))
+                .OrderByDescending(o => o.AssignedAt ?? o.UpdatedAt)
+                .ToListAsync();
+            var orders = orderEntities.Select(MapToSummary).ToList();
+
+            return Ok(new { success = true, items = orders });
+        }
+
+        [HttpGet]
+        [Route("orders/history")]
+        public async Task<IActionResult> DeliveryHistory(int page = 1, int pageSize = 10)
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var query = _db.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
+                .Where(o => o.ShipperId == shipperId && HistoryDeliveryStatuses.Contains(o.DeliveryStatus ?? ""));
+
+            var totalCount = await query.CountAsync();
+            var orderEntities = await query.OrderByDescending(o => o.DeliveredAt ?? o.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var orders = orderEntities.Select(o => new
+            {
+                summary = MapToSummary(o),
+                o.AssignedAt,
+                o.DeliveredAt,
+                o.DeliveryStatus
+            }).ToList();
+
+            return Ok(new { success = true, page, pageSize, totalCount, items = orders });
+        }
+
+        [HttpPut]
+        [Route("orders/{id:int}/status")]
+        public async Task<IActionResult> UpdateDeliveryStatusApi(int id, [FromBody] UpdateDeliveryStatusRequest request)
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+            if (request == null || string.IsNullOrWhiteSpace(request.Status))
+                return BadRequest(new { success = false, message = "Thiếu trạng thái cần cập nhật." });
+
+            var status = request.Status.Trim().ToLowerInvariant();
+            if (status != "delivering" && status != "delivered" && status != "failed")
+                return BadRequest(new { success = false, message = "Trạng thái không hợp lệ." });
+
+            var now = DateTime.UtcNow;
+            int affectedRows;
+            if (status == "delivering")
+            {
+                if (!request.Latitude.HasValue || !request.Longitude.HasValue
+                    || request.Latitude.Value < -90 || request.Latitude.Value > 90
+                    || request.Longitude.Value < -180 || request.Longitude.Value > 180)
+                {
+                    return BadRequest(new { success = false, message = "Phải gửi tọa độ GPS hợp lệ (latitude, longitude) khi chuyển sang đang giao." });
+                }
+
+                var lat = request.Latitude.Value;
+                var lng = request.Longitude.Value;
+                var clientIp = GetClientIp(HttpContext);
+                affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET DeliveryStatus = {"delivering"},
+    ShipperLatitude = {lat},
+    ShipperLongitude = {lng},
+    ShipperLocationUpdatedAt = {now},
+    ShipperLocationIp = {clientIp},
+    UpdatedAt = {now}
+WHERE Id = {id}
+  AND ShipperId = {shipperId}
+  AND DeliveryStatus = {"assigned"};
+");
+            }
+            else if (status == "delivered")
+            {
+                affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET DeliveryStatus = {"delivered"},
+    OrderStatus = {"Completed"},
+    DeliveredAt = {now},
+    UpdatedAt = {now}
+WHERE Id = {id}
+  AND ShipperId = {shipperId}
+  AND DeliveryStatus = {"delivering"};
+");
+            }
+            else
+            {
+                affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE Orders
+SET DeliveryStatus = {"failed"},
+    OrderStatus = {"Cancelled"},
+    DeliveredAt = {now},
+    UpdatedAt = {now}
+WHERE Id = {id}
+  AND ShipperId = {shipperId}
+  AND (DeliveryStatus = {"assigned"} OR DeliveryStatus = {"delivering"});
+");
+            }
+
+            if (affectedRows == 0)
+                return Conflict(new { success = false, message = "Không thể cập nhật do sai luồng trạng thái hoặc đơn không thuộc shipper hiện tại." });
+
+            return Ok(new { success = true, message = "Cập nhật trạng thái thành công.", status });
+        }
+
+        [HttpPost]
+        [Route("api/shipper/orders/{id:int}/location")]
+        public async Task<IActionResult> UpdateLocationApi(int id, [FromBody] UpdateShipperLocationRequest request)
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+            if (request == null)
+                return BadRequest(new { success = false, message = "Thiếu dữ liệu vị trí." });
+            if (request.Latitude < -90 || request.Latitude > 90 || request.Longitude < -180 || request.Longitude > 180)
+                return BadRequest(new { success = false, message = "Tọa độ không hợp lệ." });
+
+            var now = DateTime.UtcNow;
+            var clientIp = GetClientIp(HttpContext);
+
+            var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == id && o.ShipperId == shipperId);
+            if (order == null)
+                return Conflict(new { success = false, message = "Không thể cập nhật vị trí vì đơn không thuộc shipper hoặc chưa ở trạng thái giao." });
+
+            var ds = order.DeliveryStatus ?? string.Empty;
+            var canUpdate = string.Equals(ds, "assigned", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(ds, "delivering", StringComparison.OrdinalIgnoreCase);
+            if (!canUpdate)
+                return Conflict(new { success = false, message = "Không thể cập nhật vị trí vì đơn không thuộc shipper hoặc chưa ở trạng thái giao." });
+
+            order.ShipperLatitude = request.Latitude;
+            order.ShipperLongitude = request.Longitude;
+            order.ShipperLocationUpdatedAt = now;
+            order.ShipperLocationIp = clientIp;
+            order.UpdatedAt = now;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { success = true, latitude = order.ShipperLatitude, longitude = order.ShipperLongitude, updatedAtUtc = order.ShipperLocationUpdatedAt, clientIp = order.ShipperLocationIp });
+        }
+
+        [HttpGet]
+        [Route("api/shipper/orders/{id:int}/location")]
+        public async Task<IActionResult> GetLocationApi(int id)
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+
+            var order = await _db.Orders
+                .Where(o => o.Id == id && o.ShipperId == shipperId)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.DeliveryStatus,
+                    o.ShipperLatitude,
+                    o.ShipperLongitude,
+                    o.ShipperLocationUpdatedAt,
+                    o.ShipperLocationIp
+                })
+                .FirstOrDefaultAsync();
+
+            if (order == null)
+                return NotFound(new { success = false, message = "Không tìm thấy đơn hàng." });
+
+            return Ok(new
+            {
+                success = true,
+                orderId = order.Id,
+                deliveryStatus = order.DeliveryStatus,
+                latitude = order.ShipperLatitude,
+                longitude = order.ShipperLongitude,
+                updatedAtUtc = order.ShipperLocationUpdatedAt,
+                clientIp = order.ShipperLocationIp
+            });
+        }
+
+        private static string? GetClientIp(HttpContext http)
+        {
+            var forwarded = http.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(forwarded))
+            {
+                var first = forwarded.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+                if (!string.IsNullOrEmpty(first))
+                    return TruncateClientIp(first);
+            }
+
+            var realIp = http.Request.Headers["X-Real-IP"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(realIp))
+                return TruncateClientIp(realIp.Trim());
+
+            return TruncateClientIp(http.Connection.RemoteIpAddress?.ToString());
+        }
+
+        private static string? TruncateClientIp(string? ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip))
+                return null;
+            ip = ip.Trim();
+            return ip.Length > 100 ? ip[..100] : ip;
         }
 
         private static ShipperOrderSummaryViewModel MapToSummary(Models.Order order)
@@ -468,13 +834,16 @@ WHERE Id = {id}
             {
                 OrderId = order.Id,
                 OrderStatus = order.OrderStatus,
+                DeliveryStatus = order.DeliveryStatus ?? string.Empty,
                 CustomerName = GetCustomerName(order),
                 CustomerPhone = order.User?.PhoneNumber,
                 DeliveryAddress = order.DeliveryAddress ?? "Chưa có địa chỉ",
                 ItemTitle = firstItem?.Product?.Name ?? "Đơn hàng",
                 ItemCount = itemCount,
                 OrderDate = order.OrderDate,
-                TotalPrice = order.TotalPrice
+                TotalPrice = order.TotalPrice,
+                AssignedAt = order.AssignedAt,
+                DeliveredAt = order.DeliveredAt
             };
         }
 
@@ -494,6 +863,42 @@ WHERE Id = {id}
             }
 
             return 20000m;
+        }
+
+        private static DateTime? ParseDateDdMmYyyy(string? input, out bool invalid)
+        {
+            invalid = false;
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return null;
+            }
+
+            var value = input.Trim();
+            var acceptedFormats = new[] { "dd/MM/yyyy", "d/M/yyyy", "dd-MM-yyyy", "d-M-yyyy", "yyyy-MM-dd" };
+            if (DateTime.TryParseExact(value, acceptedFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+            {
+                return parsed;
+            }
+            if (DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out var fallback))
+            {
+                return fallback;
+            }
+
+            invalid = true;
+            return null;
+        }
+
+        public sealed class UpdateDeliveryStatusRequest
+        {
+            public string Status { get; set; } = string.Empty;
+            public double? Latitude { get; set; }
+            public double? Longitude { get; set; }
+        }
+
+        public sealed class UpdateShipperLocationRequest
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
         }
     }
 }

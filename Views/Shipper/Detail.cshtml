@@ -1,8 +1,14 @@
 @model LaPizzaria.ViewModels.ShipperOrderDetailViewModel
 @{
     Layout = null;
-    var mapQuery = Uri.EscapeDataString(Model.DeliveryAddress);
+    var mapQuery = Uri.EscapeDataString(Model.DeliveryAddress ?? "");
     var mapUrl = $"https://www.google.com/maps?q={mapQuery}&output=embed";
+    var statusBadge = !string.IsNullOrWhiteSpace(Model.DeliveryStatus)
+        ? Model.DeliveryStatus
+        : (Model.OrderStatus ?? "—");
+    var ds = Model.DeliveryStatus ?? "";
+    var isAssignedDs = string.Equals(ds, "assigned", StringComparison.OrdinalIgnoreCase);
+    var isDeliveringDs = string.Equals(ds, "delivering", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -18,102 +24,298 @@
     <style>
         body { font-family: 'Work Sans', sans-serif; }
         .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+        .label-caps { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; }
     </style>
 </head>
-<body class="bg-[#f8f7f5]">
+<body class="min-h-screen bg-[#f0eee9]">
     @await Html.PartialAsync("_ShipperTopNav")
-    <main class="mx-auto grid max-w-6xl gap-4 px-4 py-6 md:grid-cols-5 md:px-8">
-        <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 md:col-span-3">
-            <div class="mb-4 flex items-start justify-between">
+    <main class="mx-auto grid max-w-6xl gap-5 px-4 py-6 pb-12 md:grid-cols-5 md:gap-6 md:px-8">
+        <!-- Cột trái: chi tiết đơn -->
+        <section class="rounded-2xl bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04] md:col-span-3">
+            <div class="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
                 <div>
-                    <p class="text-xs font-bold text-orange-700">MÃ ĐƠN #@Model.OrderId</p>
-                    <h1 class="text-2xl font-extrabold text-[#2C3E50]">Chi tiết đơn hàng</h1>
-                    <p class="text-sm text-gray-500">@Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                    <p class="text-xs font-extrabold tracking-wide text-[#c2410c]">MÃ ĐƠN #@Model.OrderId</p>
+                    <h1 class="mt-1 text-2xl font-extrabold text-[#2C3E50]">Chi tiết đơn hàng</h1>
+                    <p class="mt-1 text-sm text-slate-500">@Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
                 </div>
-                <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">@Model.OrderStatus</span>
+                <span class="shrink-0 rounded-full bg-orange-100 px-4 py-1.5 text-xs font-extrabold uppercase tracking-wide text-orange-800">@statusBadge</span>
             </div>
 
-            <div class="mb-4 grid gap-3 rounded-xl bg-gray-50 p-4 md:grid-cols-2">
-                <div>
-                    <p class="text-xs font-bold uppercase text-gray-400">Khách hàng</p>
+            <div class="mb-6 grid gap-4 rounded-xl bg-[#f8fafc] p-4 md:grid-cols-2 md:gap-x-6 md:gap-y-4">
+                <div class="space-y-1">
+                    <p class="label-caps">Khách hàng</p>
                     <p class="font-semibold text-[#2C3E50]">@Model.CustomerName</p>
-                    <p class="text-sm text-gray-600">@Model.CustomerPhone</p>
+                    <p class="text-sm text-slate-600">@Model.CustomerPhone</p>
                 </div>
-                <div>
-                    <p class="text-xs font-bold uppercase text-gray-400">Địa chỉ giao</p>
-                    <p class="font-semibold text-[#2C3E50]">@Model.DeliveryAddress</p>
+                <div class="space-y-1 md:text-right">
+                    <p class="label-caps md:text-right">Địa chỉ giao</p>
+                    <p class="font-semibold leading-snug text-[#2C3E50]">@Model.DeliveryAddress</p>
                 </div>
-                <div>
-                    <p class="text-xs font-bold uppercase text-gray-400">Thanh toán</p>
+                <div class="space-y-1">
+                    <p class="label-caps">Thanh toán</p>
                     <p class="font-semibold text-[#2C3E50]">@(string.IsNullOrWhiteSpace(Model.PaymentMethod) ? "Chưa cập nhật" : Model.PaymentMethod)</p>
                 </div>
-                <div>
-                    <p class="text-xs font-bold uppercase text-gray-400">Ghi chú</p>
+                <div class="space-y-1 md:text-right">
+                    <p class="label-caps md:text-right">Ghi chú</p>
                     <p class="font-semibold text-[#2C3E50]">@(string.IsNullOrWhiteSpace(Model.Note) ? "Không có" : Model.Note)</p>
                 </div>
             </div>
 
-            <h2 class="mb-2 text-lg font-extrabold text-[#2C3E50]">Danh sách món</h2>
+            <h2 class="mb-3 text-lg font-extrabold text-[#2C3E50]">Danh sách món</h2>
             <div class="space-y-2">
                 @foreach (var item in Model.Items)
                 {
-                    <div class="flex items-center justify-between rounded-xl border border-gray-100 p-3">
+                    <div class="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3">
                         <div>
                             <p class="font-semibold text-[#2C3E50]">@item.Quantity x @item.ProductName @(string.IsNullOrWhiteSpace(item.Size) ? "" : $"(Size {item.Size})")</p>
-                            <p class="text-xs text-gray-500">Đơn giá: @item.UnitPrice.ToString("N0")đ</p>
+                            <p class="text-xs text-slate-500">Đơn giá: @item.UnitPrice.ToString("N0")đ</p>
                         </div>
-                        <p class="font-bold text-[#E67E22]">@item.Subtotal.ToString("N0")đ</p>
+                        <p class="text-base font-extrabold text-[#E67E22]">@item.Subtotal.ToString("N0")đ</p>
                     </div>
                 }
             </div>
 
-            <div class="mt-4 flex items-center justify-between border-t pt-3">
-                <p class="font-semibold text-gray-500">Tổng tiền</p>
+            <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-5">
+                <p class="font-semibold text-slate-500">Tổng tiền</p>
                 <p class="text-2xl font-extrabold text-[#E67E22]">@Model.TotalPrice.ToString("N0")đ</p>
             </div>
         </section>
 
-        <section class="space-y-4 md:col-span-2">
-            <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-                <iframe src="@mapUrl" width="100%" height="260" style="border:0;" loading="lazy"></iframe>
+        <!-- Cột phải: bản đồ + vị trí + thao tác -->
+        <section class="flex flex-col gap-5 md:col-span-2">
+            <div class="overflow-hidden rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
+                <iframe title="Bản đồ địa chỉ giao" src="@mapUrl" class="h-[260px] w-full" style="border:0;" loading="lazy"></iframe>
             </div>
 
-            <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+            <div class="rounded-2xl bg-white p-5 shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
+                <div class="mb-3 flex items-center justify-between gap-2">
+                    <p class="text-sm font-extrabold text-[#2C3E50]">Vị trí shipper hiện tại</p>
+                    <span id="gpsState" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500">Chưa bật</span>
+                </div>
+                <div id="gpsError" class="mb-3 hidden rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold leading-snug text-red-700"></div>
+                <p id="gpsCoords" class="font-mono text-sm font-medium text-slate-800">
+                    @if (Model.ShipperLatitude.HasValue && Model.ShipperLongitude.HasValue)
+                    {
+                        @($"{Model.ShipperLatitude.Value:F6}, {Model.ShipperLongitude.Value:F6}")
+                    }
+                    else
+                    {
+                        @:Chưa có dữ liệu vị trí
+                    }
+                </p>
+                <p id="gpsUpdatedAt" class="mt-2 text-xs text-slate-500">
+                    @(Model.ShipperLocationUpdatedAt.HasValue ? $"Cập nhật: {Model.ShipperLocationUpdatedAt.Value.ToLocalTime().ToString("HH:mm:ss dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))}" : "")
+                </p>
+                <p id="gpsClientIp" class="mt-1 text-xs text-slate-500">
+                    @(string.IsNullOrWhiteSpace(Model.ShipperLocationIp) ? "" : $"IP thiết bị (mạng): {Model.ShipperLocationIp}")
+                </p>
+                <p class="mt-3 text-[11px] leading-relaxed text-slate-400">Tọa độ lấy từ GPS của trình duyệt; IP dùng để nhận diện kết nối từng máy (không thay thế GPS).</p>
+                <a id="gpsOpenMap"
+                   href="@(Model.ShipperLatitude.HasValue && Model.ShipperLongitude.HasValue ? $"https://www.google.com/maps?q={Model.ShipperLatitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)},{Model.ShipperLongitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}" : "#")"
+                   target="_blank" rel="noopener"
+                   class="mt-4 flex w-full items-center justify-center rounded-xl border-2 border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 @(Model.ShipperLatitude.HasValue && Model.ShipperLongitude.HasValue ? "" : "pointer-events-none opacity-40")">
+                    Mở Google Maps
+                </a>
+                @if (isAssignedDs || isDeliveringDs)
+                {
+                    <button id="btnStartGps" type="button" class="mt-3 w-full rounded-xl bg-[#2563EB] py-3.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-600">
+                        Bật chia sẻ vị trí
+                    </button>
+                }
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
                 @if (TempData["error"] != null)
                 {
-                    <div class="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">@TempData["error"]</div>
+                    <div class="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700">@TempData["error"]</div>
                 }
                 @if (TempData["success"] != null)
                 {
-                    <div class="mb-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">@TempData["success"]</div>
+                    <div class="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-800">@TempData["success"]</div>
                 }
-                <a asp-controller="Shipper" asp-action="Index" class="mb-3 inline-flex w-full items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Quay về trang chủ</a>
+                <a asp-controller="Shipper" asp-action="Index" class="mb-3 flex w-full items-center justify-center rounded-xl border-2 border-slate-200 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Quay về trang chủ</a>
 
-                @if (Model.OrderStatus is "Preparing" or "Ready" or "Đang chế biến" or "Sẵn sàng")
+                @if (Model.OrderStatus is "Ready" or "Sẵn sàng")
                 {
                     <form asp-controller="Shipper" asp-action="Accept" asp-route-id="@Model.OrderId" method="post" class="mb-2">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="w-full rounded-xl bg-[#E67E22] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">Nhận đơn và bắt đầu giao</button>
+                        <button type="submit" class="w-full rounded-xl bg-[#E67E22] px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-orange-500/20 transition hover:opacity-95">Nhận đơn</button>
                     </form>
                 }
 
-                @if (Model.OrderStatus == "Delivering")
+                @if (isAssignedDs)
+                {
+                    <form id="formStartDelivery" asp-controller="Shipper" asp-action="StartDelivery" asp-route-id="@Model.OrderId" method="post" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="latitude" value="" />
+                        <input type="hidden" name="longitude" value="" />
+                        <button type="button" id="btnStartDelivery" class="w-full rounded-xl bg-[#1D4ED8] px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700">Bắt đầu giao hàng</button>
+                    </form>
+                    <p class="mb-2 text-xs text-slate-500">Cần bật định vị và cho phép trình duyệt truy cập vị trí để bắt đầu giao.</p>
+                }
+
+                @if (isDeliveringDs)
                 {
                     <form asp-controller="Shipper" asp-action="Complete" asp-route-id="@Model.OrderId" method="post" class="mb-2">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="w-full rounded-xl bg-[#27AE60] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">Xác nhận đã giao thành công</button>
+                        <button type="submit" class="w-full rounded-xl bg-[#27AE60] px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-600/25 transition hover:bg-[#219150]">Xác nhận đã giao thành công</button>
                     </form>
                 }
 
-                @if (Model.OrderStatus != "Completed" && Model.OrderStatus != "Cancelled")
+                @if (isAssignedDs || isDeliveringDs)
                 {
-                    <form asp-controller="Shipper" asp-action="ReturnOrder" asp-route-id="@Model.OrderId" method="post">
+                    <form asp-controller="Shipper" asp-action="Fail" asp-route-id="@Model.OrderId" method="post">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="w-full rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 ring-1 ring-red-100 hover:bg-red-100">Hoàn trả / Hủy đơn</button>
+                        <button type="submit" class="w-full rounded-xl bg-rose-50 px-4 py-3.5 text-sm font-bold text-rose-600 ring-1 ring-rose-100 transition hover:bg-rose-100">Giao thất bại</button>
                     </form>
                 }
             </div>
         </section>
     </main>
+
+    <script>
+        (function () {
+            const orderId = @Model.OrderId;
+            const isAssigned = '@(isAssignedDs ? "1" : "0")' === '1';
+            const isDelivering = '@(isDeliveringDs ? "1" : "0")' === '1';
+            const canTrack = isAssigned || isDelivering;
+            const stateEl = document.getElementById('gpsState');
+            const coordsEl = document.getElementById('gpsCoords');
+            const updatedEl = document.getElementById('gpsUpdatedAt');
+            const openMapEl = document.getElementById('gpsOpenMap');
+            const ipEl = document.getElementById('gpsClientIp');
+            const errBox = document.getElementById('gpsError');
+            const btn = document.getElementById('btnStartGps');
+            let watchId = null;
+            let lastSentMs = 0;
+            const minIntervalMs = 8000;
+            const fetchOpts = { credentials: 'same-origin' };
+
+            function showGpsError(msg) {
+                if (!errBox) return;
+                errBox.textContent = msg || '';
+                errBox.classList.toggle('hidden', !msg);
+            }
+
+            function setState(text, isError) {
+                stateEl.textContent = text;
+                stateEl.className = 'rounded-full px-2.5 py-1 text-[11px] font-bold ' +
+                    (isError ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600');
+            }
+
+            function renderCoords(lat, lng, updatedAtUtc, clientIp) {
+                const latText = Number(lat).toFixed(6);
+                const lngText = Number(lng).toFixed(6);
+                coordsEl.textContent = latText + ', ' + lngText;
+                if (updatedAtUtc) {
+                    const local = new Date(updatedAtUtc);
+                    updatedEl.textContent = 'Cập nhật: ' + local.toLocaleString('vi-VN');
+                }
+                if (ipEl) {
+                    ipEl.textContent = clientIp ? ('IP thiết bị (mạng): ' + clientIp) : '';
+                }
+                openMapEl.href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                openMapEl.classList.remove('pointer-events-none', 'opacity-40');
+            }
+
+            async function sendLocation(latitude, longitude) {
+                const now = Date.now();
+                if (lastSentMs && (now - lastSentMs) < minIntervalMs) return;
+                try {
+                    await pushLocation(latitude, longitude);
+                    lastSentMs = Date.now();
+                    showGpsError('');
+                    setState(isDelivering ? 'Đang gửi định kỳ' : 'Đang chia sẻ vị trí', false);
+                } catch (e) {
+                    showGpsError(e.message || 'Không thể cập nhật vị trí.');
+                    setState('Lỗi cập nhật', true);
+                }
+            }
+
+            async function pushLocation(latitude, longitude) {
+                const res = await fetch('/api/shipper/orders/' + orderId + '/location', Object.assign({}, fetchOpts, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: latitude, longitude: longitude })
+                }));
+                const data = await res.json().catch(function () { return {}; });
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Không thể cập nhật vị trí.');
+                }
+                renderCoords(data.latitude, data.longitude, data.updatedAtUtc, data.clientIp);
+            }
+
+            async function fetchLatest() {
+                const res = await fetch('/api/shipper/orders/' + orderId + '/location', fetchOpts);
+                const data = await res.json().catch(function () { return {}; });
+                if (res.ok && data.success && data.latitude != null && data.longitude != null) {
+                    renderCoords(data.latitude, data.longitude, data.updatedAtUtc, data.clientIp);
+                }
+            }
+
+            if (!canTrack) {
+                fetchLatest();
+                return;
+            }
+
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    if (!navigator.geolocation) {
+                        setState('Không hỗ trợ GPS', true);
+                        showGpsError('Trình duyệt không hỗ trợ định vị.');
+                        return;
+                    }
+                    if (watchId !== null) {
+                        setState('Đang chia sẻ', false);
+                        return;
+                    }
+
+                    setState('Đang lấy vị trí…', false);
+                    showGpsError('');
+                    watchId = navigator.geolocation.watchPosition(
+                        function (pos) {
+                            sendLocation(pos.coords.latitude, pos.coords.longitude);
+                        },
+                        function () {
+                            setState('Lỗi GPS', true);
+                            showGpsError('Không lấy được vị trí. Hãy bật GPS và cấp quyền cho trình duyệt.');
+                        },
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+                    );
+                });
+            }
+
+            fetchLatest();
+        })();
+    </script>
+    <script>
+        (function () {
+            var form = document.getElementById('formStartDelivery');
+            var btn = document.getElementById('btnStartDelivery');
+            if (!form || !btn) return;
+            btn.addEventListener('click', function () {
+                if (!navigator.geolocation) {
+                    alert('Trình duyệt không hỗ trợ định vị.');
+                    return;
+                }
+                btn.disabled = true;
+                var label = btn.textContent;
+                btn.textContent = 'Đang lấy vị trí...';
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        form.querySelector('[name="latitude"]').value = String(pos.coords.latitude);
+                        form.querySelector('[name="longitude"]').value = String(pos.coords.longitude);
+                        form.submit();
+                    },
+                    function () {
+                        btn.disabled = false;
+                        btn.textContent = label;
+                        alert('Không thể lấy vị trí. Hãy bật GPS và cho phép truy cập vị trí cho trang web này.');
+                    },
+                    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+                );
+            });
+        })();
+    </script>
 </body>
 </html>

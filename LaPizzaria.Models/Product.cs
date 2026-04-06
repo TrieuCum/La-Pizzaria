@@ -9,6 +9,10 @@ namespace LaPizzaria.Models
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public decimal Price { get; set; }
+        /// <summary>Phần trăm lời khi định giá từ nguyên liệu (ví dụ 30 = +30% trên giá vốn).</summary>
+        public decimal ProfitMarginPercent { get; set; } = 30m;
+        /// <summary>Đánh dấu món bán chậm — dùng cho khuyến mãi upsale.</summary>
+        public bool IsSlowSeller { get; set; }
         public string? ImageUrl { get; set; }
         public string Category { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;

@@ -46,12 +46,24 @@
     .order-mgmt .admin-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.9rem; }
     .order-mgmt .admin-table tbody tr:hover { background: #fafafa; }
     .order-mgmt .ord-id { color: #f97316; font-weight: 700; }
-    .order-mgmt .status-badge { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .order-mgmt .status-cell { min-width: 130px; }
+    .order-mgmt .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.42rem 0.9rem;
+        border-radius: 9999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+        letter-spacing: 0.01em;
+    }
     .order-mgmt .status-pending { background: #dbeafe; color: #1e40af; }
     .order-mgmt .status-confirmed { background: #bfdbfe; color: #1e3a8a; }
     .order-mgmt .status-preparing { background: #ffedd5; color: #c2410c; }
     .order-mgmt .status-ready { background: #dcfce7; color: #166534; }
-    .order-mgmt .status-delivering { background: #e9d5ff; color: #6b21a8; }
+    .order-mgmt .status-delivering { background: #ede9fe; color: #6d28d9; }
     .order-mgmt .status-completed { background: #dcfce7; color: #166534; }
     .order-mgmt .status-cancelled { background: #fee2e2; color: #991b1b; }
     .order-mgmt .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -141,7 +153,7 @@
                             <td>@(string.IsNullOrWhiteSpace(order.DeliveryAddress) ? "—" : order.DeliveryAddress)</td>
                             <td>@order.OrderDate.ToString("HH:mm, dd/MM")</td>
                             <td><strong>@order.TotalPrice.ToString("N0")₫</strong></td>
-                            <td><span class="status-badge @StatusCss(order.OrderStatus)">@StatusLabel(order.OrderStatus)</span></td>
+                            <td class="status-cell"><span class="status-badge @StatusCss(order.OrderStatus)">@StatusLabel(order.OrderStatus)</span></td>
                             <td>
                                 <div class="action-btns">
                                     @if (order.OrderStatus == "Pending")

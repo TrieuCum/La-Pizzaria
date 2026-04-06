@@ -44,7 +44,7 @@
         <section class="mb-8">
             <div class="mb-3 flex items-center justify-between">
                 <h2 class="text-xl font-extrabold text-[#2C3E50]">Đơn đang giao</h2>
-                <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">Delivering</span>
+                <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">Assigned / Delivering</span>
             </div>
             @if (Model.ActiveOrder != null)
             {
@@ -64,10 +64,22 @@
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <a asp-controller="Shipper" asp-action="Detail" asp-route-id="@o.OrderId" class="rounded-xl border border-[#E67E22] px-4 py-2 text-sm font-semibold text-[#E67E22] hover:bg-orange-50">Xem chi tiết</a>
-                        <form asp-controller="Shipper" asp-action="Complete" asp-route-id="@o.OrderId" method="post">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="rounded-xl bg-[#27AE60] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Đã giao thành công</button>
-                        </form>
+                        @if (o.DeliveryStatus == "assigned")
+                        {
+                            <form class="form-start-delivery" asp-controller="Shipper" asp-action="StartDelivery" asp-route-id="@o.OrderId" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="latitude" value="" />
+                                <input type="hidden" name="longitude" value="" />
+                                <button type="button" class="btn-start-delivery rounded-xl bg-[#1D4ED8] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Bắt đầu giao</button>
+                            </form>
+                        }
+                        else if (o.DeliveryStatus == "delivering")
+                        {
+                            <form asp-controller="Shipper" asp-action="Complete" asp-route-id="@o.OrderId" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="rounded-xl bg-[#27AE60] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Đã giao thành công</button>
+                            </form>
+                        }
                     </div>
                 </div>
             }
@@ -82,7 +94,7 @@
         <section>
             <div class="mb-3 flex items-center justify-between">
                 <h2 class="text-xl font-extrabold text-[#2C3E50]">Đơn hàng mới</h2>
-                <span class="text-xs font-semibold text-gray-500">Đang chế biến / Sẵn sàng</span>
+                <span class="text-xs font-semibold text-gray-500">Đã xác nhận / Đang chế biến / Sẵn sàng</span>
             </div>
             @if (Model.NewOrders.Any())
             {
@@ -116,5 +128,32 @@
             }
         </section>
     </main>
+    <script>
+        document.querySelectorAll('.btn-start-delivery').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var form = btn.closest('form');
+                if (!form || !navigator.geolocation) {
+                    if (!navigator.geolocation) alert('Trình duyệt không hỗ trợ định vị.');
+                    return;
+                }
+                btn.disabled = true;
+                var t = btn.textContent;
+                btn.textContent = 'Đang lấy vị trí...';
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        form.querySelector('[name="latitude"]').value = String(pos.coords.latitude);
+                        form.querySelector('[name="longitude"]').value = String(pos.coords.longitude);
+                        form.submit();
+                    },
+                    function () {
+                        btn.disabled = false;
+                        btn.textContent = t;
+                        alert('Không thể lấy vị trí. Hãy bật GPS và cho phép truy cập vị trí.');
+                    },
+                    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+                );
+            });
+        });
+    </script>
 </body>
 </html>

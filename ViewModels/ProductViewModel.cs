@@ -14,8 +14,14 @@ namespace LaPizzaria.ViewModels
         public string? Description { get; set; }
 
         [Required(ErrorMessage = "Giá là bắt buộc.")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Giá phải lớn hơn 0.")]
+        [Range(0, double.MaxValue, ErrorMessage = "Giá không hợp lệ.")]
         public decimal Price { get; set; }
+
+        /// <summary>Phần trăm lời trên giá vốn nguyên liệu (ví dụ 30 = +30%).</summary>
+        [Range(0, 500, ErrorMessage = "Phần trăm lời từ 0 đến 500.")]
+        public decimal ProfitMarginPercent { get; set; } = 30m;
+
+        public bool IsSlowSeller { get; set; }
 
         [Url(ErrorMessage = "URL Hình ảnh không hợp lệ.")]
         public string? ImageUrl { get; set; }
@@ -35,7 +41,13 @@ namespace LaPizzaria.ViewModels
         public int IngredientId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Unit { get; set; } = string.Empty;
+        public decimal UnitPrice { get; set; }
+        public bool IsDoughBase { get; set; }
         public decimal StockQuantity { get; set; }
         public decimal QuantityPerUnit { get; set; } // selected qty
+
+        public int? CategoryId { get; set; }
+        /// <summary>Đường dẫn nhóm: "Nấm" hoặc "Bò / Thịt bò xay".</summary>
+        public string CategoryDisplayPath { get; set; } = "Khác";
     }
 }
