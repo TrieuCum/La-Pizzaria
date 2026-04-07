@@ -12,14 +12,29 @@ namespace LaPizzaria.Services
 			}
 			catch
 			{
-				return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+				return TimeZoneInfo.CreateCustomTimeZone("VN+7", TimeSpan.FromHours(7), "VN", "VN");
 			}
 		}
 
 		public static DateTime UtcToVietnamLocal(DateTime utc)
 		{
-			var u = utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
-			return TimeZoneInfo.ConvertTimeFromUtc(u, GetTimeZone());
+			var normalized = utc.Kind switch
+			{
+				DateTimeKind.Utc => utc,
+				DateTimeKind.Local => utc.ToUniversalTime(),
+				_ => DateTime.SpecifyKind(utc, DateTimeKind.Utc)
+			};
+			return TimeZoneInfo.ConvertTimeFromUtc(normalized, GetTimeZone());
+		}
+
+		public static DateTime NormalizeToVietnamLocal(DateTime value)
+		{
+			return value.Kind == DateTimeKind.Utc ? UtcToVietnamLocal(value) : value;
+		}
+
+		public static int ToMinuteOfDay(DateTime localTime)
+		{
+			return localTime.Hour * 60 + localTime.Minute;
 		}
 	}
 }

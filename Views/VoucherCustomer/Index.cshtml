@@ -227,6 +227,18 @@
         box-shadow: none;
     }
 
+    .voucher-primary-btn.unavailable {
+        background: #e2e8f0;
+        color: #64748b;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    .voucher-primary-btn.unavailable:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
     .voucher-saved-check {
         width: 44px;
         height: 44px;
@@ -406,6 +418,7 @@
                     idx++;
                     var badge = v.VoucherType == "Percentage" ? $"{FormatPercent(v.DiscountPercent)}% OFF" : v.VoucherType == "FixedAmount" ? $"{v.DiscountAmount:N0}₫" : "FREESHIP";
                     var isSaved = Model.SavedVoucherIds.Contains(v.Id);
+                    var isUnavailableToday = Model.UnavailableTodayVoucherIds.Contains(v.Id);
                     <div class="voucher-card" data-voucher-id="@v.Id">
                         <div class="voucher-card-banner">
                             <img src="~/images/@imgSrc" alt="@v.Name" />
@@ -415,20 +428,44 @@
                         <div class="voucher-card-body">
                             <div class="voucher-expiry">
                                 <i class="bi bi-clock"></i>
-                                @(v.ExpiresAtUtc.HasValue ? $"Hết hạn: {v.ExpiresAtUtc.Value:dd/MM/yyyy}" : "Không giới hạn")
+                                @if (v.StartsAt.HasValue && v.StartsAt > DateTime.Now) {
+                                    <span class="text-secondary">Bắt đầu: @v.StartsAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                } else {
+                                    @(v.ExpiresAt.HasValue ? $"Hết hạn: {v.ExpiresAt.Value:dd/MM/yyyy HH:mm}" : "Không giới hạn")
+                                }
                             </div>
-                            <p class="voucher-desc">
-                                @if (v.VoucherType == "Percentage") { <text>Giảm @FormatPercent(v.DiscountPercent)% cho đơn hàng. Min @v.MinOrderValue.ToString("N0")₫.</text> }
-                                else if (v.VoucherType == "FixedAmount") { <text>Giảm @v.DiscountAmount.ToString("N0")₫. Min đơn @v.MinOrderValue.ToString("N0")₫.</text> }
-                                else { <text>Miễn phí vận chuyển.</text> }
-                            </p>
+                            <div class="voucher-desc">
+                                <div>
+                                    @if (v.VoucherType == "Percentage") { <text>Giảm @FormatPercent(v.DiscountPercent)% cho đơn hàng. Min @v.MinOrderValue.ToString("N0")₫.</text> }
+                                    else if (v.VoucherType == "FixedAmount") { <text>Giảm @v.DiscountAmount.ToString("N0")₫. Min đơn @v.MinOrderValue.ToString("N0")₫.</text> }
+                                    else { <text>Miễn phí vận chuyển.</text> }
+                                </div>
+                                @if (v.TargetProductId.HasValue && v.TargetProduct != null)
+                                {
+                                    <div class="text-primary fw-bold mt-1 small"><i class="bi bi-patch-check"></i> Yêu cầu có món: @v.TargetProduct.Name</div>
+                                }
+                                @if (!string.IsNullOrEmpty(v.ValidDaysOfWeek))
+                                {
+                                    var dayNames = new Dictionary<string, string> { {"0","CN"},{"1","T2"},{"2","T3"},{"3","T4"},{"4","T5"},{"5","T6"},{"6","T7"} };
+                                    var activeDays = v.ValidDaysOfWeek.Split(',').Select(d => dayNames.ContainsKey(d) ? dayNames[d] : d);
+                                    <div class="text-dark mt-1 small" style="font-size: 11px;"><i class="bi bi-calendar3"></i> Áp dụng: @string.Join(", ", activeDays)</div>
+                                }
+                                @if (v.TimeStartMinute.HasValue && v.TimeEndMinute.HasValue)
+                                {
+                                    <div class="text-dark mt-1 small" style="font-size: 11px;"><i class="bi bi-alarm"></i> Khung giờ: @($"{v.TimeStartMinute.Value / 60:D2}:{v.TimeStartMinute.Value % 60:D2}") - @($"{v.TimeEndMinute.Value / 60:D2}:{v.TimeEndMinute.Value % 60:D2}")</div>
+                                }
+                            </div>
                             <div class="voucher-code-box @(isSaved ? "saved" : "")">
                                 <span class="voucher-code-label">MÃ ƯU ĐÃI</span>
                                 <span class="voucher-code-text">@v.Code</span>
                                 <button type="button" class="btn btn-link p-0 text-secondary voucher-copy-btn" onclick="copyVoucher('@v.Code')"><i class="bi bi-clipboard"></i></button>
                             </div>
                             <div class="voucher-btn-row">
-                                <button type="button" class="voucher-primary-btn @(isSaved ? "saved" : "")" data-voucher-id="@v.Id" data-code="@v.Code" @(isSaved ? "disabled" : "") onclick="saveVoucherCode(this)">@(isSaved ? "Đã nhận mã" : "Lưu mã")</button>
+                                <button type="button" class="voucher-primary-btn @(isSaved ? "saved" : "") @(isUnavailableToday ? "unavailable" : "")"
+                                        data-voucher-id="@v.Id"
+                                        data-code="@v.Code"
+                                        @((isSaved || isUnavailableToday) ? "disabled" : "")
+                                        onclick="saveVoucherCode(this)">@(isSaved ? "Đã nhận mã" : (isUnavailableToday ? "Không khả dụng hôm nay" : "Lưu mã"))</button>
                                 <span class="voucher-saved-check @(isSaved ? "show" : "")" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
                             </div>
                         </div>
@@ -538,6 +575,7 @@
                 @foreach (var v in freeshipVouchers)
                 {
                     var isSavedFreeship = Model.SavedVoucherIds.Contains(v.Id);
+                    var isUnavailableTodayFreeship = Model.UnavailableTodayVoucherIds.Contains(v.Id);
                     <div class="voucher-card" data-voucher-id="@v.Id">
                         <div class="voucher-card-banner">
                             <img src="~/images/@imgs[i % 2]" alt="@v.Name" />
@@ -545,7 +583,7 @@
                             <div class="voucher-title">@v.Name</div>
                         </div>
                         <div class="voucher-card-body">
-                            <div class="voucher-expiry"><i class="bi bi-clock"></i> @(v.ExpiresAtUtc.HasValue ? $"Hết hạn: {v.ExpiresAtUtc.Value:dd/MM/yyyy}" : "Không giới hạn")</div>
+                            <div class="voucher-expiry"><i class="bi bi-clock"></i> @(v.ExpiresAt.HasValue ? $"Hết hạn: {v.ExpiresAt.Value:dd/MM/yyyy HH:mm}" : "Không giới hạn")</div>
                             <p class="voucher-desc">@v.Name — Miễn phí vận chuyển.</p>
                             <div class="voucher-code-box @(isSavedFreeship ? "saved" : "")">
                                 <span class="voucher-code-label">MÃ ƯU ĐÃI</span>
@@ -553,7 +591,11 @@
                                 <button type="button" class="btn btn-link p-0 text-secondary voucher-copy-btn" onclick="copyVoucher('@v.Code')"><i class="bi bi-clipboard"></i></button>
                             </div>
                             <div class="voucher-btn-row">
-                                <button type="button" class="voucher-primary-btn @(isSavedFreeship ? "saved" : "")" data-voucher-id="@v.Id" data-code="@v.Code" @(isSavedFreeship ? "disabled" : "") onclick="saveVoucherCode(this)">@(isSavedFreeship ? "Đã nhận mã" : "Lưu mã")</button>
+                                <button type="button" class="voucher-primary-btn @(isSavedFreeship ? "saved" : "") @(isUnavailableTodayFreeship ? "unavailable" : "")"
+                                        data-voucher-id="@v.Id"
+                                        data-code="@v.Code"
+                                        @((isSavedFreeship || isUnavailableTodayFreeship) ? "disabled" : "")
+                                        onclick="saveVoucherCode(this)">@(isSavedFreeship ? "Đã nhận mã" : (isUnavailableTodayFreeship ? "Không khả dụng hôm nay" : "Lưu mã"))</button>
                                 <span class="voucher-saved-check @(isSavedFreeship ? "show" : "")" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
                             </div>
                         </div>

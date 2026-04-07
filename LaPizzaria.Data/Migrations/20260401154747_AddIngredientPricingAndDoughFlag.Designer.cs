@@ -4,6 +4,7 @@ using LaPizzaria.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaPizzaria.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260401154747_AddIngredientPricingAndDoughFlag")]
+    partial class AddIngredientPricingAndDoughFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -288,6 +291,9 @@ namespace LaPizzaria.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsDoughBase")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -303,6 +309,10 @@ namespace LaPizzaria.Data.Migrations
                     b.Property<string>("Unit")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -742,7 +752,7 @@ namespace LaPizzaria.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("DiscountAmount")
@@ -753,10 +763,7 @@ namespace LaPizzaria.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<TimeSpan?>("EndTime")
-                        .HasColumnType("time");
-
-                    b.Property<DateTime?>("ExpiresAt")
+                    b.Property<DateTime?>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsActive")
@@ -773,34 +780,20 @@ namespace LaPizzaria.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<TimeSpan?>("StartTime")
-                        .HasColumnType("time");
-
-                    b.Property<DateTime?>("StartsAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("TargetProductId")
-                        .HasColumnType("int");
-
                     b.Property<string>("TargetUserId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("UsedCount")
                         .HasColumnType("int");
-
-                    b.Property<string>("ValidDaysOfWeek")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VoucherType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("TargetProductId");
 
                     b.HasIndex("TargetUserId");
 
@@ -1169,17 +1162,10 @@ namespace LaPizzaria.Data.Migrations
 
             modelBuilder.Entity("LaPizzaria.Models.Voucher", b =>
                 {
-                    b.HasOne("LaPizzaria.Models.Product", "TargetProduct")
-                        .WithMany()
-                        .HasForeignKey("TargetProductId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("LaPizzaria.Models.ApplicationUser", "TargetUser")
                         .WithMany()
                         .HasForeignKey("TargetUserId")
                         .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("TargetProduct");
 
                     b.Navigation("TargetUser");
                 });

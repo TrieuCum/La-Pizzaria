@@ -13,13 +13,15 @@ namespace LaPizzaria.Services
         private readonly IInventoryService _inventory;
         private readonly IComboService _comboService;
         private readonly IPricingService _pricingService;
+        private readonly IVoucherService _voucherService;
 
-        public OrderService(ApplicationDbContext db, IInventoryService inventory, IComboService comboService, IPricingService pricingService)
+        public OrderService(ApplicationDbContext db, IInventoryService inventory, IComboService comboService, IPricingService pricingService, IVoucherService voucherService)
         {
             _db = db;
             _inventory = inventory;
             _comboService = comboService;
             _pricingService = pricingService;
+            _voucherService = voucherService;
         }
 
         public async Task<Order> CreateOrderAsync(string? userId, IEnumerable<OrderDetail> items, IEnumerable<int> tableIds, string? deliveryAddress = null, double? latitude = null, double? longitude = null)
@@ -119,7 +121,7 @@ namespace LaPizzaria.Services
                     UnitPrice = detail.UnitPrice,
                     Subtotal = detail.UnitPrice * moveQty,
                     Size = detail.Size, // Preserve size
-                    OrderDetailToppings = detail.OrderDetailToppings?.Select(odt => new OrderDetailTopping { ToppingId = odt.ToppingId }).ToList() // Copy toppings
+                    OrderDetailToppings = detail.OrderDetailToppings?.Select(odt => new OrderDetailTopping { ToppingId = odt.ToppingId }).ToList() ?? new List<OrderDetailTopping>() // Copy toppings
                 };
                 newOrder.OrderDetails.Add(moved);
             }
@@ -139,21 +141,12 @@ namespace LaPizzaria.Services
                 .Include(o => o.OrderDetails).ThenInclude(od => od.OrderDetailToppings)
                 .Include(o => o.OrderVouchers).ThenInclude(ov => ov.Voucher)
                 .FirstAsync(o => o.Id == orderId);
-            var productIds = order.OrderDetails.Select(x => x.ProductId)
-                .Concat(order.OrderDetails.Where(x => x.ProductId2.HasValue).Select(x => x.ProductId2!.Value))
-                .Distinct().ToList();
-            var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
             foreach (var d in order.OrderDetails)
             {
-                if (products.TryGetValue(d.ProductId, out var p1))
-                {
-                    decimal basePrice = p1.Price;
-                    if (d.ProductId2.HasValue && products.TryGetValue(d.ProductId2.Value, out var p2))
-                    {
-                        basePrice = (p1.Price + p2.Price) / 2;
-                    }
+                var basePrice = await CalculateIngredientBasedPriceAsync(d.ProductId, d.ProductId2, d.Size);
+                var p1 = await _db.Products.FindAsync(d.ProductId);
+                if (p1 != null)
                     d.UnitPrice = _pricingService.AdjustUnitPrice(p1, basePrice, System.DateTime.UtcNow);
-                }
                 d.Subtotal = d.UnitPrice * d.Quantity;
             }
 
@@ -166,16 +159,16 @@ namespace LaPizzaria.Services
 
             // voucher discounts (up to 2 vouchers already attached to order)
             decimal voucherDiscount = 0m;
-            var now = System.DateTime.UtcNow;
+            var now = System.DateTime.Now;
             if (order.OrderVouchers != null)
             {
                 foreach (var ov in order.OrderVouchers.Take(2))
                 {
                     var v = ov.Voucher;
                     if (v == null) continue;
-                    if (v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now) && (v.MaxUses == 0 || v.UsedCount <= v.MaxUses))
+                    if (_voucherService.IsUsable(v, now))
                     {
-                        voucherDiscount += System.Math.Round(subtotal * (v.DiscountPercent / 100m), 2);
+                        voucherDiscount += _voucherService.CalculateDiscount(v, order.OrderDetails.ToList(), subtotal);
                     }
                 }
             }
@@ -183,6 +176,51 @@ namespace LaPizzaria.Services
             var total = subtotal - discount - voucherDiscount;
             if (total < 0) total = 0;
             return total;
+        }
+
+        private async Task<decimal> CalculateIngredientBasedPriceAsync(int productId, int? productId2, string? size)
+        {
+            var productIds = new List<int> { productId };
+            if (productId2.HasValue) productIds.Add(productId2.Value);
+
+            var products = await _db.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+            if (!products.TryGetValue(productId, out var p1)) return 0m;
+
+            var mappings = await _db.ProductIngredients
+                .Where(pi => productIds.Contains(pi.ProductId))
+                .ToListAsync();
+            if (!mappings.Any())
+            {
+                if (productId2.HasValue && products.TryGetValue(productId2.Value, out var p2Product))
+                    return (p1.Price + p2Product.Price) / 2m;
+                return p1.Price;
+            }
+
+            var ingredientIds = mappings.Select(m => m.IngredientId).Distinct().ToList();
+            var ingredientMap = await _db.Ingredients
+                .Where(i => ingredientIds.Contains(i.Id))
+                .ToDictionaryAsync(i => i.Id);
+
+            decimal ComputePriceForProduct(int pid, decimal fallbackPrice)
+            {
+                var productMappings = mappings.Where(m => m.ProductId == pid).ToList();
+                if (!productMappings.Any()) return fallbackPrice;
+                return productMappings.Sum(m =>
+                {
+                    if (!ingredientMap.TryGetValue(m.IngredientId, out var ing)) return 0m;
+                    var qty = ProductPricingCalculator.GetScaledQuantity(m, ing, size);
+                    return qty * ing.UnitPrice;
+                });
+            }
+
+            var p1Price = ComputePriceForProduct(productId, p1.Price);
+            if (!productId2.HasValue) return p1Price;
+
+            var p2Fallback = products.TryGetValue(productId2.Value, out var p2) ? p2.Price : p1.Price;
+            var p2Price = ComputePriceForProduct(productId2.Value, p2Fallback);
+            return (p1Price + p2Price) / 2m;
         }
 
         public async Task<bool> AssignTablesAsync(int orderId, IEnumerable<int> tableIds)

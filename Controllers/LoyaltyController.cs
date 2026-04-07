@@ -51,7 +51,7 @@ namespace LaPizzaria.Controllers
 
             var targetedVouchers = await _db.Vouchers
                 .Where(v => v.TargetUserId == user.Id)
-                .OrderByDescending(v => v.CreatedAtUtc)
+                .OrderByDescending(v => v.CreatedAt)
                 .Take(20)
                 .ToListAsync();
 
@@ -89,13 +89,13 @@ namespace LaPizzaria.Controllers
                 Vouchers = targetedVouchers.Select(v =>
                 {
                     var isUsed = usedVoucherIds.Contains(v.Id);
-                    var isExpired = v.ExpiresAtUtc.HasValue && v.ExpiresAtUtc.Value < DateTime.UtcNow;
+                    var isExpired = v.ExpiresAt.HasValue && v.ExpiresAt.Value < DateTime.Now;
                     var status = isUsed ? "used" : isExpired ? "expired" : "unused";
                     var meta = isUsed
                         ? "Đã dùng trong đơn hàng"
                         : isExpired
-                            ? $"Hết hạn: {v.ExpiresAtUtc:dd/MM/yyyy}"
-                            : $"HSD: {(v.ExpiresAtUtc.HasValue ? v.ExpiresAtUtc.Value.ToString("dd/MM/yyyy") : "Không giới hạn")}";
+                            ? $"Hết hạn: {v.ExpiresAt:dd/MM/yyyy}"
+                            : $"HSD: {(v.ExpiresAt.HasValue ? v.ExpiresAt.Value.ToString("dd/MM/yyyy") : "Không giới hạn")}";
                     return new LoyaltyVoucherItemViewModel
                     {
                         VoucherId = v.Id,
@@ -254,9 +254,9 @@ namespace LaPizzaria.Controllers
                     MinOrderValue = 200000,
                     TargetUserId = userId,
                     IsActive = true,
-                    ExpiresAtUtc = now.AddDays(30),
-                    CreatedAtUtc = now,
-                    UpdatedAtUtc = now
+                    ExpiresAt = now.AddDays(30),
+                    CreatedAt = now,
+                    UpdatedAt = now
                 },
                 "COCA15_200" => new Voucher
                 {
@@ -268,9 +268,9 @@ namespace LaPizzaria.Controllers
                     MinOrderValue = 0,
                     TargetUserId = userId,
                     IsActive = true,
-                    ExpiresAtUtc = now.AddDays(15),
-                    CreatedAtUtc = now,
-                    UpdatedAtUtc = now
+                    ExpiresAt = now.AddDays(15),
+                    CreatedAt = now,
+                    UpdatedAt = now
                 },
                 "FREESHIP5_300" => new Voucher
                 {
@@ -282,9 +282,9 @@ namespace LaPizzaria.Controllers
                     MinOrderValue = 0,
                     TargetUserId = userId,
                     IsActive = true,
-                    ExpiresAtUtc = now.AddDays(20),
-                    CreatedAtUtc = now,
-                    UpdatedAtUtc = now
+                    ExpiresAt = now.AddDays(20),
+                    CreatedAt = now,
+                    UpdatedAt = now
                 },
                 _ => new Voucher
                 {
@@ -296,9 +296,9 @@ namespace LaPizzaria.Controllers
                     MinOrderValue = 0,
                     TargetUserId = userId,
                     IsActive = true,
-                    ExpiresAtUtc = now.AddDays(20),
-                    CreatedAtUtc = now,
-                    UpdatedAtUtc = now
+                    ExpiresAt = now.AddDays(20),
+                    CreatedAt = now,
+                    UpdatedAt = now
                 }
             };
         }

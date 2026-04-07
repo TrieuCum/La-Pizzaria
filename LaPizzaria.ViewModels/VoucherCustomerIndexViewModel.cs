@@ -14,6 +14,7 @@ namespace LaPizzaria.ViewModels
         public List<CategoryFilterItem> CategoryFilters { get; set; } = new();
         /// <summary>Danh sách Id voucher mà user đã lưu vào tài khoản.</summary>
         public List<int> SavedVoucherIds { get; set; } = new();
+        public List<int> UnavailableTodayVoucherIds { get; set; } = new();
         /// <summary>User đã đăng nhập hay chưa (để hiện nút "Lưu mã" / "Đăng nhập để lưu mã").</summary>
         public bool IsAuthenticated { get; set; }
     }

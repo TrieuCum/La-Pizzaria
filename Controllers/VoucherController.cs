@@ -31,20 +31,20 @@ namespace LaPizzaria.Controllers
 		{
 			var query = _db.Vouchers.AsQueryable();
 
-			if (!string.IsNullOrEmpty(search))
+			if (!string.IsNullOrWhiteSpace(search))
 			{
 				query = query.Where(v => v.Code.Contains(search) || v.Name.Contains(search));
 			}
 
-			if (!string.IsNullOrEmpty(status))
+			if (!string.IsNullOrWhiteSpace(status))
 			{
 				var now = DateTime.UtcNow;
 				if (status == "Active")
-					query = query.Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now));
+					query = query.Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > now));
 				else if (status == "Inactive")
 					query = query.Where(v => !v.IsActive);
 				else if (status == "Expired")
-					query = query.Where(v => v.ExpiresAtUtc != null && v.ExpiresAtUtc <= now);
+					query = query.Where(v => v.ExpiresAt != null && v.ExpiresAt <= now);
 			}
 
 			if (page < 1) page = 1;
@@ -56,7 +56,7 @@ namespace LaPizzaria.Controllers
 			if (page > totalPages) page = totalPages;
 
 			var list = await query
-				.OrderByDescending(v => v.CreatedAtUtc)
+				.OrderByDescending(v => v.CreatedAt)
 				.Skip((page - 1) * pageSize)
 				.Take(pageSize)
 				.ToListAsync();
@@ -86,22 +86,23 @@ namespace LaPizzaria.Controllers
 			return View(voucher);
 		}
 
-		private static string? FormatMinute(int? m)
+		private static string? FormatMinute(int? minute)
 		{
-			if (m == null) return null;
-			var x = Math.Clamp(m.Value, 0, 1439);
-			return $"{x / 60:D2}:{x % 60:D2}";
+			if (minute == null) return null;
+			var value = Math.Clamp(minute.Value, 0, 1439);
+			return $"{value / 60:D2}:{value % 60:D2}";
 		}
 
-		private static int? ParseTimeToMinute(string? s)
+		private static int? ParseTimeToMinute(string? input)
 		{
-			if (string.IsNullOrWhiteSpace(s)) return null;
-			var p = s.Trim().Split(':', StringSplitOptions.RemoveEmptyEntries);
-			if (p.Length < 2) return null;
-			if (!int.TryParse(p[0], out var h) || !int.TryParse(p[1], out var min)) return null;
-			var total = h * 60 + min;
-			if (total < 0 || total > 1439) return null;
-			return total;
+			if (string.IsNullOrWhiteSpace(input)) return null;
+
+			var parts = input.Trim().Split(':', StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length < 2) return null;
+			if (!int.TryParse(parts[0], out var hour) || !int.TryParse(parts[1], out var minute)) return null;
+
+			var total = hour * 60 + minute;
+			return total is < 0 or > 1439 ? null : total;
 		}
 
 		[HttpPost]
@@ -113,16 +114,18 @@ namespace LaPizzaria.Controllers
 			[FromForm] int[]? weekDays,
 			[FromForm] int[]? eligibleProductIds)
 		{
-			model.WindowTimeStartMinute = ParseTimeToMinute(windowTimeStart);
-			model.WindowTimeEndMinute = ParseTimeToMinute(windowTimeEnd);
+			model.TimeStartMinute = ParseTimeToMinute(windowTimeStart);
+			model.TimeEndMinute = ParseTimeToMinute(windowTimeEnd);
 			model.ValidDaysOfWeek = weekDays != null && weekDays.Length > 0
-				? string.Join(",", weekDays.Distinct().Where(d => d >= 0 && d <= 6).OrderBy(d => d))
+				? string.Join(",", weekDays.Distinct().Where(day => day >= 0 && day <= 6).OrderBy(day => day))
 				: null;
 
 			var selectedProductIds = eligibleProductIds?
 				.Where(id => id > 0)
 				.Distinct()
 				.ToArray() ?? Array.Empty<int>();
+
+			model.TargetProductId = selectedProductIds.Length == 1 ? selectedProductIds[0] : null;
 
 			if (!ModelState.IsValid)
 			{
@@ -132,13 +135,17 @@ namespace LaPizzaria.Controllers
 
 			var voucherMissing = false;
 			var strategy = _db.Database.CreateExecutionStrategy();
+
 			await strategy.ExecuteAsync(async () =>
 			{
 				await using var tx = await _db.Database.BeginTransactionAsync();
+
 				if (model.Id == 0)
 				{
 					model.UsedCount = 0;
 					model.UpsaleRequiresSlowSeller = false;
+					model.CreatedAt = DateTime.UtcNow;
+					model.UpdatedAt = DateTime.UtcNow;
 					await _svc.CreateAsync(model);
 					await ReplaceVoucherProductsAsync(model.Id, selectedProductIds);
 				}
@@ -160,13 +167,15 @@ namespace LaPizzaria.Controllers
 					existing.MinOrderValue = model.MinOrderValue;
 					existing.TargetUserId = model.TargetUserId;
 					existing.MaxUses = model.MaxUses;
-					existing.ExpiresAtUtc = model.ExpiresAtUtc;
-					existing.IsActive = model.IsActive;
-					existing.WindowTimeStartMinute = model.WindowTimeStartMinute;
-					existing.WindowTimeEndMinute = model.WindowTimeEndMinute;
+					existing.StartsAt = model.StartsAt;
+					existing.ExpiresAt = model.ExpiresAt;
 					existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
+					existing.TimeStartMinute = model.TimeStartMinute;
+					existing.TimeEndMinute = model.TimeEndMinute;
+					existing.TargetProductId = model.TargetProductId;
+					existing.IsActive = model.IsActive;
 					existing.UpsaleRequiresSlowSeller = false;
-					existing.UpdatedAtUtc = DateTime.UtcNow;
+					existing.UpdatedAt = DateTime.UtcNow;
 
 					await _svc.UpdateAsync(existing);
 					await ReplaceVoucherProductsAsync(existing.Id, selectedProductIds);
@@ -174,15 +183,17 @@ namespace LaPizzaria.Controllers
 
 				await tx.CommitAsync();
 			});
+
 			if (voucherMissing) return NotFound();
-			TempData["success"] = "L\u01b0u voucher th\u00e0nh c\u00f4ng";
+
+			TempData["success"] = "Lưu voucher thành công";
 			return RedirectToAction(nameof(Index));
 		}
 
 		public async Task<IActionResult> Delete(int id)
 		{
 			await _svc.DeleteAsync(id);
-			TempData["success"] = "\u0110\u00e3 x\u00f3a voucher";
+			TempData["success"] = "Đã xóa voucher";
 			return RedirectToAction(nameof(Index));
 		}
 
@@ -207,11 +218,19 @@ namespace LaPizzaria.Controllers
 				percent = v.DiscountPercent,
 				amount = v.DiscountAmount,
 				minOrderValue = v.MinOrderValue,
+				targetProductId = v.TargetProductId,
+				targetProductName = v.TargetProduct?.Name,
+				isActive = v.IsActive,
+				startsAt = v.StartsAt,
+				expiresAt = v.ExpiresAt,
+				validDaysOfWeek = v.ValidDaysOfWeek,
+				timeStartMinute = v.TimeStartMinute,
+				timeEndMinute = v.TimeEndMinute,
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
-				expiresAtUtc = v.ExpiresAtUtc,
 				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds
 			});
+
 			return Ok(list);
 		}
 
@@ -223,8 +242,8 @@ namespace LaPizzaria.Controllers
 			IEnumerable<int>? selectedProductIds = null)
 		{
 			ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
-			ViewBag.WindowTimeStart = windowTimeStart ?? FormatMinute(model.WindowTimeStartMinute);
-			ViewBag.WindowTimeEnd = windowTimeEnd ?? FormatMinute(model.WindowTimeEndMinute);
+			ViewBag.WindowTimeStart = windowTimeStart ?? FormatMinute(model.TimeStartMinute);
+			ViewBag.WindowTimeEnd = windowTimeEnd ?? FormatMinute(model.TimeEndMinute);
 			ViewBag.WeekDaysSelected = weekDays != null
 				? weekDays.Where(x => x >= 0 && x <= 6).ToHashSet()
 				: string.IsNullOrEmpty(model.ValidDaysOfWeek)
@@ -243,6 +262,11 @@ namespace LaPizzaria.Controllers
 						.Where(vp => vp.VoucherId == model.Id)
 						.Select(vp => vp.ProductId)
 						.ToHashSetAsync();
+
+			if (selectedSet.Count == 0 && model.TargetProductId.HasValue)
+			{
+				selectedSet.Add(model.TargetProductId.Value);
+			}
 
 			if (selectedSet.Count == 0 && model.Id != 0 && model.UpsaleRequiresSlowSeller)
 			{
@@ -301,6 +325,7 @@ namespace LaPizzaria.Controllers
 			var soldProducts = products
 				.Where(p => p.TotalUnitsSold > 0 || p.CompletedOrderCount > 0)
 				.ToList();
+
 			if (soldProducts.Count > 0)
 			{
 				var maxUnits = soldProducts.Max(p => p.TotalUnitsSold);
@@ -334,6 +359,7 @@ namespace LaPizzaria.Controllers
 			var existing = await _db.VoucherProducts
 				.Where(vp => vp.VoucherId == voucherId)
 				.ToListAsync();
+
 			if (existing.Count > 0)
 			{
 				_db.VoucherProducts.RemoveRange(existing);

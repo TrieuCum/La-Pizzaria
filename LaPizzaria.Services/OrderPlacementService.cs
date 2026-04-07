@@ -61,7 +61,7 @@ public sealed class OrderPlacementService : IOrderPlacementService
             if (v == null) continue;
 
             if (!await _voucherService.CanApplyToOrderAsync(v, productIds, DateTime.UtcNow))
-                return CheckoutTotalsOutcome.Fail($"Voucher {v.Code} hiện không khả dụng (khung giờ/ngày hoặc upsale món bán chậy).");
+                return CheckoutTotalsOutcome.Fail($"Voucher {v.Code} hiện không khả dụng.");
 
             if (subtotal < v.MinOrderValue)
                 return CheckoutTotalsOutcome.Fail($"Đơn hàng chưa đạt giá trị tối thiểu ({v.MinOrderValue:N0}đ) để sử dụng mã {v.Code}.");

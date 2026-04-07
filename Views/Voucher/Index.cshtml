@@ -309,7 +309,7 @@
                 <tbody>
                     @foreach (var v in Model)
                     {
-                        var isExpired = v.ExpiresAtUtc.HasValue && v.ExpiresAtUtc < DateTime.UtcNow;
+                        var isExpired = v.ExpiresAt.HasValue && v.ExpiresAt < DateTime.Now;
                         var progress = v.MaxUses > 0 ? (double)v.UsedCount / v.MaxUses * 100 : 0;
                         var progressColor = progress > 90 ? "#ef4444" : (progress > 50 ? "#f97316" : "#3b82f6");
 
@@ -336,7 +336,7 @@
                                     <span>Miễn phí giao hàng</span>
                                 }
                             </td>
-                            <td>@(v.ExpiresAtUtc?.ToLocalTime().ToString("dd/MM/yyyy") ?? "Không có")</td>
+                            <td>@(v.ExpiresAt?.ToString("dd/MM/yyyy HH:mm") ?? "Không có")</td>
                             <td>@(v.MinOrderValue > 0 ? $"> {v.MinOrderValue.ToString("N0")}" : "Không có")</td>
                             <td>
                                 <div>@v.UsedCount/@(v.MaxUses == 0 ? "∞" : v.MaxUses.ToString())</div>

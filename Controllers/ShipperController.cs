@@ -13,7 +13,7 @@ namespace LaPizzaria.Controllers
     public class ShipperController : Controller
     {
         private readonly ApplicationDbContext _db;
-        private static readonly string[] KitchenReadyStatuses = { "Ready", "Sẵn sàng" };
+        private static readonly string[] KitchenReadyStatuses = { "Confirmed", "Preparing", "Ready", "Đang chế biến", "Sẵn sàng" };
         private static readonly string[] ActiveDeliveryStatuses = { "assigned", "delivering" };
         private static readonly string[] HistoryDeliveryStatuses = { "delivered", "failed" };
 
@@ -444,7 +444,7 @@ SET OrderStatus = {"Delivering"},
     UpdatedAt = {DateTime.UtcNow}
 WHERE Id = {id}
   AND ShipperId IS NULL
-  AND (OrderStatus = {"Ready"} OR OrderStatus = {"Sẵn sàng"})
+  AND (OrderStatus = {"Confirmed"} OR OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
 ");
 
             if (affectedRows == 0)
@@ -477,7 +477,7 @@ SET OrderStatus = {"Delivering"},
     UpdatedAt = {DateTime.UtcNow}
 WHERE Id = {id}
   AND ShipperId IS NULL
-  AND (OrderStatus = {"Ready"} OR OrderStatus = {"Sẵn sàng"})
+  AND (OrderStatus = {"Confirmed"} OR OrderStatus = {"Preparing"} OR OrderStatus = {"Ready"} OR OrderStatus = {"Đang chế biến"} OR OrderStatus = {"Sẵn sàng"})
 ");
 
             if (affectedRows == 0)

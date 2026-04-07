@@ -884,133 +884,268 @@ body.has-sidebar.sidebar-collapsed .content-wrapper {
 /* ============================================
    VOUCHER UI REDESIGN (PREMIUM TICKET STYLE)
    ============================================ */
-.modal-glass .modal-content {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+.modal-premium .modal-content {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-premium .modal-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 1.5rem 2rem;
+}
+
+.modal-premium .modal-body {
+    padding: 2.25rem;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.search-container-v {
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid #E2E8F0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.search-container-v:focus-within {
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
+}
+
+.custom-pills .nav-link {
+    background: #F1F5F9;
+    color: #64748B;
+    border: none;
+    font-size: 13px;
+    padding: 10px 24px;
+    transition: all 0.3s ease;
+}
+
+.custom-pills .nav-link:hover {
+    background: #E2E8F0;
+    color: var(--brand-dark);
+}
+
+.custom-pills .nav-link.active {
+    background: var(--brand-orange) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
 .voucher-ticket {
     display: flex;
     background: white;
-    border-radius: 12px;
-    margin-bottom: 16px;
+    border-radius: 16px;
+    margin-bottom: 20px;
     position: relative;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     overflow: hidden;
-    height: 100px;
-    border: 1px solid #f1f5f9;
+    min-height: 110px;
+    border: 1px solid rgba(0,0,0,0.03);
+    /* The ticket notches using mask or radial gradients */
+    mask-image: radial-gradient(circle at 100px 0, transparent 12px, black 13px),
+                radial-gradient(circle at 100px 100%, transparent 12px, black 13px);
+    -webkit-mask-image: radial-gradient(circle at 100px 0, transparent 12px, black 13px),
+                        radial-gradient(circle at 100px 100%, transparent 12px, black 13px);
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
 }
 
-.voucher-ticket::before,
-.voucher-ticket::after {
+.voucher-ticket::before {
     content: '';
     position: absolute;
-    left: 80px;
-    width: 20px;
-    height: 20px;
-    background: #f8fafc; /* Match modal body bg */
-    border-radius: 50%;
+    left: 100px;
+    top: 15px;
+    bottom: 15px;
+    width: 1px;
+    border-left: 2px dashed rgba(0,0,0,0.1);
     z-index: 2;
 }
 
-.voucher-ticket::before { top: -10px; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.02); }
-.voucher-ticket::after { bottom: -10px; box-shadow: inset 0 3px 5px rgba(0,0,0,0.02); }
-
 .voucher-ticket:hover:not(.ineligible) {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 12px 20px rgba(255, 122, 0, 0.15);
-    border-color: var(--brand-orange);
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(249, 115, 22, 0.15), 0 10px 10px -5px rgba(249, 115, 22, 0.1);
+    border-color: rgba(249, 115, 22, 0.3);
 }
 
 .ticket-left {
-    width: 90px;
-    background: linear-gradient(135deg, var(--brand-orange), #ff9d42);
+    width: 100px;
+    background: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     color: white;
-    border-right: 2px dashed rgba(255,255,255,0.3);
-    padding: 10px;
+    padding: 15px;
     flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
 }
 
-.ticket-left i { font-size: 1.5rem; margin-bottom: 5px; }
-.ticket-percent { font-size: 1.25rem; font-weight: 900; line-height: 1; }
-.ticket-type { font-size: 10px; font-weight: 600; text-transform: uppercase; opacity: 0.9; }
+/* Subtle pattern on the left side */
+.ticket-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px);
+    background-size: 10px 10px;
+    opacity: 0.3;
+}
+
+.ticket-left i { font-size: 1.75rem; margin-bottom: 8px; position: relative; z-index: 2; }
+.ticket-percent { font-size: 1.5rem; font-weight: 900; line-height: 1; position: relative; z-index: 2; font-family: 'Plus Jakarta Sans', sans-serif; }
+.ticket-type { font-size: 11px; font-weight: 700; text-transform: uppercase; opacity: 0.9; position: relative; z-index: 2; letter-spacing: 0.5px; }
 
 .ticket-right {
     flex-grow: 1;
-    padding: 12px 15px 12px 25px;
+    padding: 15px 20px 15px 25px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-width: 0;
 }
 
-.ticket-code {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--brand-dark);
-    letter-spacing: 0.5px;
-}
-
-.v-condition-toggle {
-    font-size: 11px;
-    color: var(--brand-gray);
-    cursor: pointer;
+.ticket-header {
     display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: color 0.2s;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
 }
 
-.v-condition-toggle:hover { color: var(--brand-orange); }
-
-.voucher-ticket.ineligible {
-    opacity: 0.7;
-    filter: grayscale(0.5);
+.ticket-code {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--brand-dark);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
 }
 
-.voucher-ticket.ineligible .ticket-left {
-    background: #94a3b8;
-}
-
-.ticket-btn-apply {
-    background: transparent;
-    border: 1.5px solid var(--brand-orange);
+.btn-copy-code {
+    background: var(--brand-orange-light);
     color: var(--brand-orange);
-    font-size: 11px;
+    border: none;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 20px;
     transition: all 0.2s;
 }
 
-.ticket-btn-apply:hover {
+.btn-copy-code:hover { background: var(--brand-orange); color: white; }
+
+.ticket-progress-container {
+    margin: 10px 0;
+}
+
+.ticket-progress-bar {
+    height: 6px;
+    background: #F1F5F9;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.ticket-progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, #FB923C, #F97316);
+    border-radius: 10px;
+    transition: width 1s ease-out;
+}
+
+.ticket-progress-text {
+    font-size: 10px;
+    color: var(--brand-gray-light);
+    margin-top: 4px;
+    display: block;
+    font-weight: 600;
+}
+
+.v-condition-toggle {
+    font-size: 12px;
+    color: var(--brand-orange);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    margin-top: 5px;
+}
+
+.v-condition-toggle:hover { opacity: 0.8; transform: translateX(2px); }
+
+.voucher-ticket.ineligible {
+    opacity: 0.9;
+    background: #FAFAFA;
+    border: 1px dashed #E2E8F0;
+}
+
+.voucher-ticket.ineligible .ticket-left {
+    background: linear-gradient(135deg, #CBD5E1 0%, #94A3B8 100%);
+    filter: grayscale(0.5);
+}
+
+.voucher-ticket.ineligible .ticket-code {
+    color: #94A3B8;
+}
+
+.voucher-ticket.ineligible .ticket-btn-apply {
+    background: #E2E8F0;
+    color: #94A3B8;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.ticket-btn-apply {
     background: var(--brand-orange);
+    border: none;
     color: white;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 18px;
+    border-radius: 12px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.2);
+}
+
+.ticket-btn-apply:hover {
+    background: var(--brand-orange-hover);
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.3);
 }
 
 .voucher-details-expand {
     display: none;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--brand-gray);
-    background: #fdfdfd;
-    padding: 10px 15px;
-    margin-top: -16px;
-    margin-bottom: 16px;
-    border: 1px solid #f1f5f9;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(5px);
+    padding: 15px 25px;
+    margin-top: -20px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(0,0,0,0.05);
     border-top: none;
-    border-radius: 0 0 12px 12px;
-    animation: slideDown 0.3s ease-out;
+    border-radius: 0 0 16px 16px;
+    animation: ticketSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
+@keyframes ticketSlideIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.stagger-item {
+    opacity: 0;
+    animation: staggerFadeIn 0.5s ease forwards;
+}
+
+@keyframes staggerFadeIn {
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
