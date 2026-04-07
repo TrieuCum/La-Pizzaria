@@ -35,8 +35,7 @@ namespace LaPizzaria.Controllers
             var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
 
             var vouchersQuery = _db.Vouchers
-                .Include(v => v.TargetProduct)
-                .Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > DateTime.Now))
+                .Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > DateTime.UtcNow))
                 .AsQueryable();
 
             vouchersQuery = isAuthenticated && !string.IsNullOrEmpty(userId)
@@ -47,7 +46,7 @@ namespace LaPizzaria.Controllers
                 .OrderByDescending(v => v.DiscountPercent)
                 .ToListAsync();
 
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var unavailableTodayVoucherIds = vouchers
                 .Where(v => !_voucherService.IsUsable(v, now))
                 .Select(v => v.Id)
@@ -114,10 +113,10 @@ namespace LaPizzaria.Controllers
             if (voucher == null)
                 return Json(new { success = false, message = "Mã không tồn tại." });
 
-            if (!voucher.IsActive || (voucher.ExpiresAt.HasValue && voucher.ExpiresAt.Value < DateTime.Now))
+            if (!voucher.IsActive || (voucher.ExpiresAtUtc.HasValue && voucher.ExpiresAtUtc.Value < DateTime.UtcNow))
                 return Json(new { success = false, message = "Mã đã hết hạn hoặc không còn hiệu lực." });
 
-            if (!_voucherService.IsUsable(voucher, DateTime.Now))
+            if (!_voucherService.IsUsable(voucher, DateTime.UtcNow))
                 return Json(new { success = false, message = "Mã này không khả dụng hôm nay." });
 
             if (!string.IsNullOrEmpty(voucher.TargetUserId) && voucher.TargetUserId != userId)

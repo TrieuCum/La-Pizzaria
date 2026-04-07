@@ -38,7 +38,7 @@ namespace LaPizzaria.Controllers
 
             ViewBag.TotalRevenue = _db.Orders.Where(o => o.OrderStatus == "Completed").Sum(o => (decimal?)o.TotalPrice) ?? 0m;
             ViewBag.TotalOrders = _db.Orders.Count();
-            ViewBag.ActiveVouchers = _db.Vouchers.Count(v => v.IsActive && (!v.ExpiresAt.HasValue || v.ExpiresAt > DateTime.Now));
+            ViewBag.ActiveVouchers = _db.Vouchers.Count(v => v.IsActive && (!v.ExpiresAtUtc.HasValue || v.ExpiresAtUtc > DateTime.UtcNow));
             
             ViewBag.RecentOrders = _db.Orders
                 .Include(o => o.User)

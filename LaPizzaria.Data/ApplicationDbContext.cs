@@ -168,12 +168,6 @@ namespace LaPizzaria.Data
 				.WithMany()
 				.HasForeignKey(v => v.TargetUserId)
 				.OnDelete(DeleteBehavior.SetNull);
-			modelBuilder.Entity<Voucher>()
-				.HasOne(v => v.TargetProduct)
-				.WithMany()
-				.HasForeignKey(v => v.TargetProductId)
-				.OnDelete(DeleteBehavior.SetNull);
-
 			modelBuilder.Entity<VoucherProduct>()
 				.HasKey(vp => new { vp.VoucherId, vp.ProductId });
 			modelBuilder.Entity<VoucherProduct>()

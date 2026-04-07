@@ -40,11 +40,11 @@ namespace LaPizzaria.Controllers
 			{
 				var now = DateTime.UtcNow;
 				if (status == "Active")
-					query = query.Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > now));
+					query = query.Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now));
 				else if (status == "Inactive")
 					query = query.Where(v => !v.IsActive);
 				else if (status == "Expired")
-					query = query.Where(v => v.ExpiresAt != null && v.ExpiresAt <= now);
+					query = query.Where(v => v.ExpiresAtUtc != null && v.ExpiresAtUtc <= now);
 			}
 
 			if (page < 1) page = 1;
@@ -56,7 +56,7 @@ namespace LaPizzaria.Controllers
 			if (page > totalPages) page = totalPages;
 
 			var list = await query
-				.OrderByDescending(v => v.CreatedAt)
+				.OrderByDescending(v => v.CreatedAtUtc)
 				.Skip((page - 1) * pageSize)
 				.Take(pageSize)
 				.ToListAsync();
@@ -114,8 +114,8 @@ namespace LaPizzaria.Controllers
 			[FromForm] int[]? weekDays,
 			[FromForm] int[]? eligibleProductIds)
 		{
-			model.TimeStartMinute = ParseTimeToMinute(windowTimeStart);
-			model.TimeEndMinute = ParseTimeToMinute(windowTimeEnd);
+			model.WindowTimeStartMinute = ParseTimeToMinute(windowTimeStart);
+			model.WindowTimeEndMinute = ParseTimeToMinute(windowTimeEnd);
 			model.ValidDaysOfWeek = weekDays != null && weekDays.Length > 0
 				? string.Join(",", weekDays.Distinct().Where(day => day >= 0 && day <= 6).OrderBy(day => day))
 				: null;
@@ -124,8 +124,6 @@ namespace LaPizzaria.Controllers
 				.Where(id => id > 0)
 				.Distinct()
 				.ToArray() ?? Array.Empty<int>();
-
-			model.TargetProductId = selectedProductIds.Length == 1 ? selectedProductIds[0] : null;
 
 			if (!ModelState.IsValid)
 			{
@@ -144,8 +142,8 @@ namespace LaPizzaria.Controllers
 				{
 					model.UsedCount = 0;
 					model.UpsaleRequiresSlowSeller = false;
-					model.CreatedAt = DateTime.UtcNow;
-					model.UpdatedAt = DateTime.UtcNow;
+					model.CreatedAtUtc = DateTime.UtcNow;
+					model.UpdatedAtUtc = DateTime.UtcNow;
 					await _svc.CreateAsync(model);
 					await ReplaceVoucherProductsAsync(model.Id, selectedProductIds);
 				}
@@ -167,15 +165,13 @@ namespace LaPizzaria.Controllers
 					existing.MinOrderValue = model.MinOrderValue;
 					existing.TargetUserId = model.TargetUserId;
 					existing.MaxUses = model.MaxUses;
-					existing.StartsAt = model.StartsAt;
-					existing.ExpiresAt = model.ExpiresAt;
+					existing.ExpiresAtUtc = model.ExpiresAtUtc;
 					existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
-					existing.TimeStartMinute = model.TimeStartMinute;
-					existing.TimeEndMinute = model.TimeEndMinute;
-					existing.TargetProductId = model.TargetProductId;
+					existing.WindowTimeStartMinute = model.WindowTimeStartMinute;
+					existing.WindowTimeEndMinute = model.WindowTimeEndMinute;
 					existing.IsActive = model.IsActive;
 					existing.UpsaleRequiresSlowSeller = false;
-					existing.UpdatedAt = DateTime.UtcNow;
+					existing.UpdatedAtUtc = DateTime.UtcNow;
 
 					await _svc.UpdateAsync(existing);
 					await ReplaceVoucherProductsAsync(existing.Id, selectedProductIds);
@@ -218,14 +214,11 @@ namespace LaPizzaria.Controllers
 				percent = v.DiscountPercent,
 				amount = v.DiscountAmount,
 				minOrderValue = v.MinOrderValue,
-				targetProductId = v.TargetProductId,
-				targetProductName = v.TargetProduct?.Name,
 				isActive = v.IsActive,
-				startsAt = v.StartsAt,
-				expiresAt = v.ExpiresAt,
+				expiresAt = v.ExpiresAtUtc,
 				validDaysOfWeek = v.ValidDaysOfWeek,
-				timeStartMinute = v.TimeStartMinute,
-				timeEndMinute = v.TimeEndMinute,
+				timeStartMinute = v.WindowTimeStartMinute,
+				timeEndMinute = v.WindowTimeEndMinute,
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
 				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds
@@ -242,8 +235,8 @@ namespace LaPizzaria.Controllers
 			IEnumerable<int>? selectedProductIds = null)
 		{
 			ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
-			ViewBag.WindowTimeStart = windowTimeStart ?? FormatMinute(model.TimeStartMinute);
-			ViewBag.WindowTimeEnd = windowTimeEnd ?? FormatMinute(model.TimeEndMinute);
+			ViewBag.WindowTimeStart = windowTimeStart ?? FormatMinute(model.WindowTimeStartMinute);
+			ViewBag.WindowTimeEnd = windowTimeEnd ?? FormatMinute(model.WindowTimeEndMinute);
 			ViewBag.WeekDaysSelected = weekDays != null
 				? weekDays.Where(x => x >= 0 && x <= 6).ToHashSet()
 				: string.IsNullOrEmpty(model.ValidDaysOfWeek)
@@ -262,11 +255,6 @@ namespace LaPizzaria.Controllers
 						.Where(vp => vp.VoucherId == model.Id)
 						.Select(vp => vp.ProductId)
 						.ToHashSetAsync();
-
-			if (selectedSet.Count == 0 && model.TargetProductId.HasValue)
-			{
-				selectedSet.Add(model.TargetProductId.Value);
-			}
 
 			if (selectedSet.Count == 0 && model.Id != 0 && model.UpsaleRequiresSlowSeller)
 			{

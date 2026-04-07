@@ -23,9 +23,8 @@ namespace LaPizzaria.Services
 		{
 			var now = DateTime.UtcNow;
 			return await _db.Vouchers
-				.Include(v => v.TargetProduct)
-				.Where(v => v.IsActive && (v.ExpiresAt == null || v.ExpiresAt > now) && (v.MaxUses == 0 || v.UsedCount < v.MaxUses))
-				.OrderBy(v => v.ExpiresAt)
+				.Where(v => v.IsActive && (v.ExpiresAtUtc == null || v.ExpiresAtUtc > now) && (v.MaxUses == 0 || v.UsedCount < v.MaxUses))
+				.OrderBy(v => v.ExpiresAtUtc)
 				.ToListAsync();
 		}
 
@@ -68,8 +67,7 @@ namespace LaPizzaria.Services
 		{
 			var localNow = VietnamTime.NormalizeToVietnamLocal(now);
 			if (!v.IsActive) return false;
-			if (v.StartsAt != null && v.StartsAt > localNow) return false;
-			if (v.ExpiresAt != null && v.ExpiresAt <= localNow) return false;
+			if (v.ExpiresAtUtc != null && v.ExpiresAtUtc <= localNow) return false;
 			if (v.MaxUses > 0 && v.UsedCount >= v.MaxUses) return false;
 			if (v.VoucherType == "Percentage" && v.DiscountPercent <= 0) return false;
 			if ((v.VoucherType == "FixedAmount" || v.VoucherType == "FreeShipping") && v.DiscountAmount <= 0) return false;
@@ -78,10 +76,10 @@ namespace LaPizzaria.Services
 
 		public TimeSpan? TimeRemaining(Voucher v, DateTime now)
 		{
-			if (v.ExpiresAt == null) return null;
+			if (v.ExpiresAtUtc == null) return null;
 
 			var localNow = VietnamTime.NormalizeToVietnamLocal(now);
-			var span = v.ExpiresAt.Value - localNow;
+			var span = v.ExpiresAtUtc.Value - localNow;
 			return span <= TimeSpan.Zero ? TimeSpan.Zero : span;
 		}
 
@@ -104,14 +102,14 @@ namespace LaPizzaria.Services
 				}
 			}
 
-			if (v.TimeStartMinute == null || v.TimeEndMinute == null)
+			if (v.WindowTimeStartMinute == null || v.WindowTimeEndMinute == null)
 			{
 				return true;
 			}
 
 			var minuteOfDay = VietnamTime.ToMinuteOfDay(localNow);
-			var start = v.TimeStartMinute.Value;
-			var end = v.TimeEndMinute.Value;
+			var start = v.WindowTimeStartMinute.Value;
+			var end = v.WindowTimeEndMinute.Value;
 
 			return start <= end
 				? minuteOfDay >= start && minuteOfDay <= end
@@ -121,12 +119,6 @@ namespace LaPizzaria.Services
 		public decimal CalculateDiscount(Voucher v, List<OrderDetail> details, decimal subtotal)
 		{
 			if (subtotal <= 0) return 0m;
-
-			if (v.TargetProductId.HasValue &&
-				!details.Any(d => d.ProductId == v.TargetProductId.Value || d.ProductId2 == v.TargetProductId.Value))
-			{
-				return 0m;
-			}
 
 			if (v.VoucherType == "Percentage")
 			{
@@ -158,10 +150,6 @@ namespace LaPizzaria.Services
 			{
 				if (productIds.Count == 0) return false;
 				if (!productIds.Intersect(targetedProductIds).Any()) return false;
-			}
-			else if (v.TargetProductId.HasValue && !productIds.Contains(v.TargetProductId.Value))
-			{
-				return false;
 			}
 
 			if (v.UpsaleRequiresSlowSeller)
