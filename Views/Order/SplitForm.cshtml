@@ -1,0 +1,34 @@
+@model LaPizzaria.Models.Order
+
+<div class="container mt-4">
+    <h3>Tách hóa đơn - Đơn #@Model.Id</h3>
+    <form asp-action="SplitForm" method="post">
+        <input type="hidden" name="orderId" value="@Model.Id" />
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Món</th>
+                    <th>Số lượng hiện tại</th>
+                    <th>Chuyển sang hóa đơn mới</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.OrderDetails)
+                {
+                    <tr>
+                        <td>@d.Product?.Name</td>
+                        <td>@d.Quantity</td>
+                        <td>
+                            <input type="hidden" name="orderDetailId" value="@d.Id" />
+                            <input class="form-control" name="moveQty" value="0" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <button class="btn btn-brand-primary" type="submit">Tách</button>
+        <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+    </form>
+</div>
+
+

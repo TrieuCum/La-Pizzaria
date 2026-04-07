@@ -1,0 +1,36 @@
+@model LaPizzaria.Models.MomoExecuteResponseModel
+@{
+    ViewData["Title"] = "Kết quả thanh toán MoMo";
+    var ok = Model.SignatureValid && Model.IsSuccess;
+}
+
+<div class="container py-4" style="max-width: 640px;">
+    <h1 class="h4 mb-3">Kết quả thanh toán</h1>
+
+    @if (!Model.SignatureValid)
+    {
+        <div class="alert alert-warning">
+            <strong>Chữ ký không hợp lệ.</strong> Không nên tin kết quả này — có thể dữ liệu bị thay đổi hoặc cấu hình SecretKey sai.
+        </div>
+    }
+    else if (Model.IsSuccess)
+    {
+        <div class="alert alert-success">Thanh toán thành công (resultCode = 0).</div>
+    }
+    else
+    {
+        <div class="alert alert-secondary">Giao dịch chưa thành công hoặc đã hủy. <strong>Message:</strong> @(Model.Message ?? "—")</div>
+    }
+
+    <dl class="row small bg-light rounded p-3">
+        <dt class="col-sm-4">orderId</dt><dd class="col-sm-8">@Model.OrderId</dd>
+        <dt class="col-sm-4">requestId</dt><dd class="col-sm-8">@Model.RequestId</dd>
+        <dt class="col-sm-4">amount</dt><dd class="col-sm-8">@Model.Amount.ToString("N0") đ</dd>
+        <dt class="col-sm-4">resultCode</dt><dd class="col-sm-8">@Model.ResultCode</dd>
+        <dt class="col-sm-4">transId</dt><dd class="col-sm-8">@Model.TransId</dd>
+        <dt class="col-sm-4">message</dt><dd class="col-sm-8">@Model.Message</dd>
+        <dt class="col-sm-4">Chữ ký hợp lệ</dt><dd class="col-sm-8">@(Model.SignatureValid ? "Có" : "Không")</dd>
+    </dl>
+
+    <a asp-controller="Payment" asp-action="Index" class="btn btn-outline-primary">Quay lại</a>
+</div>

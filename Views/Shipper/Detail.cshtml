@@ -1,0 +1,441 @@
+@model LaPizzaria.ViewModels.ShipperOrderDetailViewModel
+@{
+    Layout = null;
+    var statusBadge = !string.IsNullOrWhiteSpace(Model.DeliveryStatus)
+        ? Model.DeliveryStatus
+        : (Model.OrderStatus ?? "—");
+    var ds = Model.DeliveryStatus ?? "";
+    var isAssignedDs = string.Equals(ds, "assigned", StringComparison.OrdinalIgnoreCase);
+    var isDeliveringDs = string.Equals(ds, "delivering", StringComparison.OrdinalIgnoreCase);
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shipper - Chi tiết đơn #@Model.OrderId</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Work Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+        .label-caps { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen bg-[#f0eee9]">
+    @await Html.PartialAsync("_ShipperTopNav")
+    <main class="mx-auto grid max-w-6xl gap-5 px-4 py-6 pb-12 md:grid-cols-5 md:gap-6 md:px-8">
+        <!-- Cột trái: chi tiết đơn -->
+        <section class="rounded-2xl bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04] md:col-span-3">
+            <div class="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
+                <div>
+                    <p class="text-xs font-extrabold tracking-wide text-[#c2410c]">MÃ ĐƠN #@Model.OrderId</p>
+                    <h1 class="mt-1 text-2xl font-extrabold text-[#2C3E50]">Chi tiết đơn hàng</h1>
+                    <p class="mt-1 text-sm text-slate-500">@Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+                <span class="shrink-0 rounded-full bg-orange-100 px-4 py-1.5 text-xs font-extrabold uppercase tracking-wide text-orange-800">@statusBadge</span>
+            </div>
+
+            <div class="mb-6 grid gap-4 rounded-xl bg-[#f8fafc] p-4 md:grid-cols-2 md:gap-x-6 md:gap-y-4">
+                <div class="space-y-1">
+                    <p class="label-caps">Khách hàng</p>
+                    <p class="font-semibold text-[#2C3E50]">@Model.CustomerName</p>
+                    <p class="text-sm text-slate-600">@Model.CustomerPhone</p>
+                </div>
+                <div class="space-y-1 md:text-right">
+                    <p class="label-caps md:text-right">Địa chỉ giao</p>
+                    <p class="font-semibold leading-snug text-[#2C3E50]">@Model.DeliveryAddress</p>
+                </div>
+                <div class="space-y-1">
+                    <p class="label-caps">Thanh toán</p>
+                    <p class="font-semibold text-[#2C3E50]">@(string.IsNullOrWhiteSpace(Model.PaymentMethod) ? "Chưa cập nhật" : Model.PaymentMethod)</p>
+                </div>
+                <div class="space-y-1 md:text-right">
+                    <p class="label-caps md:text-right">Ghi chú</p>
+                    <p class="font-semibold text-[#2C3E50]">@(string.IsNullOrWhiteSpace(Model.Note) ? "Không có" : Model.Note)</p>
+                </div>
+            </div>
+
+            <h2 class="mb-3 text-lg font-extrabold text-[#2C3E50]">Danh sách món</h2>
+            <div class="space-y-2">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3">
+                        <div>
+                            <p class="font-semibold text-[#2C3E50]">@item.Quantity x @item.ProductName @(string.IsNullOrWhiteSpace(item.Size) ? "" : $"(Size {item.Size})")</p>
+                            <p class="text-xs text-slate-500">Đơn giá: @item.UnitPrice.ToString("N0")đ</p>
+                        </div>
+                        <p class="text-base font-extrabold text-[#E67E22]">@item.Subtotal.ToString("N0")đ</p>
+                    </div>
+                }
+            </div>
+
+            <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-5">
+                <p class="font-semibold text-slate-500">Tổng tiền</p>
+                <p class="text-2xl font-extrabold text-[#E67E22]">@Model.TotalPrice.ToString("N0")đ</p>
+            </div>
+        </section>
+
+        <!-- Cột phải: bản đồ + vị trí + thao tác -->
+        <section class="flex flex-col gap-5 md:col-span-2">
+            <div class="overflow-hidden rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
+                <div id="shipperLeafletMap" class="h-[260px] w-full"></div>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
+                <div class="mb-3 flex items-center justify-between gap-2">
+                    <p class="text-sm font-extrabold text-[#2C3E50]">Vị trí shipper hiện tại</p>
+                    <span id="gpsState" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500">Chưa bật</span>
+                </div>
+                <div id="gpsError" class="mb-3 hidden rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold leading-snug text-red-700"></div>
+                <p id="gpsCoords" class="font-mono text-sm font-medium text-slate-800">
+                    @if (Model.ShipperLatitude.HasValue && Model.ShipperLongitude.HasValue)
+                    {
+                        @($"{Model.ShipperLatitude.Value:F6}, {Model.ShipperLongitude.Value:F6}")
+                    }
+                    else
+                    {
+                        @:Chưa có dữ liệu vị trí
+                    }
+                </p>
+                <p id="gpsUpdatedAt" class="mt-2 text-xs text-slate-500">
+                    @(Model.ShipperLocationUpdatedAt.HasValue ? $"Cập nhật: {Model.ShipperLocationUpdatedAt.Value.ToLocalTime().ToString("HH:mm:ss dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))}" : "")
+                </p>
+                <p id="gpsClientIp" class="mt-1 text-xs text-slate-500">
+                    @(string.IsNullOrWhiteSpace(Model.ShipperLocationIp) ? "" : $"IP thiết bị (mạng): {Model.ShipperLocationIp}")
+                </p>
+                <p class="mt-3 text-[11px] leading-relaxed text-slate-400">Tọa độ lấy từ GPS của trình duyệt; IP dùng để nhận diện kết nối từng máy (không thay thế GPS).</p>
+                <a id="gpsOpenMap"
+                   href="#"
+                   target="_blank" rel="noopener"
+                   class="mt-4 flex w-full items-center justify-center rounded-xl border-2 border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 @(Model.ShipperLatitude.HasValue && Model.ShipperLongitude.HasValue ? "" : "pointer-events-none opacity-40")">
+                    Xem vị trí trên bản đồ
+                </a>
+                @if (isAssignedDs || isDeliveringDs)
+                {
+                    <button id="btnStartGps" type="button" class="mt-3 w-full rounded-xl bg-[#2563EB] py-3.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-600">
+                        Bật chia sẻ vị trí
+                    </button>
+                }
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
+                @if (TempData["error"] != null)
+                {
+                    <div class="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700">@TempData["error"]</div>
+                }
+                @if (TempData["success"] != null)
+                {
+                    <div class="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-800">@TempData["success"]</div>
+                }
+                <a asp-controller="Shipper" asp-action="Index" class="mb-3 flex w-full items-center justify-center rounded-xl border-2 border-slate-200 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Quay về trang chủ</a>
+
+                @if (Model.OrderStatus is "Ready" or "Sẵn sàng")
+                {
+                    <form asp-controller="Shipper" asp-action="Accept" asp-route-id="@Model.OrderId" method="post" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="w-full rounded-xl bg-[#E67E22] px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-orange-500/20 transition hover:opacity-95">Nhận đơn</button>
+                    </form>
+                }
+
+                @if (isAssignedDs)
+                {
+                    <form id="formStartDelivery" asp-controller="Shipper" asp-action="StartDelivery" asp-route-id="@Model.OrderId" method="post" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="latitude" value="" />
+                        <input type="hidden" name="longitude" value="" />
+                        <button type="button" id="btnStartDelivery" class="w-full rounded-xl bg-[#1D4ED8] px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700">Bắt đầu giao hàng</button>
+                    </form>
+                    <p class="mb-2 text-xs text-slate-500">Cần bật định vị và cho phép trình duyệt truy cập vị trí để bắt đầu giao.</p>
+                }
+
+                @if (isDeliveringDs)
+                {
+                    <form asp-controller="Shipper" asp-action="Complete" asp-route-id="@Model.OrderId" method="post" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="w-full rounded-xl bg-[#27AE60] px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-600/25 transition hover:bg-[#219150]">Xác nhận đã giao thành công</button>
+                    </form>
+                }
+
+                @if (isAssignedDs || isDeliveringDs)
+                {
+                    <form asp-controller="Shipper" asp-action="Fail" asp-route-id="@Model.OrderId" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="w-full rounded-xl bg-rose-50 px-4 py-3.5 text-sm font-bold text-rose-600 ring-1 ring-rose-100 transition hover:bg-rose-100">Giao thất bại</button>
+                    </form>
+                }
+            </div>
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function () {
+            const orderId = @Model.OrderId;
+            const isAssigned = '@(isAssignedDs ? "1" : "0")' === '1';
+            const isDelivering = '@(isDeliveringDs ? "1" : "0")' === '1';
+            const canTrack = isAssigned || isDelivering;
+            const destinationLat = @(Model.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null");
+            const destinationLng = @(Model.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null");
+            const fixedShipperPos = [10.937570107102053, 106.8347959491137]; // 193 Đỗ Văn Thi, Trấn Biên, Đồng Nai
+            const mapEl = document.getElementById('shipperLeafletMap');
+            const stateEl = document.getElementById('gpsState');
+            const coordsEl = document.getElementById('gpsCoords');
+            const updatedEl = document.getElementById('gpsUpdatedAt');
+            const openMapEl = document.getElementById('gpsOpenMap');
+            const ipEl = document.getElementById('gpsClientIp');
+            const errBox = document.getElementById('gpsError');
+            const btn = document.getElementById('btnStartGps');
+            const fetchOpts = { credentials: 'same-origin' };
+            const hasDestination = Number.isFinite(destinationLat) && Number.isFinite(destinationLng);
+            const shipperDefault = fixedShipperPos;
+            const map = mapEl ? L.map(mapEl).setView(shipperDefault, 13) : null;
+            if (map) {
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+            }
+            let shipperMarker = null;
+            let customerMarker = null;
+            let routeLine = null;
+            let simulationTimer = null;
+
+            function haversineMeters(a, b) {
+                const toRad = (v) => (v * Math.PI) / 180;
+                const R = 6371000;
+                const dLat = toRad(b[0] - a[0]);
+                const dLng = toRad(b[1] - a[1]);
+                const lat1 = toRad(a[0]);
+                const lat2 = toRad(b[0]);
+                const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+                return 2 * R * Math.asin(Math.sqrt(h));
+            }
+
+            function decodePolyline(encoded) {
+                const points = [];
+                let index = 0;
+                let lat = 0;
+                let lng = 0;
+                while (index < encoded.length) {
+                    let shift = 0;
+                    let result = 0;
+                    let byte;
+                    do {
+                        byte = encoded.charCodeAt(index++) - 63;
+                        result |= (byte & 0x1f) << shift;
+                        shift += 5;
+                    } while (byte >= 0x20);
+                    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+                    shift = 0;
+                    result = 0;
+                    do {
+                        byte = encoded.charCodeAt(index++) - 63;
+                        result |= (byte & 0x1f) << shift;
+                        shift += 5;
+                    } while (byte >= 0x20);
+                    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+                    points.push([lat / 1e5, lng / 1e5]);
+                }
+                return points;
+            }
+
+            function sampleRouteByDistance(routePoints, stepMeters) {
+                if (!routePoints || routePoints.length < 2) return routePoints || [];
+                const sampled = [routePoints[0]];
+                let carried = 0;
+                for (let i = 1; i < routePoints.length; i++) {
+                    let prev = routePoints[i - 1];
+                    const curr = routePoints[i];
+                    let segmentLeft = haversineMeters(prev, curr);
+                    while (carried + segmentLeft >= stepMeters) {
+                        const need = stepMeters - carried;
+                        const ratio = need / segmentLeft;
+                        const next = [
+                            prev[0] + (curr[0] - prev[0]) * ratio,
+                            prev[1] + (curr[1] - prev[1]) * ratio
+                        ];
+                        sampled.push(next);
+                        prev = next;
+                        segmentLeft = haversineMeters(prev, curr);
+                        carried = 0;
+                    }
+                    carried += segmentLeft;
+                }
+                sampled.push(routePoints[routePoints.length - 1]);
+                return sampled;
+            }
+
+            async function fetchOsrmRoute(fromPos, toPos) {
+                const url = `https://router.project-osrm.org/route/v1/driving/${fromPos[1]},${fromPos[0]};${toPos[1]},${toPos[0]}?overview=full&geometries=polyline`;
+                const response = await fetch(url, { method: 'GET' });
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (!data || !data.routes || !data.routes.length || !data.routes[0].geometry) return null;
+                return decodePolyline(data.routes[0].geometry);
+            }
+
+            function renderMap(currentPos, routePoints) {
+                if (!map || !hasDestination) return;
+                const destination = [destinationLat, destinationLng];
+                const path = routePoints && routePoints.length > 1 ? routePoints : [currentPos, destination];
+                if (!routeLine) {
+                    routeLine = L.polyline(path, { color: '#2563eb', weight: 4, opacity: 0.9 }).addTo(map);
+                } else {
+                    routeLine.setLatLngs(path);
+                }
+                if (!shipperMarker) {
+                    shipperMarker = L.marker(currentPos).addTo(map).bindPopup('Shipper hiện tại');
+                } else {
+                    shipperMarker.setLatLng(currentPos);
+                }
+                if (!customerMarker) {
+                    customerMarker = L.marker(destination).addTo(map).bindPopup('Khách hàng');
+                }
+                map.fitBounds(L.latLngBounds(path), { padding: [20, 20] });
+            }
+
+            function showGpsError(msg) {
+                if (!errBox) return;
+                errBox.textContent = msg || '';
+                errBox.classList.toggle('hidden', !msg);
+            }
+
+            function setState(text, isError) {
+                stateEl.textContent = text;
+                stateEl.className = 'rounded-full px-2.5 py-1 text-[11px] font-bold ' +
+                    (isError ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600');
+            }
+
+            function renderCoords(lat, lng, updatedAtUtc, clientIp) {
+                const latText = Number(lat).toFixed(6);
+                const lngText = Number(lng).toFixed(6);
+                coordsEl.textContent = latText + ', ' + lngText;
+                if (updatedAtUtc) {
+                    const local = new Date(updatedAtUtc);
+                    updatedEl.textContent = 'Cập nhật: ' + local.toLocaleString('vi-VN');
+                }
+                if (ipEl) {
+                    ipEl.textContent = clientIp ? ('IP thiết bị (mạng): ' + clientIp) : '';
+                }
+                openMapEl.href = '#';
+                openMapEl.classList.remove('pointer-events-none', 'opacity-40');
+            }
+
+            async function pushLocation(latitude, longitude) {
+                const res = await fetch('/api/shipper/orders/' + orderId + '/location', Object.assign({}, fetchOpts, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: latitude, longitude: longitude })
+                }));
+                const data = await res.json().catch(function () { return {}; });
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Không thể cập nhật vị trí.');
+                }
+                renderCoords(data.latitude, data.longitude, data.updatedAtUtc, data.clientIp);
+                return [Number(data.latitude), Number(data.longitude)];
+            }
+
+            async function fetchLatest() {
+                const res = await fetch('/api/shipper/orders/' + orderId + '/location', fetchOpts);
+                const data = await res.json().catch(function () { return {}; });
+                if (res.ok && data.success && data.latitude != null && data.longitude != null) {
+                    renderCoords(data.latitude, data.longitude, data.updatedAtUtc, data.clientIp);
+                    return [Number(data.latitude), Number(data.longitude)];
+                }
+                return null;
+            }
+
+            async function startSimulationIfDelivering() {
+                if (!isDelivering || !hasDestination) return;
+                let current = await fetchLatest();
+                if (!current) current = shipperDefault;
+                let route = await fetchOsrmRoute(current, [destinationLat, destinationLng]);
+                if (!route || route.length < 2) route = [current, [destinationLat, destinationLng]];
+                renderMap(current, route);
+                const points = sampleRouteByDistance(route, 75);
+                let idx = 0;
+
+                simulationTimer = setInterval(async function () {
+                    if (idx >= points.length - 1) {
+                        clearInterval(simulationTimer);
+                        setState('Đã tới nơi', false);
+                        return;
+                    }
+                    const stepMeters = 50 + Math.random() * 50;
+                    let nextIdx = idx + 1;
+                    while (nextIdx < points.length - 1 && haversineMeters(points[idx], points[nextIdx]) < stepMeters) {
+                        nextIdx++;
+                    }
+                    idx = nextIdx;
+                    const nextPos = points[idx];
+                    try {
+                        const stored = await pushLocation(nextPos[0], nextPos[1]);
+                        renderMap(stored, [stored, [destinationLat, destinationLng]]);
+                        setState('Đang gửi định kỳ', false);
+                    } catch (e) {
+                        showGpsError(e.message || 'Không thể cập nhật vị trí.');
+                        setState('Lỗi cập nhật', true);
+                    }
+                }, 5000);
+            }
+
+            if (!canTrack) {
+                fetchLatest();
+                return;
+            }
+
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    setState('Đang lấy vị trí…', false);
+                    showGpsError('');
+                    pushLocation(fixedShipperPos[0], fixedShipperPos[1])
+                        .then(function (stored) {
+                            if (hasDestination) {
+                                renderMap(stored, [stored, [destinationLat, destinationLng]]);
+                            }
+                            setState('Đã bật chia sẻ', false);
+                        })
+                        .catch(function (e) {
+                            showGpsError(e.message || 'Không thể cập nhật vị trí.');
+                            setState('Lỗi cập nhật', true);
+                        });
+                });
+            }
+
+            fetchLatest().then(function (latest) {
+                if (latest && hasDestination) {
+                    renderMap(latest, [latest, [destinationLat, destinationLng]]);
+                } else if (hasDestination) {
+                    renderMap(shipperDefault, [shipperDefault, [destinationLat, destinationLng]]);
+                }
+            });
+            startSimulationIfDelivering();
+            window.addEventListener('beforeunload', function () {
+                if (simulationTimer) clearInterval(simulationTimer);
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            var form = document.getElementById('formStartDelivery');
+            var btn = document.getElementById('btnStartDelivery');
+            if (!form || !btn) return;
+            var fixedLat = '10.937570107102053';
+            var fixedLng = '106.8347959491137';
+            btn.addEventListener('click', function () {
+                btn.disabled = true;
+                var label = btn.textContent;
+                btn.textContent = 'Đang bắt đầu giao hàng...';
+                form.querySelector('[name="latitude"]').value = fixedLat;
+                form.querySelector('[name="longitude"]').value = fixedLng;
+                form.submit();
+            });
+        })();
+    </script>
+</body>
+</html>

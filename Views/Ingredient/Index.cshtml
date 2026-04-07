@@ -1,0 +1,607 @@
+@model IEnumerable<LaPizzaria.Models.Ingredient>
+@using System.Linq
+@{
+    ViewData["Title"] = "Quản lý Nguyên liệu";
+    Layout = "_Layout";
+    var roots = ViewBag.CategoryRoots as List<LaPizzaria.Models.IngredientCategory> ?? new List<LaPizzaria.Models.IngredientCategory>();
+    var allCategories = ViewBag.AllCategories as List<LaPizzaria.Models.IngredientCategory> ?? new List<LaPizzaria.Models.IngredientCategory>();
+    int? selCat = ViewBag.SelectedCategoryId as int?;
+    var qStr = ViewBag.Q as string ?? "";
+}
+
+<style>
+    * { box-sizing: border-box; }
+    
+    .ingredient-management-wrapper {
+        width: 100%;
+        min-height: 100vh;
+        background: rgba(248,247,245,1);
+        padding: 40px;
+    }
+    
+    .ingredient-content {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    /* Header */
+    .ingredient-header {
+        margin-bottom: 40px;
+    }
+    
+    .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    
+    .title-section h1 {
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 900;
+        font-size: 30px;
+        color: rgba(24,20,17,1);
+        margin: 0;
+    }
+    
+    .btn-add-ingredient {
+        background: rgba(244,140,37,1);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(244,140,37,0.2);
+        transition: all 0.2s;
+    }
+    
+    .btn-add-ingredient:hover {
+        background: rgba(230,122,21,1);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(244,140,37,0.3);
+        color: white;
+    }
+    
+    /* Filter Tabs */
+    .filter-tabs {
+        background: white;
+        border-radius: 12px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    
+    .search-wrapper {
+        flex-grow: 1;
+        background: rgba(245,242,240,1);
+        border-radius: 8px;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .search-wrapper i {
+        color: rgba(138,117,96,1);
+        font-size: 18px;
+    }
+    
+    .search-wrapper input {
+        border: none;
+        background: transparent;
+        width: 100%;
+        outline: none;
+        font-family: 'Work Sans', sans-serif;
+        font-size: 14px;
+        color: rgba(24,20,17,1);
+    }
+    
+    .search-wrapper input::placeholder {
+        color: rgba(117,117,117,1);
+    }
+    
+    .tab-buttons {
+        display: flex;
+        gap: 4px;
+        background: rgba(249,250,251,1);
+        border-radius: 8px;
+        padding: 4px;
+    }
+    
+    .tab-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: rgba(107,114,128,1);
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .tab-btn.active {
+        background: rgba(24,20,17,1);
+        color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Table Card */
+    .table-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    
+    .ingredient-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .ingredient-table thead {
+        background: rgba(245,242,240,1);
+    }
+    
+    .ingredient-table th {
+        padding: 16px 24px;
+        text-align: left;
+        color: rgba(138,117,96,1);
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+    }
+    
+    .ingredient-table tbody tr {
+        border-bottom: 1px solid rgba(245,242,240,1);
+        transition: all 0.2s;
+    }
+    
+    .ingredient-table tbody tr:last-child {
+        border-bottom: none;
+    }
+    
+    .ingredient-table tbody tr:hover {
+        background: rgba(248,247,245,0.5);
+    }
+    
+    .ingredient-table td {
+        padding: 17px 24px;
+        vertical-align: middle;
+    }
+    
+    /* Ingredient Cell */
+    .ingredient-cell {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .ingredient-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(243,244,246,1);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+    
+    .ingredient-info {
+        flex: 1;
+    }
+    
+    .ingredient-name {
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        color: rgba(24,20,17,1);
+        margin: 0 0 2px 0;
+    }
+    
+    .ingredient-id {
+        font-family: 'Work Sans', sans-serif;
+        font-size: 12px;
+        color: rgba(138,117,96,1);
+        margin: 0;
+    }
+    
+    .unit-text {
+        font-family: 'Work Sans', sans-serif;
+        font-size: 14px;
+        color: rgba(24,20,17,1);
+    }
+    
+    .stock-number {
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        color: rgba(24,20,17,1);
+    }
+    
+    /* Status Badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 10px;
+        border-radius: 9999px;
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 600;
+        font-size: 12px;
+    }
+    
+    .status-badge.safe {
+        background: rgba(220,252,231,1);
+        color: rgba(22,101,52,1);
+    }
+    
+    .status-badge.warning {
+        background: rgba(255,237,213,1);
+        color: rgba(154,52,18,1);
+    }
+    
+    .status-badge.danger {
+        background: rgba(254,226,226,1);
+        color: rgba(153,27,27,1);
+    }
+    
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+    
+    .status-dot.safe {
+        background: rgba(34,197,94,1);
+    }
+    
+    .status-dot.warning {
+        background: rgba(249,115,22,1);
+    }
+    
+    .status-dot.danger {
+        background: rgba(239,68,68,1);
+    }
+    
+    /* Action Buttons */
+    .action-icon {
+        width: 15px;
+        height: 15px;
+        color: rgba(138,117,96,1);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .action-icon:hover {
+        color: rgba(244,140,37,1);
+        transform: scale(1.2);
+    }
+    
+    /* Pagination */
+    .pagination-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        background: rgba(249,250,251,1);
+        border-top: 1px solid rgba(245,242,240,1);
+        color: rgba(107,114,128,1);
+        font-family: 'Work Sans', sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .pagination-buttons {
+        display: flex;
+        gap: 12px;
+    }
+    
+    .page-btn {
+        min-width: 31px;
+        height: 29px;
+        border-radius: 6px;
+        border: none;
+        background: white;
+        color: rgba(138,117,96,1);
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .page-btn:hover {
+        background: rgba(245,242,240,1);
+    }
+    
+    .page-btn.active {
+        background: rgba(244,140,37,1);
+        color: white;
+    }
+</style>
+
+<div class="ingredient-management-wrapper">
+    <div class="ingredient-content">
+        <!-- Header -->
+        <div class="ingredient-header">
+            <div class="header-row">
+                <div class="title-section">
+                    <h1>Quản lý Nguyên liệu</h1>
+                </div>
+                <a asp-action="Upsert" class="btn-add-ingredient">
+                    <i class="bi bi-plus-lg"></i>
+                    Thêm nguyên liệu mới
+                </a>
+            </div>
+        </div>
+
+        @if (TempData["success"] != null)
+        {
+            <div class="alert alert-success py-2 mb-3">@TempData["success"]</div>
+        }
+        @if (TempData["error"] != null)
+        {
+            <div class="alert alert-danger py-2 mb-3">@TempData["error"]</div>
+        }
+
+        <div class="table-card mb-3 p-3" style="background:white;border-radius:12px;">
+            <form asp-action="AddCategory" method="post" class="row g-2 align-items-end">
+                @Html.AntiForgeryToken()
+                <div class="col-md-4">
+                    <label class="small fw-bold d-block text-muted">Thêm nhóm (Nấm, Bò, Rau…)</label>
+                    <input name="name" class="form-control form-control-sm" placeholder="Tên nhóm" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold d-block text-muted">Nhóm cha (tuỳ chọn)</label>
+                    <select name="parentId" class="form-select form-select-sm">
+                        <option value="">— Không —</option>
+                        @foreach (var r in roots)
+                        {
+                            <option value="@r.Id">@r.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-dark w-100">Thêm nhóm</button>
+                </div>
+            </form>
+            @if (allCategories.Count > 0)
+            {
+                <div class="mt-3 pt-3 border-top d-flex flex-wrap align-items-center gap-2">
+                    <span class="small fw-bold text-muted me-1">Nhóm hiện có:</span>
+                    @foreach (var cat in allCategories)
+                    {
+                        <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-1">
+                            <span>@cat.Name</span>
+                            <form asp-action="DeleteCategory" method="post" class="d-inline m-0 p-0" onsubmit="return confirm('Xóa nhóm này?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@cat.Id" />
+                                <button type="submit" class="btn btn-link text-danger p-0 lh-1 border-0 align-baseline" style="font-size:1rem;line-height:1;text-decoration:none;" title="Xóa nhóm">×</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="filter-tabs mb-3" style="flex-wrap:wrap;">
+            <a href="@Url.Action("Index", new { categoryId = (int?)null, q = qStr })" class="tab-btn @(selCat == null ? "active" : "")">Tất cả</a>
+            @foreach (var root in roots)
+            {
+                <a href="@Url.Action("Index", new { categoryId = root.Id, q = qStr })" class="tab-btn @(selCat == root.Id ? "active" : "")">@root.Name</a>
+            }
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <div class="search-wrapper">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm theo tên nguyên liệu...">
+            </div>
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-filter="all">Tất cả</button>
+                <button class="tab-btn" data-filter="safe">An toàn</button>
+                <button class="tab-btn" data-filter="warning">Trung bình</button>
+                <button class="tab-btn" data-filter="danger">Sắp hết</button>
+            </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card">
+            <table class="ingredient-table">
+                <thead>
+                    <tr>
+                        <th>TÊN NGUYÊN LIỆU</th>
+                        <th>NHÓM</th>
+                        <th>ĐƠN VỊ</th>
+                        <th>GIÁ / ĐƠN VỊ (₫)</th>
+                        <th>TỒN KHO</th>
+                        <th>TRẠNG THÁI</th>
+                        <th>HÀNH ĐỘNG</th>
+                    </tr>
+                </thead>
+                <tbody id="ingredientTableBody">
+                @foreach (var ing in Model)
+                {
+                    var stockStatus = ing.StockQuantity > 50 ? "safe" :
+                                      ing.StockQuantity > 20 ? "warning" : "danger";
+                    var statusText = ing.StockQuantity <= 0 ? "Đã hết" :
+                                     ing.StockQuantity <= 20 ? "Sắp hết" :
+                                     ing.StockQuantity <= 50 ? "Trung bình" : "An toàn";
+                    
+                    <tr class="ingredient-row" data-name="@ing.Name.ToLower()" data-status="@stockStatus">
+                        <td>
+                            <div class="ingredient-cell">
+                                <div class="ingredient-icon">🥫</div>
+                                <div class="ingredient-info">
+                                    <p class="ingredient-name">@ing.Name</p>
+                                    <p class="ingredient-id">ID: ING-@ing.Id.ToString("D3") @(ing.IsSecondary ? "· phụ" : "")</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="unit-text small">@(ing.Category?.Name ?? "—")</span></td>
+                        <td>
+                            <span class="unit-text">@ing.Unit</span>
+                        </td>
+                        <td>
+                            <span class="stock-number">@ing.UnitPrice.ToString("N2")</span>
+                        </td>
+                        <td>
+                            <span class="stock-number">@ing.StockQuantity.ToString("N1")</span>
+                        </td>
+                        <td>
+                            <span class="status-badge @stockStatus">
+                                <span class="status-dot @stockStatus"></span>
+                                @statusText
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 12px;">
+                                <a asp-action="Upsert" asp-route-id="@ing.Id" style="text-decoration: none;">
+                                    <i class="bi bi-pencil action-icon" style="font-size: 18px;"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@ing.Id" 
+                                   onclick="return confirm('Bạn có chắc muốn xoá nguyên liệu này?')" 
+                                   style="text-decoration: none;">
+                                    <i class="bi bi-trash action-icon" style="font-size: 18px;"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="pagination-footer">
+                <div>Hiển thị <span id="visibleCount">@Model.Count()</span> trong tổng số <span id="totalCount">@Model.Count()</span> nguyên liệu</div>
+                <div class="pagination-buttons"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const rows = document.querySelectorAll('.ingredient-row');
+    const totalCount = document.getElementById('totalCount');
+    const visibleCount = document.getElementById('visibleCount');
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const paginationContainer = document.querySelector('.pagination-buttons');
+    
+    let currentFilter = 'all';
+    let currentPage = 1;
+    const pageSize = 8;
+    let lastFilteredRows = [];
+    
+    function updateTable() {
+        const filtered = [];
+        const searchTerm = searchInput.value.toLowerCase();
+
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const status = row.getAttribute('data-status');
+            
+            const matchesSearch = name.includes(searchTerm);
+            const matchesFilter = currentFilter === 'all' || 
+                                 (currentFilter === 'safe' && status === 'safe') ||
+                                 (currentFilter === 'warning' && status === 'warning') ||
+                                 (currentFilter === 'danger' && status === 'danger');
+            
+            if (matchesSearch && matchesFilter) {
+                filtered.push(row);
+            }
+        });
+
+        lastFilteredRows = filtered;
+        applyPagination();
+    }
+    
+    function buildPagination(totalVisible) {
+        const totalPages = Math.max(1, Math.ceil(totalVisible / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        paginationContainer.innerHTML = '';
+
+        const createBtn = (text, page, isActive = false) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'page-btn' + (isActive ? ' active' : '');
+            btn.textContent = text;
+            btn.dataset.page = page;
+            btn.addEventListener('click', handlePageClick);
+            paginationContainer.appendChild(btn);
+        };
+
+        createBtn('Trước', 'prev', false);
+        for (let i = 1; i <= totalPages; i++) {
+            createBtn(i.toString(), i.toString(), i === currentPage);
+        }
+        createBtn('Sau', 'next', false);
+    }
+
+    function handlePageClick(e) {
+        const page = e.target.dataset.page;
+        const totalVisible = lastFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalVisible / pageSize));
+
+        if (page === 'prev') {
+            if (currentPage > 1) currentPage--;
+        } else if (page === 'next') {
+            if (currentPage < totalPages) currentPage++;
+        } else {
+            currentPage = parseInt(page);
+        }
+
+        applyPagination();
+    }
+
+    function applyPagination() {
+        const totalVisible = lastFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalVisible / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        rows.forEach(r => r.style.display = 'none');
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        lastFilteredRows.forEach((row, index) => {
+            if (index >= start && index < end) {
+                row.style.display = '';
+            }
+        });
+
+        visibleCount.textContent = totalVisible;
+        buildPagination(totalVisible);
+    }
+
+    searchInput.addEventListener('input', updateTable);
+    
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.getAttribute('data-filter');
+            currentPage = 1;
+            updateTable();
+        });
+    });
+
+    // Khởi tạo lần đầu
+    lastFilteredRows = Array.from(rows);
+    applyPagination();
+</script>

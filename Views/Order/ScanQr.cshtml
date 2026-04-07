@@ -1,0 +1,510 @@
+@{
+    ViewData["Title"] = "Đặt món bằng QR";
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --brand-orange: #ff7a00;
+        --brand-dark: #0f172a;
+        --brand-gray: #64748b;
+        --bg-main: #f8fafc;
+    }
+
+    body {
+        background-color: var(--bg-main);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .cat-item {
+        border: none;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        transition: all 0.2s ease;
+        padding: 10px 15px;
+        color: var(--brand-gray);
+        font-weight: 500;
+        text-decoration: none;
+        display: block;
+    }
+
+    .cat-item.active, .cat-item:hover {
+        background-color: #fff1e6;
+        color: var(--brand-orange);
+        font-weight: 600;
+    }
+
+    .menu-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.2s;
+        cursor: pointer;
+        background: white;
+    }
+
+    .menu-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .menu-card .img-wrap {
+        position: relative;
+        padding-top: 100%;
+        background: #f1f5f9;
+    }
+
+    .menu-card .img-wrap img {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+    }
+
+    .menu-card .price {
+        color: var(--brand-orange);
+        font-weight: 700;
+    }
+
+    .voucher-input-group {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .voucher-field {
+        padding-left: 40px !important;
+    }
+
+    .voucher-icon-abs {
+        position: absolute;
+        left: 12px;
+        color: var(--brand-orange);
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    .voucher-badge {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 4px;
+    }
+
+    .voucher-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+    }
+
+    .voucher-item.ineligible {
+        opacity: 0.6;
+        background: #f8fafc;
+    }
+
+    .voucher-item:hover:not(.ineligible) {
+        border-color: var(--brand-orange);
+        background: #fffafa;
+    }
+
+    .voucher-condition-text {
+        font-size: 11px;
+        color: var(--brand-gray);
+        margin-top: 8px;
+        display: none;
+        padding-top: 8px;
+        border-top: 1px dashed #eee;
+    }
+    .bg-brand-orange-light { background-color: #fff1e6; }
+    .extra-small { font-size: 0.75rem; }
+
+    .btn-brand-primary {
+        background-color: var(--brand-orange);
+        color: white;
+        border: none;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 10px 20px;
+    }
+
+    .btn-brand-primary:hover {
+        background-color: #e66e00;
+        color: white;
+    }
+
+    #cart-sticky {
+        position: sticky;
+        top: 20px;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold m-0"><i class="bi bi-qr-code-scan text-brand-orange me-2"></i> @ViewData["Title"]</h3>
+        <div class="d-flex gap-2">
+            <input id="tableCode" class="form-control form-control-sm" placeholder="Mã bàn (VD: T01)" style="width: 120px;" />
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#configPanel">
+                <i class="bi bi-gear"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="collapse mb-4" id="configPanel">
+        <div class="card card-body bg-light border-0">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Địa chỉ máy chủ (IP LAN)</label>
+                    <input id="serverBase" class="form-control form-control-sm" placeholder="http://192.168.1.10:5081" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Chia sẻ QR bàn</label>
+                    <div id="qrShare" class="bg-white p-2 rounded d-inline-block border"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Sidebar Category -->
+        <div class="col-lg-2">
+            <div class="list-group list-group-flush border-0 bg-transparent" id="catList">
+                <a href="#" class="cat-item active" data-cat="All">Tất cả món</a>
+                <a href="#" class="cat-item" data-cat="Pizza">Pizza</a>
+                <a href="#" class="cat-item" data-cat="Đồ uống">Đồ uống</a>
+                <a href="#" class="cat-item" data-cat="Món phụ">Món phụ</a>
+                <a href="#" class="cat-item" data-cat="Combo">Combo</a>
+            </div>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="col-lg-6">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="small text-muted fw-bold" id="menuTitle">TẤT CẢ MÓN</div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small text-muted">SL:</span>
+                    <input id="qtyInput" type="number" class="form-control form-control-sm" min="1" value="1" style="width: 60px;" />
+                </div>
+            </div>
+            <div id="menuGrid" class="row row-cols-2 row-cols-md-3 g-3"></div>
+        </div>
+
+        <!-- Cart Section -->
+        <div class="col-lg-4">
+            <div id="cart-sticky">
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-3">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="fw-bold m-0"><i class="bi bi-cart3 text-brand-orange me-2"></i> Đơn hàng của bạn</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul id="cart" class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Items here -->
+                            <li class="list-group-item text-center py-4 text-muted small">Chưa có món nào</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-0 pt-3">
+                        <!-- Voucher Input -->
+                        <div id="globalAppliedVouchersPlaceholder" class="mb-3 d-flex flex-wrap gap-2"></div>
+
+                        <div class="d-flex justify-content-between mb-1 small">
+                            <span class="text-muted">Tạm tính</span>
+                            <span id="subtotalText" class="fw-bold">0đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1 small text-success">
+                            <span class="text-muted">Giảm giá</span>
+                            <span id="discountText" class="fw-bold">- 0đ</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-bold">Tổng cộng</span>
+                            <span id="totalText" class="fw-bold fs-5 text-brand-orange">0đ</span>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button id="btnPreview" class="btn btn-outline-secondary w-100 fw-bold small">Tạm tính</button>
+                            </div>
+                            <div class="col-6">
+                                <button id="btnSend" class="btn btn-brand-primary w-100 fw-bold small">Gửi đơn</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="result-msg" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Global modal in _Layout.cshtml -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    // Global State
+    window.__cart = [];
+    window.__menuGroups = [];
+    window.__vouchers = []; // Initialize global vouchers array
+
+    const host = window.location.origin;
+
+    // --- Helpers ---
+    function formatCurrency(val) {
+        return (val || 0).toLocaleString() + 'đ';
+    }
+
+    function getSubtotal() {
+        return window.__cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+
+    // --- Data Loading ---
+    async function loadProducts() {
+        try {
+            const res = await fetch('/api/menu');
+            window.__menuGroups = await res.json();
+            renderMenu('All');
+        } catch (e) {
+            console.error('Menu load failed', e);
+        }
+    }
+
+    async function loadVouchers() {
+        try {
+            const res = await fetch('/api/vouchers');
+            window.__vouchers = await res.json();
+        } catch (e) {
+            console.error('Voucher load failed', e);
+        }
+    }
+
+    // --- Rendering ---
+    function renderMenu(cat) {
+        const grid = document.getElementById('menuGrid');
+        grid.innerHTML = '';
+        document.getElementById('menuTitle').textContent = cat.toUpperCase();
+        
+        let pick = [];
+        window.__menuGroups.forEach(g => {
+            const key = (g.key || '').toLowerCase();
+            const target = cat.toLowerCase();
+            if (target === 'all' || key.includes(target) || (cat === 'Combo' && g.type === 'combo')) {
+                g.items.forEach(it => pick.push({ ...it, type: g.type }));
+            }
+        });
+
+        pick.forEach(it => {
+            const div = document.createElement('div');
+            div.className = 'col';
+            div.innerHTML = `
+                <div class="menu-card h-100 shadow-sm border-0">
+                    <div class="product-img-wrap rounded-4 overflow-hidden mb-3">
+                        <img src="${window.sanitizeImageUrl(it.imageUrl)}" class="w-100 h-100 object-fit-cover transition-all" alt="${it.name}">
+                    </div>
+                    <div class="p-3">
+                        <div class="small fw-bold mb-1">${it.name}</div>
+                        <div class="price small">${formatCurrency(it.price)}</div>
+                    </div>
+                </div>
+            `;
+            div.querySelector('.menu-card').onclick = () => addToCart(it);
+            grid.appendChild(div);
+        });
+    }
+
+    function addToCart(it) {
+        const qty = parseInt(document.getElementById('qtyInput').value, 10) || 1;
+        const price = it.price || 0;
+        const key = it.type === 'combo' ? (it.name + ' (Combo)') : it.name;
+        const pid = it.type === 'combo' ? 0 : it.id;
+
+        const existing = window.__cart.find(x => (pid > 0 && x.productId === pid) || (pid === 0 && x.name === key));
+        if (existing) {
+            existing.quantity += qty;
+        } else {
+            window.__cart.push({ productId: pid, quantity: qty, name: key, price: price });
+        }
+        renderCart();
+        updateVoucherUI(); // Re-check accessibility
+    }
+
+    function renderCart() {
+        const ul = document.getElementById('cart');
+        ul.innerHTML = '';
+        if (window.__cart.length === 0) {
+            ul.innerHTML = '<li class="list-group-item text-center py-4 text-muted small">Chưa có món nào</li>';
+            updateTotals(0, 0, 0);
+            return;
+        }
+
+        window.__cart.forEach((it, idx) => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item border-0 px-3 py-2 d-flex justify-content-between align-items-center small';
+            li.innerHTML = `
+                <div>
+                    <span class="fw-bold">${it.name}</span> <span class="text-muted">x${it.quantity}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span>${formatCurrency(it.price * it.quantity)}</span>
+                    <i class="bi bi-x-circle text-danger cursor-pointer" onclick="removeFromCart(${idx})"></i>
+                </div>
+            `;
+            ul.appendChild(li);
+        });
+        
+        autoPreview();
+    }
+
+    function removeFromCart(idx) {
+        window.__cart.splice(idx, 1);
+        renderCart();
+    }
+
+    function updateTotals(sub, disc, total) {
+        document.getElementById('subtotalText').textContent = formatCurrency(sub);
+        document.getElementById('discountText').textContent = '- ' + formatCurrency(disc);
+        document.getElementById('totalText').textContent = formatCurrency(total);
+    }
+
+    // --- Preview & Send ---
+    async function previewOrder() {
+        const tableCode = document.getElementById('tableCode').value;
+        const items = window.__cart.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.price }));
+        const voucherIds = cart.getVoucherIds();
+
+        try {
+            const res = await fetch('/Order/Preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableCode, items, voucherIds })
+            });
+
+            if (!res.ok) {
+                if (res.status === 400) {
+                    if (voucherIds.length > 0) {
+                        localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
+                        window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
+                        // Re-fetch preview without the invalid voucher to update the UI
+                        previewOrder();
+                        return;
+                    }
+                }
+                const data = await res.json();
+                document.getElementById('result-msg').innerHTML = `<div class="alert alert-danger small p-2">${data.error || 'Lỗi áp mã'}</div>`;
+                return;
+            }
+
+            const data = await res.json();
+            
+            // Auto-removal logic for QR page
+            if (voucherIds.length > 0 && data.voucherDiscount === 0 && data.subtotal > 0) {
+                if (cart.getVoucherIds().length > 0) {
+                    localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
+                    window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
+                    // Re-fetch preview without the invalid voucher to update the UI
+                    previewOrder();
+                    return;
+                }
+            }
+
+            updateTotals(data.subtotal, data.voucherDiscount, data.total);
+            document.getElementById('result-msg').innerHTML = '';
+            
+            // Render Voucher UI manually
+            const placeholder = document.getElementById('globalAppliedVouchersPlaceholder');
+            if (placeholder) {
+                placeholder.innerHTML = '';
+                const currentVIds = cart.getVoucherIds();
+                if (currentVIds.length > 0 && cart._allVouchers) {
+                   currentVIds.forEach((id, idx) => {
+                       const v = cart._allVouchers.find(x => x.id === id);
+                       if (!v) return;
+                       const b = document.createElement('div');
+                       b.className = 'badge bg-brand-orange-light text-brand-orange p-2 rounded d-flex align-items-center gap-2 border border-brand-orange';
+                       b.innerHTML = `<span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeVoucher(${idx}); previewOrder();"></i>`;
+                       placeholder.appendChild(b);
+                   });
+                }
+            }
+
+        } catch (e) {
+            console.error('Preview failed', e);
+        }
+    }
+
+    let previewTimer;
+    function autoPreview() {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(previewOrder, 500);
+    }
+
+    document.getElementById('btnSend').onclick = async () => {
+        const tableCode = document.getElementById('tableCode').value;
+        if (!tableCode) { window.showToast('Vui lòng nhập mã bàn!', 'warning'); return; }
+        if (window.__cart.length === 0) { window.showToast('Giỏ hàng trống!', 'warning'); return; }
+
+        const items = window.__cart.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.price }));
+        const voucherIds = cart.getVoucherIds();
+
+        try {
+            const res = await fetch('/Order/FromQr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableCode, items, voucherIds })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                window.showToast('Đặt món thành công! Mã đơn: #' + data.orderId, 'success');
+                window.__cart = [];
+                cart.saveVoucherIds([]); // Clear vouchers after order
+                renderCart();
+            } else {
+                const err = await res.json();
+                window.showToast('Lỗi: ' + (err.error || 'Gửi đơn thất bại'), 'error');
+            }
+        } catch (e) {
+            window.showToast('Lỗi mạng!', 'error');
+        }
+    };
+
+    // --- Init ---
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProducts();
+
+        // Categories click
+        document.querySelectorAll('.cat-item').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.cat-item').forEach(x => x.classList.remove('active'));
+                btn.classList.add('active');
+                renderMenu(btn.dataset.cat);
+            };
+        });
+
+        // Prefill from URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('tableCode')) {
+            document.getElementById('tableCode').value = params.get('tableCode');
+        }
+        
+        initQR();
+    });
+
+    function initQR() {
+        const qrBox = document.getElementById('qrShare');
+        const updateQR = () => {
+            const code = document.getElementById('tableCode').value;
+            const base = document.getElementById('serverBase').value || host;
+            const url = `${base.replace(/\/$/, '')}/Order/ScanQr?tableCode=${encodeURIComponent(code)}`;
+            qrBox.innerHTML = '';
+            new QRCode(qrBox, { text: url, width: 100, height: 100 });
+        };
+        document.getElementById('tableCode').oninput = updateQR;
+        document.getElementById('serverBase').oninput = updateQR;
+        document.getElementById('serverBase').value = localStorage.getItem('qrServerBase') || host;
+        document.getElementById('serverBase').addEventListener('change', (e) => localStorage.setItem('qrServerBase', e.target.value));
+        updateQR();
+    }
+</script>

@@ -1,0 +1,275 @@
+@using Microsoft.AspNetCore.Identity
+@using LaPizzaria.Models
+@model LaPizzaria.ViewModels.ProductIndexViewModel
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "Quản lý Sản phẩm";
+}
+
+<style>
+    /* Main Content */
+    .main-wrapper-product { padding: 40px; background: #f8f7f5; min-height: calc(100vh - 80px); }
+    
+    .v17_2603 { display: flex; flex-direction: column; margin-bottom: 40px; position: relative; }
+    .v17_2604 { font-weight: 900; font-size: 30px; color: rgba(24,20,17,1); margin: 0; }
+    .v17_2605 { font-size: 16px; color: rgba(107,114,128,1); margin-top: 8px; }
+    
+    .header-action-buttons { position: absolute; top: 0; right: 0; display: flex; gap: 12px; }
+    .v17_2606 { background: rgba(244,140,37,1); color: white !important; border-radius: 12px; padding: 12px 24px; font-weight: 700; font-size: 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(244,140,37,0.2); transition: all 0.2s; border: none; }
+    .v17_2606:hover { background: #e67a15; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(244,140,37,0.3); }
+    .v17_2606_alt { background: white; color: rgba(244,140,37,1) !important; border: 2px solid rgba(244,140,37,1); border-radius: 12px; padding: 10px 22px; font-weight: 700; font-size: 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+    .v17_2606_alt:hover { background: rgba(244,140,37,0.05); transform: translateY(-2px); }
+
+    /* Search/Filter Bar */
+    .v17_2610 { background: white; border-radius: 16px; padding: 10px; display: flex; align-items: center; gap: 20px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    .v17_2768 { flex-grow: 1; background: rgba(249,250,251,1); border-radius: 12px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; position: relative; }
+    .v17_2769 { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; padding-left: 30px; }
+    
+    .v17_2612 { display: flex; gap: 4px; background: rgba(249,250,251,1); border-radius: 12px; padding: 4px; }
+    .cat-tab-link { padding: 8px 16px; border-radius: 8px; color: rgba(107,114,128,1); text-decoration: none; font-weight: 600; font-size: 14px; }
+    .cat-tab-link.active { background: white; color: rgba(244,140,37,1); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+    .v17_2618 { background: rgba(249,250,251,1); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 10px; color: rgba(24,20,17,1); font-weight: 600; font-size: 14px; border: 1px solid #f1f5f9; }
+
+    /* Table Card */
+    .v17_2622 { background: white; border-radius: 16px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .v17_2625 { background: rgba(249,250,251,1); border-bottom: 1px solid #f1f5f9; }
+    .admin-table th { padding: 16px 24px; text-align: left; color: rgba(107,114,128,1); font-weight: 700; font-size: 12px; text-transform: uppercase; }
+    .admin-table td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    
+    .product-img-v { width: 48px; height: 48px; border-radius: 8px; background: rgba(243,244,246,1); object-fit: cover; }
+    .product-name-v { font-weight: 700; font-size: 14px; color: rgba(24,20,17,1); margin: 0; }
+    .product-desc-v { font-size: 12px; color: rgba(107,114,128,1); margin: 2px 0 0; }
+    
+    .v17_2639 { background: rgba(254,226,226,1); color: rgba(220,38,38,1); border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .v17_2657 { background: rgba(220,252,231,1); color: rgba(22,163,74,1); border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .v17_2675 { background: rgba(244,140,37,0.2); color: rgba(244,140,37,1); border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    
+    .v17_2643 { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    .sd-green { background: rgba(34,197,94,1); box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+    .sd-orange { background: rgba(249,115,22,1); box-shadow: 0 0 8px rgba(249,115,22,0.4); }
+    .sd-red { background: rgba(239,68,68,1); box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+    .sd-gray { background: rgba(148,163,184,1); box-shadow: 0 0 8px rgba(148,163,184,0.4); }
+
+    /* Stats Section */
+    .v17_2716 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px; }
+    .stat-box-v { border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: center; min-height: 109px; position: relative; }
+    .stat-box-v span { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+    .stat-box-v h2 { font-weight: 900; font-size: 30px; margin: 0; color: rgba(24,20,17,1); }
+    .v17_2717 { background: rgba(244,140,37,0.05); color: rgba(244,140,37,1); }
+    .v17_2721 { background: rgba(240,253,244,1); color: rgba(22,163,74,1); }
+    .v17_2725 { background: rgba(254,242,242,1); color: rgba(220,38,38,1); }
+
+    .pagination-footer { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: rgba(249,250,251,1); border-top: 1px solid #f1f5f9; color: rgba(107,114,128,1); font-size: 13px; font-weight: 500; }
+    .btn-pg { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb; background: white; color: rgba(75,85,99,1); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+    .btn-pg:hover { background: #f9fafb; color: rgba(244,140,37,1); border-color: rgba(244,140,37,0.3); }
+    .btn-pg:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+
+<div class="main-wrapper-product">
+    <div class="v17_2603">
+        <h1 class="v17_2604">Quản lý Sản phẩm</h1>
+        <p class="v17_2605">Quản lý thực đơn và các gói combo hiệu quả.</p>
+        <div class="header-action-buttons">
+            <a asp-action="Upsert" class="v17_2606_alt">
+                <i class="bi bi-plus-lg"></i> Thêm món lẻ
+            </a>
+            <a asp-action="CreateCombo" class="v17_2606">
+                <i class="bi bi-box-seam"></i> Thêm combo mới
+            </a>
+        </div>
+    </div>
+
+    @* Search & Tab Bar *@
+    <div class="v17_2610">
+        <div class="v17_2768">
+            <i class="bi bi-search" style="position: absolute; left: 15px; color: #9ca3af;"></i>
+            <input type="text" id="searchBox" class="v17_2769" placeholder="Tìm tên pizza, mã hoặc thành phần...">
+        </div>
+        <div class="v17_2612" id="catTabs">
+            <a href="#" class="cat-tab-link active" data-cat="All">Tất cả</a>
+            <a href="#" class="cat-tab-link" data-cat="Pizza">Pizza</a>
+            <a href="#" class="cat-tab-link" data-cat="Combo">Combo</a>
+            <a href="#" class="cat-tab-link" data-cat="Side Dish">Món phụ</a>
+        </div>
+        <button class="v17_2618">
+            <i class="bi bi-sliders"></i> Lọc thêm
+        </button>
+    </div>
+
+    @* Table Container *@
+    <div class="v17_2622">
+        <table class="admin-table">
+            <thead>
+                <tr class="v17_2625">
+                    <th style="width: 40%;">SẢN PHẨM</th>
+                    <th>DANH MỤC</th>
+                    <th>GIÁ</th>
+                    <th>TRẠNG THÁI</th>
+                    <th class="text-end">HÀNH ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                @{
+                    var outIds = Model.OutOfStockIds ?? new List<int>();
+                    var statusMap = Model.ProductStockStatus ?? new Dictionary<int, string>();
+                    var pizzaCount = Model.Products.Count(p => p.Category == "Pizza" && p.IsActive && !outIds.Contains(p.Id));
+                    var comboCount = Model.Combos.Count(c => c.IsActive);
+                    var outCount = outIds.Count;
+                }
+
+                @* Products *@
+                @foreach (var p in Model.Products)
+                {
+                    var isOut = outIds.Contains(p.Id);
+                    var stockStatus = statusMap.ContainsKey(p.Id) ? statusMap[p.Id] : "safe";
+                    var statusText = stockStatus == "out" ? "Đã hết" :
+                                     stockStatus == "danger" ? "Sắp hết" :
+                                     stockStatus == "warning" ? "Trung bình" : "An toàn";
+                    var dotClass = stockStatus == "out" ? "sd-gray" :
+                                   stockStatus == "danger" ? "sd-red" :
+                                   stockStatus == "warning" ? "sd-orange" : "sd-green";
+                    var bcClass = p.Category == "Pizza" ? "v17_2675" : (p.Category == "Side Dish" ? "v17_2657" : "v17_2639");
+                    
+                    <tr data-cat="@p.Category" data-name="@p.Name">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "https://placehold.co/100x100?text=🍕" : p.ImageUrl)" class="product-img-v" alt="@p.Name" onerror="this.src='https://placehold.co/100x100?text=🍕'">
+                                <div>
+                                    <p class="product-name-v">@p.Name</p>
+                                    <p class="product-desc-v">@p.Description</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="@bcClass">@(p.Category?.ToUpper() ?? "KHÁC")</span></td>
+                        <td><span style="font-weight: 800; color: #1e293b;">@p.Price.ToString("N0")₫</span></td>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="v17_2643 @dotClass"></span>
+                                <span style="font-weight: 600; color: #374151;">@statusText</span>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                <a asp-action="Upsert" asp-route-id="@p.Id" style="color: #cbd5e1; font-size: 18px;"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline" onsubmit="return confirm('Xoá sản phẩm này?');">
+                                    <button type="submit" style="background: none; border: none; color: #cbd5e1; font-size: 18px; padding: 0;"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+                @* Combos *@
+                @foreach (var c in Model.Combos)
+                {
+                    var comboPrice = (c.Items.Select(i => ((i.Product?.Price) ?? 0m) * Math.Max(1, i.MinQuantity)).Sum() - (c.DiscountAmount > 0 ? c.DiscountAmount : 0m)) * (1 - (c.DiscountPercent ?? 0m) / 100m);
+                    if (comboPrice < 0) comboPrice = 0;
+
+                    <tr data-cat="Combo" data-name="@c.Name">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <img src="@(string.IsNullOrEmpty(c.ImageUrl) ? "https://placehold.co/100x100?text=📦" : c.ImageUrl)" class="product-img-v" alt="@c.Name" onerror="this.src='https://placehold.co/100x100?text=📦'">
+                                <div>
+                                    <p class="product-name-v">@c.Name</p>
+                                    <p class="product-desc-v">@string.Join(", ", c.Items.Select(i => i.Product?.Name))</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="v17_2675">COMBO</span></td>
+                        <td><span style="font-weight: 800; color: #1e293b;">@comboPrice.ToString("N0")₫</span></td>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="v17_2643 sd-green"></span>
+                                <span style="font-weight: 600; color: #374151;">Còn hàng</span>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                <a asp-action="EditCombo" asp-route-id="@c.Id" style="color: #cbd5e1; font-size: 18px;"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="DeleteCombo" asp-route-id="@c.Id" method="post" class="d-inline" onsubmit="return confirm('Xoá combo này?');">
+                                    <button type="submit" style="background: none; border: none; color: #cbd5e1; font-size: 18px; padding: 0;"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="pagination-footer">
+            <div>Đang hiển thị <span id="visibleCount">0</span> trong tổng số <span id="totalCount">0</span> sản phẩm</div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-pg"><i class="bi bi-chevron-left"></i></button>
+                <button class="btn-pg"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    @* Stats Grid *@
+    <div class="v17_2716">
+        <div class="stat-box-v v17_2717">
+            <span>Tổng Pizza đang bán</span>
+            <h2>@pizzaCount</h2>
+        </div>
+        <div class="stat-box-v v17_2721">
+            <span>Combo hiện có</span>
+            <h2>@comboCount</h2>
+        </div>
+        <div class="stat-box-v v17_2725">
+            <span>Sản phẩm hết hàng</span>
+            <h2>@outCount</h2>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            const $searchBox = $('#searchBox');
+            const $catTabs = $('#catTabs .cat-tab-link');
+            const $rows = $('#tableBody tr');
+            const $visibleCount = $('#visibleCount');
+            const $totalCount = $('#totalCount');
+
+            $totalCount.text($rows.length);
+
+            function filter() {
+                const term = $searchBox.val().toLowerCase();
+                const activeCat = $('#catTabs .cat-tab-link.active').data('cat');
+                let count = 0;
+
+                $rows.each(function() {
+                    const $row = $(this);
+                    const name = ($row.data('name') || "").toString().toLowerCase();
+                    const cat = ($row.data('cat') || "").toString();
+                    
+                    const matchesSearch = name.includes(term);
+                    const matchesCat = (activeCat === 'All' || cat === activeCat);
+
+                    if (matchesSearch && matchesCat) {
+                        $row.show();
+                        count++;
+                    } else {
+                        $row.hide();
+                    }
+                });
+                $visibleCount.text(count);
+            }
+
+            $searchBox.on('input', filter);
+
+            $catTabs.on('click', function(e) {
+                e.preventDefault();
+                $catTabs.removeClass('active');
+                $(this).addClass('active');
+                filter();
+            });
+
+            filter();
+        });
+    </script>
+}
+

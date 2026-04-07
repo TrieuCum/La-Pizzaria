@@ -1,0 +1,371 @@
+@model List<LaPizzaria.Models.Product>
+@{
+    ViewData["Title"] = "Ghép Pizza 2 Nửa - LaPizzaria";
+    Layout = "_Layout";
+    string Img(string? u) => string.IsNullOrEmpty(u) ? "/images/mix-default.png" : u;
+    var selectedId1 = ViewBag.SelectedId1 as int?;
+    var initialPizza = Model.FirstOrDefault(p => p.Id == selectedId1);
+}
+
+<div class="mix-light-container">
+    <div class="container py-5">
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb breadcrumb-site">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Menu" asp-action="Index">Thực đơn</a></li>
+                <li class="breadcrumb-item active">Ghép Pizza 2 Nửa</li>
+            </ol>
+        </nav>
+
+        <div class="row g-5 align-items-start">
+            <!-- Left Column: Visual Display -->
+            <div class="col-lg-6">
+                <div class="sticky-visual">
+                    <div class="header-content mb-4">
+                        <h1 class="display-5 fw-black text-site-dark mb-2">Hô biến 2 trong 1</h1>
+                        <div id="selection-phase-info" class="text-site-orange fw-bold fs-5">
+                            @(initialPizza != null ? "Chọn tiếp nửa bên phải" : "Bắt đầu với nửa bên trái")
+                        </div>
+                        <p class="text-muted small">Cá nhân hóa chiếc pizza của bạn bằng cách chọn 2 loại nhân khác nhau.</p>
+                    </div>
+
+                    <div class="visual-pizza-area">
+                        <!-- Main Circle with Default Mix Background -->
+                        <div class="pizza-main-circle @(initialPizza != null ? "active-right" : "active-left")" 
+                             id="pizza-wrap"
+                             style="background-image: url('/images/mix-default.png'); background-size: cover;">
+                            
+                            <!-- Left Side (Hidden when empty to show default bg) -->
+                            <div class="pizza-side left-side @(initialPizza == null ? "is-ghost" : "")" id="p-left" 
+                                 onclick="switchSide('left')"
+                                 style="background-image: url('@(initialPizza != null ? Img(initialPizza.ImageUrl) : "")')">
+                            </div>
+                            <!-- Right Side -->
+                            <div class="pizza-side right-side is-ghost" id="p-right" onclick="switchSide('right')">
+                            </div>
+
+                            <div class="selection-visual-ring" id="ui-ring"></div>
+                        </div>
+                        <div class="pizza-floor-shadow"></div>
+                    </div>
+
+                    <!-- Side Status Cards -->
+                    <div class="row g-3 mt-4">
+                        <div class="col-6">
+                            <div class="side-indicator-card p-3 shadow-sm @(initialPizza != null ? "" : "active")" id="card-side-left" onclick="switchSide('left')">
+                                <div class="side-tag">NỬA TRÁI</div>
+                                <div class="side-pizza-name" id="name-left">@(initialPizza?.Name ?? "Trống")</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="side-indicator-card p-3 shadow-sm" id="card-side-right" onclick="switchSide('right')">
+                                <div class="side-tag">NỬA PHẢI</div>
+                                <div class="side-pizza-name" id="name-right">Trống</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: List & Action -->
+            <div class="col-lg-6">
+                <!-- Navigation Tabs -->
+                <div class="custom-tabs-nav mb-4">
+                    <a asp-action="Index" asp-route-category="Pizza" class="tab-item">
+                        <i class="bi bi-circle"></i> Nguyên chiếc
+                    </a>
+                    <a href="javascript:void(0)" class="tab-item active">
+                        <i class="bi bi-intersect"></i> Ghép 2 nửa
+                    </a>
+                </div>
+
+                <!-- Selection List -->
+                <div class="pizza-list-card shadow-sm">
+                    <div class="list-scroll-area">
+                        @foreach (var p in Model)
+                        {
+                            <div class="selection-pizza-item" id="pizza-@p.Id" 
+                                 onclick="choosePizzaForCurrentSide(@p.Id, '@p.Name.Replace("'", "\\'")', @p.Price, '@Img(p.ImageUrl)')">
+                                <div class="item-visual">
+                                    <div class="mini-pizza" style="background-image: url('@Img(p.ImageUrl)')"></div>
+                                </div>
+                                <div class="item-details">
+                                    <div class="item-main">
+                                        <span class="p-title">@p.Name</span>
+                                        <span class="p-cost">@p.Price.ToString("N0")₫</span>
+                                    </div>
+                                    <div class="p-description truncate-text">@p.Description</div>
+                                </div>
+                                <div class="item-check">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Final Action Section -->
+                <div class="checkout-summary-card mt-4 p-4 shadow">
+                        <div class="price-container">
+                            <span class="text-muted small d-block mb-1">Tổng cộng dự kiến:</span>
+                            <span class="price-value text-site-dark" id="total-price-text">0₫</span>
+                        </div>
+                        <div class="d-flex flex-column align-items-end gap-2">
+                            <div class="status-indicator" id="summary-badge">
+                                Chưa đủ 2 nửa
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Size Selection -->
+                    <div class="size-selector-wrap mb-4">
+                        <label class="fw-bold small text-muted mb-2 d-block">CHỌN KÍCH CỠ PIZZA (ÁP DỤNG CHO CẢ 2 NỬA):</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="pizza-size" id="size-s" value="S" onchange="updateSize('S')">
+                                <label class="btn btn-outline-size w-100 p-2" for="size-s">
+                                    <div class="size-name">Size S</div>
+                                    <div class="size-desc">20cm (-30k)</div>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="pizza-size" id="size-m" value="M" checked onchange="updateSize('M')">
+                                <label class="btn btn-outline-size w-100 p-2" for="size-m">
+                                    <div class="size-name">Size M</div>
+                                    <div class="size-desc">25cm (Gốc)</div>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="pizza-size" id="size-l" value="L" onchange="updateSize('L')">
+                                <label class="btn btn-outline-size w-100 p-2" for="size-l">
+                                    <div class="size-name">Size L</div>
+                                    <div class="size-desc">30cm (+50k)</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="btn-submit-order" class="btn btn-order-primary w-100 disabled" onclick="submitMix()">
+                        <i class="bi bi-cart-plus me-2"></i> THÊM VÀO GIỎ HÀNG
+                    </button>
+                    <p class="text-center text-muted small mt-3 mb-0">Giá được tính bằng trung bình cộng 2 loại pizza đã chọn.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .mix-light-container {
+        background-color: #fff;
+        min-height: 80vh;
+        font-family: 'Work Sans', sans-serif;
+        color: #0F172A; /* Site Dark */
+    }
+
+    /* Branded Palette */
+    .text-site-orange { color: #F97316 !important; }
+    .text-site-dark { color: #0F172A !important; }
+    .display-5 { font-weight: 800; color: #0F172A; }
+    .fw-black { font-weight: 900; }
+
+    /* Breadcrumbs - Site Style */
+    .breadcrumb-site .breadcrumb-item a { color: #475569; text-decoration: none; }
+    .breadcrumb-site .breadcrumb-item.active { color: #F97316; font-weight: 600; }
+
+    /* Visual Pizza Display */
+    .sticky-visual { position: sticky; top: 120px; }
+    .visual-pizza-area { position: relative; width: 340px; height: 340px; margin: 30px auto; }
+    
+    .pizza-main-circle {
+        position: relative; width: 100%; height: 100%;
+        border-radius: 50%; background: #fdfdfd;
+        overflow: hidden; z-index: 2;
+        border: 4px solid #fff;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+        transition: 0.3s;
+    }
+    
+    .pizza-side {
+        position: absolute; width: 100%; height: 100%;
+        background-size: cover; background-position: center;
+        transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    .pizza-side.is-ghost { background-image: none !important; background-color: transparent !important; }
+    .left-side { clip-path: inset(0 50% 0 0); }
+    .right-side { clip-path: inset(0 0 0 50%); }
+
+    /* Selector indicator */
+    .selection-visual-ring {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        border-radius: 50%; border: 4px solid #F97316;
+        z-index: 10; pointer-events: none; transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        opacity: 0.8; box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
+    }
+    .active-left .selection-visual-ring { clip-path: inset(-5px 50% -5px -5px); }
+    .active-right .selection-visual-ring { clip-path: inset(-5px -5px -5px 50%); }
+
+    /* Side Status Cards */
+    .side-indicator-card { 
+        background: #fff; border: 2px solid #F1F5F9; border-radius: 12px; transition: 0.3s; cursor: pointer;
+    }
+    .side-indicator-card.active { border-color: #F97316; background: #fffaf0; }
+    .side-tag { font-size: 0.6rem; font-weight: 800; color: #94A3B8; letter-spacing: 1px; margin-bottom: 2px; }
+    .side-pizza-name { font-weight: 700; font-size: 0.85rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Tabs */
+    .custom-tabs-nav { background: #F1F5F9; padding: 4px; border-radius: 12px; display: inline-flex; }
+    .tab-item { 
+        padding: 8px 18px; text-decoration: none !important; color: #64748B; 
+        font-weight: 700; border-radius: 8px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+    }
+    .tab-item.active { background: #fff; color: #F97316; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+    /* List Area */
+    .pizza-list-card { background: #fff; border: 1px solid #F1F5F9; border-radius: 16px; overflow: hidden; }
+    .list-scroll-area { max-height: 460px; overflow-y: auto; padding: 12px; }
+    .list-scroll-area::-webkit-scrollbar { width: 4px; }
+    .list-scroll-area::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+
+    .selection-pizza-item {
+        display: flex; align-items: center; gap: 14px; padding: 12px;
+        border-radius: 12px; cursor: pointer; transition: 0.2s;
+        margin-bottom: 6px; border: 1px solid transparent;
+    }
+    .selection-pizza-item:hover { background: #F8FAFC; }
+    .selection-pizza-item.selected-current { background: #fff7ed; border-color: #fed7aa; }
+    
+    .item-visual { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #f1f5f9; }
+    .mini-pizza { width: 100%; height: 100%; background-size: cover; background-position: center; border-radius: 50%; }
+    
+    .item-details { flex-grow: 1; min-width: 0; }
+    .item-main { display: flex; justify-content: space-between; align-items: baseline; }
+    .p-title { font-weight: 700; font-size: 0.9rem; color: #0f172a; }
+    .p-cost { font-weight: 800; font-size: 0.8rem; color: #F97316; }
+    .p-description { font-size: 0.75rem; color: #64748B; }
+    .truncate-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .item-check { color: #F97316; font-size: 1.1rem; visibility: hidden; }
+    .selected-current .item-check { visibility: visible; }
+
+    /* Summary Card */
+    .checkout-summary-card { background: #fdfaf7; border: 1px solid #ffedd5; border-radius: 20px; }
+    .price-value { font-size: 2.2rem; font-weight: 900; }
+    .status-indicator { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; color: #64748B; }
+    .status-indicator.ready { background: #DCFCE7; color: #166534; }
+
+    .btn-order-primary { background: #F97316; color: #fff; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 1rem; border: none; transition: 0.3s; }
+    .btn-order-primary:hover:not(.disabled) { background: #EA580C; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.4); }
+    .btn-order-primary.disabled { background: #CBD5E1; color: #fff; opacity: 1; }
+
+    /* Size Selector Styles */
+    .btn-outline-size {
+        border: 2px solid #F1F5F9; background: #fff; border-radius: 12px; transition: 0.2s;
+        text-align: center; color: #64748B;
+    }
+    .btn-check:checked + .btn-outline-size {
+        border-color: #F97316; background: #fffaf0; color: #F97316; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
+    }
+    .size-name { font-weight: 800; font-size: 0.9rem; }
+    .size-desc { font-size: 0.65rem; font-weight: 600; opacity: 0.8; }
+</style>
+
+<script>
+    let currentSide = '@(initialPizza != null ? "right" : "left")';
+    let pizzaData = {
+        left: @(initialPizza != null ? $"{{ id: {initialPizza.Id}, name: '{initialPizza.Name}', price: {initialPizza.Price}, img: '{Img(initialPizza.ImageUrl)}' }}" : "null"),
+        right: null,
+        size: 'M'
+    };
+
+    function updateSize(size) {
+        pizzaData.size = size;
+        updateFinalPrice();
+    }
+
+    function switchSide(side) {
+        currentSide = side;
+        const wrap = document.getElementById('pizza-wrap');
+        wrap.classList.remove('active-left', 'active-right');
+        wrap.classList.add('active-' + side);
+        
+        document.getElementById('card-side-left').classList.toggle('active', side === 'left');
+        document.getElementById('card-side-right').classList.toggle('active', side === 'right');
+        
+        document.getElementById('selection-phase-info').innerText = currentSide === 'left' ? 'Chọn nửa bên trái' : 'Chọn nửa bên phải';
+        
+        refreshListUI();
+    }
+
+    function choosePizzaForCurrentSide(id, name, price, img) {
+        pizzaData[currentSide] = { id, name, price, img };
+        
+        // Update Circle View - Remove ghost state to show real image
+        const sideEl = document.getElementById('p-' + currentSide);
+        sideEl.style.backgroundImage = `url('${img}')`;
+        sideEl.classList.remove('is-ghost');
+        sideEl.innerHTML = '';
+
+        // Update Side Cards
+        document.getElementById('name-' + currentSide).innerText = name;
+
+        // Auto transition logic
+        const opposite = currentSide === 'left' ? 'right' : 'left';
+        if (!pizzaData[opposite]) {
+            setTimeout(() => switchSide(opposite), 350);
+        } else {
+            refreshListUI();
+        }
+
+        updateFinalPrice();
+    }
+
+    function refreshListUI() {
+        document.querySelectorAll('.selection-pizza-item').forEach(item => {
+            const id = parseInt(item.id.replace('pizza-', ''));
+            item.classList.remove('selected-current');
+            if (pizzaData[currentSide] && pizzaData[currentSide].id === id) {
+                item.classList.add('selected-current');
+            }
+        });
+    }
+
+    function updateFinalPrice() {
+        const btn = document.getElementById('btn-submit-order');
+        const priceText = document.getElementById('total-price-text');
+        const badge = document.getElementById('summary-badge');
+
+        if (pizzaData.left && pizzaData.right) {
+            let modifier = 0;
+            if (pizzaData.size === 'S') modifier = -30000;
+            else if (pizzaData.size === 'L') modifier = 50000;
+
+            const baseAvg = (pizzaData.left.price + pizzaData.right.price) / 2;
+            const finalPrice = Math.round(baseAvg + modifier);
+            
+            priceText.innerText = new Intl.NumberFormat('vi-VN').format(finalPrice) + '₫';
+            badge.innerText = 'Đã đủ phần';
+            badge.classList.add('ready');
+            btn.classList.remove('disabled');
+        } else {
+            priceText.innerText = '0₫';
+            badge.innerText = 'Chưa đủ phần';
+            badge.classList.remove('ready');
+            btn.classList.add('disabled');
+        }
+    }
+
+    function submitMix() {
+        if (!pizzaData.left || !pizzaData.right) return;
+        
+        if (window.cart && typeof window.cart.addMix === 'function') {
+            window.cart.addMix(pizzaData.left, pizzaData.right, pizzaData.size);
+            window.showToast?.('Pizza của bạn đã được thêm vào giỏ hàng!', 'success');
+            setTimeout(() => window.location.href = '/Menu/Index?category=Pizza', 800);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', refreshListUI);
+</script>

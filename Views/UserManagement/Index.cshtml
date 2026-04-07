@@ -1,0 +1,354 @@
+@model List<LaPizzaria.Controllers.UserViewModel>
+@{
+    ViewData["Title"] = "Quản lý Người dùng";
+}
+
+<div class="profile-container" style="background-color: #F8FAFC; min-height: 100vh;">
+    <div class="container py-4">
+        <!-- Breadcrumb & Header -->
+        <nav class="profile-breadcrumb mb-4">
+            <a asp-controller="Home" asp-action="Index">Trang chủ</a> / <span>Quản lý người dùng</span>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="profile-title mb-1">Quản lý người dùng</h1>
+                <p class="profile-subtitle m-0">Danh sách tài khoản và phân quyền hệ thống</p>
+            </div>
+            <button type="button" class="btn-profile-save" data-bs-toggle="modal" data-bs-target="#userModal" onclick="openCreateModal()">
+                <i class="bi bi-person-plus-fill me-2"></i> Thêm người dùng
+            </button>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="profile-card p-4 mb-4">
+            <form method="get" id="filterForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="profile-form-label">Tìm kiếm</label>
+                        <div class="position-relative">
+                            <i class="bi bi-search position-absolute top-50 translate-middle-y text-muted" style="left: 15px;"></i>
+                            <input type="text" name="search" class="form-control profile-form-input ps-5" placeholder="Tên, email hoặc SĐT..." value="@Context.Request.Query["search"]">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="profile-form-label">Vai trò</label>
+                        <select name="role" class="form-select profile-form-input">
+                            <option value="">Tất cả vai trò</option>
+                            @foreach (var r in ViewBag.AllRoles as List<string> ?? new List<string>())
+                            {
+                                <option value="@r" selected="@(Context.Request.Query["role"] == r)">@r</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="profile-form-label">Trạng thái</label>
+                        <select name="status" class="form-select profile-form-input">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="Active" selected="@(Context.Request.Query["status"] == "Active")">Hoạt động</option>
+                            <option value="Inactive" selected="@(Context.Request.Query["status"] == "Inactive")">Vô hiệu hóa</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn-profile-save w-100 py-2">
+                           Lọc dữ liệu
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Users Table -->
+        <div class="profile-card overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead style="background-color: #F1F5F9;">
+                        <tr>
+                            <th class="ps-4 py-3 border-0" style="font-weight: 700; color: #475569;">Người dùng</th>
+                            <th class="border-0" style="font-weight: 700; color: #475569;">Vai trò</th>
+                            <th class="border-0" style="font-weight: 700; color: #475569;">Ngày tham gia</th>
+                            <th class="border-0" style="font-weight: 700; color: #475569;">Trạng thái</th>
+                            <th class="text-center pe-4 border-0" style="font-weight: 700; color: #475569;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @if (Model.Any())
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                @await Html.PartialAsync("_UserAvatar", new LaPizzaria.ViewModels.UserAvatarViewModel
+                                                {
+                                                    AvatarUrl = item.User.AvatarUrl,
+                                                    FirstName = item.User.FirstName,
+                                                    LastName = item.User.LastName,
+                                                    UserName = item.User.UserName,
+                                                    ElementClass = "rounded-circle",
+                                                    ElementStyle = "width: 40px; height: 40px; object-fit: cover; border: 2px solid #F1F5F9;"
+                                                })
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold" style="color: #0F172A;">@item.User.FirstName @item.User.LastName</div>
+                                                <div class="text-muted small">@item.User.Email</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @foreach (var role in item.Roles)
+                                        {
+                                            <span class="badge rounded-pill bg-light text-dark border me-1" style="font-weight: 600; font-size: 11px;">@role</span>
+                                        }
+                                        @if (!item.Roles.Any())
+                                        {
+                                            <span class="badge rounded-pill bg-light text-muted border" style="font-weight: 600; font-size: 11px;">User</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">@item.User.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (item.User.IsActive)
+                                        {
+                                            <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill" style="font-weight: 700; font-size: 11px;">Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill" style="font-weight: 700; font-size: 11px;">Vô hiệu hóa</span>
+                                        }
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <button class="btn btn-sm btn-outline-primary border-0 rounded-circle p-2" onclick="openEditModal('@item.User.Id')" title="Chỉnh sửa">
+                                                <i class="bi bi-pencil-square fs-5"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning border-0 rounded-circle p-2" onclick="openResetPasswordModal('@item.User.Id', '@item.User.Email')" title="Đổi mật khẩu">
+                                                <i class="bi bi-key-fill fs-5"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger border-0 rounded-circle p-2" onclick="deleteUser('@item.User.Id')" title="Xóa tài khoản">
+                                                <i class="bi bi-trash-fill fs-5"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="py-4">
+                                        <i class="bi bi-people text-light" style="font-size: 4rem;"></i>
+                                        <p class="text-muted mt-3">Không tìm thấy người dùng nào phù hợp.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 class="modal-title fw-bold fs-4" id="modalTitle">Tạo tài khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="userForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <input type="hidden" id="userId" name="id">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="profile-form-label">Họ và tên đệm <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control profile-form-input" name="FirstName" id="firstName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="profile-form-label">Tên <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control profile-form-input" name="LastName" id="lastName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="profile-form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control profile-form-input" name="Email" id="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="profile-form-label">Số điện thoại</label>
+                            <input type="text" class="form-control profile-form-input" name="PhoneNumber" id="phoneNumber">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="profile-form-label">Ngày sinh</label>
+                            <input type="date" class="form-control profile-form-input" name="Birthday" id="birthday">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="profile-form-label">Giới tính</label>
+                            <div class="gender-radio-group mt-2">
+                                <label class="gender-radio-item" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="radio" name="Gender" value="Nam" id="genderNam" style="accent-color: var(--brand-orange); width: 18px; height: 18px;"> Nam
+                                </label>
+                                <label class="gender-radio-item" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="radio" name="Gender" value="Nữ" id="genderNu" style="accent-color: var(--brand-orange); width: 18px; height: 18px;"> Nữ
+                                </label>
+                                <label class="gender-radio-item" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="radio" name="Gender" value="Khác" id="genderKhac" style="accent-color: var(--brand-orange); width: 18px; height: 18px;"> Khác
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="profile-form-label">Địa chỉ</label>
+                            <textarea class="form-control profile-form-input" name="Address" id="address" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="col-md-12" id="passwordField">
+                            <label class="profile-form-label">Mật khẩu <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control profile-form-input" name="password" id="password">
+                            <small class="text-muted">Tối thiểu 6 ký tự</small>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="profile-form-label">Phân quyền</label>
+                            <div class="d-flex flex-wrap gap-3 mt-1">
+                                @foreach (var role in ViewBag.AllRoles as List<string> ?? new List<string>())
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input role-checkbox" type="checkbox" name="roles" value="@role" id="role_@role">
+                                        <label class="form-check-label small" for="role_@role" style="font-weight: 600;">@role</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12" id="statusField" style="display:none;">
+                            <label class="profile-form-label">Trạng thái tài khoản</label>
+                            <select class="form-select profile-form-input" name="IsActive" id="isActive">
+                                <option value="true">Hoạt động</option>
+                                <option value="false">Vô hiệu hóa</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0 justify-content-start gap-2">
+                    <button type="submit" class="btn-profile-save">Lưu thông tin</button>
+                    <button type="button" class="btn-profile-cancel border-1 shadow-none" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 class="modal-title fw-bold fs-4">Đặt lại mật khẩu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="@Url.Action("ResetPassword")" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <input type="hidden" id="resetUserId" name="id">
+                    <p class="text-muted">Đang đặt lại mật khẩu cho: <strong id="resetUserEmail" class="text-dark"></strong></p>
+                    <label class="profile-form-label">Mật khẩu mới <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control profile-form-input" name="newPassword" required>
+                    <small class="text-muted">Vui lòng nhập tối thiểu 6 ký tự</small>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0 justify-content-start gap-2">
+                    <button type="submit" class="btn-profile-save">Cập nhật mật khẩu</button>
+                    <button type="button" class="btn-profile-cancel border-1 shadow-none" data-bs-dismiss="modal">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+<script>
+    function openCreateModal() {
+        document.getElementById('modalTitle').textContent = 'Tạo tài khoản mới';
+        document.getElementById('userForm').action = '@Url.Action("Create")';
+        document.getElementById('userForm').reset();
+        document.getElementById('userId').value = '';
+        document.getElementById('email').readOnly = false;
+        document.getElementById('passwordField').style.display = 'block';
+        document.getElementById('password').required = true;
+        document.getElementById('statusField').style.display = 'none';
+        document.querySelectorAll('.role-checkbox').forEach(cb => cb.checked = false);
+    }
+
+    async function openEditModal(id) {
+        try {
+            const response = await fetch(`/UserManagement/GetUser/${id}`);
+            const data = await response.json();
+            
+            document.getElementById('modalTitle').textContent = 'Chỉnh sửa tài khoản';
+            document.getElementById('userForm').action = '@Url.Action("Edit")';
+            document.getElementById('userId').value = data.user.id;
+            document.getElementById('firstName').value = data.user.firstName || '';
+            document.getElementById('lastName').value = data.user.lastName || '';
+            document.getElementById('email').value = data.user.email;
+            document.getElementById('email').readOnly = true;
+            document.getElementById('phoneNumber').value = data.user.phoneNumber || '';
+            document.getElementById('address').value = data.user.address || '';
+            
+            // Handle Birthday
+            if (data.user.birthday) {
+                const bday = new Date(data.user.birthday);
+                // Adjust for timezone to get correct date string YYYY-MM-DD
+                const dateVal = bday.toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
+                document.getElementById('birthday').value = dateVal;
+            } else {
+                document.getElementById('birthday').value = '';
+            }
+
+            // Handle Gender
+            const gender = data.user.gender;
+            if (gender === 'Nam') document.getElementById('genderNam').checked = true;
+            else if (gender === 'Nữ') document.getElementById('genderNu').checked = true;
+            else if (gender === 'Khác') document.getElementById('genderKhac').checked = true;
+            else {
+                document.getElementById('genderNam').checked = false;
+                document.getElementById('genderNu').checked = false;
+                document.getElementById('genderKhac').checked = false;
+            }
+
+            document.getElementById('passwordField').style.display = 'none';
+            document.getElementById('password').required = false;
+            document.getElementById('statusField').style.display = 'block';
+            document.getElementById('isActive').value = data.user.isActive.toString();
+            
+            document.querySelectorAll('.role-checkbox').forEach(cb => {
+                cb.checked = data.roles.includes(cb.value);
+            });
+            
+            new bootstrap.Modal(document.getElementById('userModal')).show();
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            alert('Không thể tải thông tin người dùng.');
+        }
+    }
+
+    function openResetPasswordModal(id, email) {
+        document.getElementById('resetUserId').value = id;
+        document.getElementById('resetUserEmail').textContent = email;
+        new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
+    }
+
+    function deleteUser(id) {
+        if (confirm('Bạn có chắc chắn muốn xóa tài khoản này không? Thao tác này không thể hoàn tác.')) {
+            const form = document.getElementById('deleteForm');
+            form.action = `/UserManagement/Delete/${id}`;
+            form.submit();
+        }
+    }
+</script>
+}

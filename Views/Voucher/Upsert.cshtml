@@ -1,0 +1,889 @@
+@model LaPizzaria.Models.Voucher
+@using LaPizzaria.Models
+@using LaPizzaria.ViewModels
+
+@{
+    ViewData["Title"] = (Model.Id == 0 ? "Tạo Voucher Mới" : "Chỉnh Sửa Voucher");
+    var users = ViewBag.Users as List<ApplicationUser> ?? new List<ApplicationUser>();
+    var weekSel = ViewBag.WeekDaysSelected as HashSet<int> ?? new HashSet<int>();
+    var ts = ViewBag.WindowTimeStart as string;
+    var te = ViewBag.WindowTimeEnd as string;
+    var productTargets = ViewBag.ProductTargets as List<VoucherProductTargetItemViewModel> ?? new List<VoucherProductTargetItemViewModel>();
+    var selectedTargets = productTargets.Where(x => x.IsSelected).ToList();
+    var usedLegacySelection = ViewBag.LegacySlowSellerSelection is true;
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --brand-orange: #f97316;
+        --brand-orange-deep: #ea580c;
+        --brand-dark: #0f172a;
+        --brand-gray: #64748b;
+        --brand-line: #e2e8f0;
+        --bg-main: linear-gradient(180deg, #fff7ed 0%, #f8fafc 24%, #f8fafc 100%);
+        --card-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    }
+
+    body {
+        background: var(--bg-main);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .upsert-shell {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+    }
+
+    .page-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(249, 115, 22, 0.08);
+        color: var(--brand-orange-deep);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .page-header h1 {
+        margin: 0 0 8px;
+        color: var(--brand-dark);
+        font-size: 32px;
+        font-weight: 800;
+    }
+
+    .page-header p {
+        margin: 0;
+        max-width: 720px;
+        color: var(--brand-gray);
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    .card-brand {
+        background: rgba(255,255,255,0.96);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 28px;
+        box-shadow: var(--card-shadow);
+        padding: 28px;
+        backdrop-filter: blur(10px);
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 24px 0 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--brand-dark);
+    }
+
+    .section-title:first-of-type {
+        margin-top: 0;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--brand-dark);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .form-control-brand {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1px solid var(--brand-line);
+        border-radius: 14px;
+        background: #fff;
+        color: var(--brand-dark);
+        font-size: 14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .form-control-brand:focus {
+        border-color: rgba(249, 115, 22, 0.95);
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.12);
+        outline: none;
+    }
+
+    .form-select-brand {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-size: 18px;
+        padding-right: 42px;
+    }
+
+    .helper-text {
+        margin-top: 6px;
+        color: var(--brand-gray);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .dynamic-field {
+        transition: opacity 0.2s ease;
+    }
+
+    .target-summary {
+        display: grid;
+        grid-template-columns: 1.7fr auto;
+        gap: 16px;
+        align-items: center;
+        padding: 18px;
+        border: 1px solid #fed7aa;
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(255,247,237,0.95), rgba(255,255,255,0.98));
+    }
+
+    .target-summary-label {
+        margin: 0 0 6px;
+        color: var(--brand-gray);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .target-summary-value {
+        margin: 0;
+        color: var(--brand-dark);
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .target-summary-note {
+        margin: 8px 0 0;
+        color: var(--brand-gray);
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+    .btn-picker {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border: none;
+        border-radius: 16px;
+        background: var(--brand-dark);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-picker:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(15, 23, 42, 0.2);
+    }
+
+    .target-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .target-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        color: var(--brand-dark);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .target-chip-muted {
+        color: var(--brand-gray);
+        background: #f8fafc;
+    }
+
+    .selector-panel {
+        margin-top: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .selector-panel[hidden] {
+        display: none !important;
+    }
+
+    .selector-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        padding: 22px 22px 16px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .selector-head h3 {
+        margin: 0 0 6px;
+        color: var(--brand-dark);
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    .selector-head p {
+        margin: 0;
+        color: var(--brand-gray);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .selector-tools {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        padding: 18px 22px;
+        border-bottom: 1px solid #f8fafc;
+        background: #fcfcfd;
+    }
+
+    .selector-search-wrap {
+        position: relative;
+    }
+
+    .selector-search-wrap i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+
+    .selector-search {
+        padding-left: 42px;
+    }
+
+    .selector-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-ghost {
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: var(--brand-dark);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .selector-stats {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 0 22px 18px;
+    }
+
+    .selector-stat {
+        min-width: 130px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #eef2f7;
+    }
+
+    .selector-stat strong {
+        display: block;
+        color: var(--brand-dark);
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    .selector-stat span {
+        color: var(--brand-gray);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .target-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+        gap: 14px;
+        padding: 0 22px 22px;
+        max-height: 560px;
+        overflow: auto;
+    }
+
+    .target-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 18px;
+        border-radius: 22px;
+        border: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #ffffff, #fbfdff);
+        cursor: pointer;
+        transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .target-card:hover {
+        transform: translateY(-2px);
+        border-color: #fdba74;
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+    }
+
+    .target-card.is-selected {
+        border-color: rgba(249, 115, 22, 0.75);
+        box-shadow: 0 18px 34px rgba(249, 115, 22, 0.14);
+        background: linear-gradient(180deg, #fff7ed, #ffffff);
+    }
+
+    .target-card-top {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .target-checkbox {
+        width: 20px;
+        height: 20px;
+        margin-top: 2px;
+        accent-color: var(--brand-orange);
+        flex: 0 0 auto;
+    }
+
+    .target-meta {
+        min-width: 0;
+    }
+
+    .target-meta h4 {
+        margin: 0 0 6px;
+        color: var(--brand-dark);
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+    .target-subline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        color: var(--brand-gray);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .target-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+    }
+
+    .pill-slow {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
+    .pill-hot {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .pill-unsold {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .target-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .target-stat-box {
+        padding: 12px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #eef2f7;
+    }
+
+    .target-stat-box strong {
+        display: block;
+        color: var(--brand-dark);
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .target-stat-box span {
+        color: var(--brand-gray);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .legacy-note {
+        margin-top: 14px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid #fde68a;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+    .btn-save,
+    .btn-cancel {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 144px;
+        padding: 14px 22px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    .btn-save {
+        border: none;
+        background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-deep));
+        color: #fff;
+        box-shadow: 0 16px 30px rgba(249, 115, 22, 0.22);
+    }
+
+    .btn-save:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-cancel {
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: var(--brand-gray);
+    }
+
+    .actions-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 32px;
+    }
+
+    @@media (max-width: 900px) {
+        .target-summary,
+        .selector-tools {
+            grid-template-columns: 1fr;
+        }
+
+        .selector-head {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="upsert-shell">
+    <div class="page-header">
+        <div class="page-kicker"><i class="bi bi-ticket-perforated"></i> Voucher Engine</div>
+        <h1>@ViewData["Title"]</h1>
+        <p>Tạo voucher theo đúng bối cảnh bán hàng thật: giới hạn thời gian, người dùng và cả nhóm sản phẩm cụ thể để tránh giảm sai món.</p>
+    </div>
+
+    <form method="post" class="card-brand">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="section-title">
+            <i class="bi bi-info-circle"></i> Thông tin cơ bản
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label asp-for="Code" class="form-label">Mã voucher</label>
+                <input asp-for="Code" class="form-control-brand" placeholder="Ví dụ: PIZZA50" required />
+                <div class="helper-text">Mã khách hàng sẽ thấy và dùng khi đặt đơn.</div>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Name" class="form-label">Tên chương trình</label>
+                <input asp-for="Name" class="form-control-brand" placeholder="Ví dụ: Giảm 50% cuối tuần" required />
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-tag"></i> Loại và mức giảm
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <label asp-for="VoucherType" class="form-label">Loại voucher</label>
+                <select asp-for="VoucherType" class="form-control-brand form-select-brand" id="voucherTypeSelect">
+                    <option value="Percentage">Giảm theo phần trăm (%)</option>
+                    <option value="FixedAmount">Giảm theo số tiền cố định (VNĐ)</option>
+                    <option value="FreeShipping">Miễn phí giao hàng</option>
+                </select>
+            </div>
+
+            <div class="col-md-6 dynamic-field" id="percentField">
+                <label asp-for="DiscountPercent" class="form-label">Phần trăm giảm (%)</label>
+                <input type="number" step="1" min="0" max="100" asp-for="DiscountPercent" class="form-control-brand" placeholder="Nhập 0-100" />
+            </div>
+
+            <div class="col-md-6 dynamic-field" id="amountField" style="display:none;">
+                <label asp-for="DiscountAmount" class="form-label">Số tiền giảm (VNĐ)</label>
+                <input type="number" step="1000" min="0" asp-for="DiscountAmount" class="form-control-brand" placeholder="Nhập số tiền" />
+                <div class="helper-text">Với FreeShip, đây là mức hỗ trợ vận chuyển tối đa.</div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-gear"></i> Điều kiện sử dụng
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <label asp-for="MinOrderValue" class="form-label">Giá trị đơn tối thiểu (VNĐ)</label>
+                <input type="number" step="1000" min="0" asp-for="MinOrderValue" class="form-control-brand" placeholder="Để 0 nếu không giới hạn" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="TargetUserId" class="form-label">Khách hàng áp dụng</label>
+                <select asp-for="TargetUserId" class="form-control-brand form-select-brand">
+                    <option value="">Tất cả khách hàng</option>
+                    @foreach (var user in users)
+                    {
+                        <option value="@user.Id">@user.Email (@user.FirstName @user.LastName)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="MaxUses" class="form-label">Giới hạn số lần dùng</label>
+                <input type="number" min="0" asp-for="MaxUses" class="form-control-brand" placeholder="0 = không giới hạn" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ExpiresAtUtc" class="form-label">Ngày hết hạn (UTC)</label>
+                <input type="datetime-local" asp-for="ExpiresAtUtc" class="form-control-brand" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" asp-for="IsActive" id="isActiveCheck">
+                    <label class="form-check-label fw-semibold" for="isActiveCheck">Kích hoạt ngay</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-clock-history"></i> Khung giờ và ngày áp dụng
+        </div>
+        <p class="helper-text mb-3">Để trống giờ bắt đầu hoặc kết thúc nếu voucher không bị giới hạn theo khung giờ. Ngày trong tuần: 0 = Chủ nhật, 6 = Thứ bảy.</p>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label">Giờ bắt đầu (Việt Nam)</label>
+                <input type="time" name="windowTimeStart" class="form-control-brand" value="@(ts ?? "")" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Giờ kết thúc (Việt Nam)</label>
+                <input type="time" name="windowTimeEnd" class="form-control-brand" value="@(te ?? "")" />
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Ngày áp dụng trong tuần</label>
+                <div class="d-flex flex-wrap gap-3">
+                    @{ var dayLabels = new[] { "CN", "T2", "T3", "T4", "T5", "T6", "T7" }; }
+                    @for (var d = 0; d <= 6; d++)
+                    {
+                        <label class="form-check d-flex align-items-center gap-1 mb-0">
+                            <input type="checkbox" name="weekDays" value="@d" class="form-check-input" @(weekSel.Contains(d) ? "checked" : null) />
+                            <span class="small">@dayLabels[d]</span>
+                        </label>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="bi bi-bag-check"></i> Phạm vi sản phẩm áp dụng
+        </div>
+
+        <div class="target-summary">
+            <div>
+                <div class="target-summary-label">Targeting sản phẩm</div>
+                <p class="target-summary-value" id="productSelectionSummaryText">
+                    @(selectedTargets.Count == 0 ? "Áp dụng cho toàn bộ sản phẩm" : $"Đã giới hạn cho {selectedTargets.Count} sản phẩm")
+                </p>
+                <p class="target-summary-note">Chọn đúng nhóm món cần kích cầu. Khi có danh sách được chọn, voucher chỉ áp dụng nếu giỏ hàng chứa ít nhất một sản phẩm trong danh sách đó.</p>
+            </div>
+            <button type="button" class="btn-picker" id="toggleProductPicker">
+                <i class="bi bi-grid-3x3-gap"></i> Chọn sản phẩm
+            </button>
+        </div>
+
+        <div class="target-preview" id="selectedProductsPreview">
+            @if (selectedTargets.Count == 0)
+            {
+                <span class="target-chip target-chip-muted">Chưa giới hạn sản phẩm, voucher áp dụng cho mọi món phù hợp điều kiện chung.</span>
+            }
+            else
+            {
+                foreach (var item in selectedTargets.Take(6))
+                {
+                    <span class="target-chip">@item.ProductName</span>
+                }
+                if (selectedTargets.Count > 6)
+                {
+                    <span class="target-chip target-chip-muted">+@(selectedTargets.Count - 6) sản phẩm khác</span>
+                }
+            }
+        </div>
+
+        @if (usedLegacySelection)
+        {
+            <div class="legacy-note">
+                Voucher này trước đây đang dùng cơ chế "sản phẩm bán chậm". Mình đã tự nạp sẵn các món được gắn cờ đó vào danh sách để bạn rà soát và lưu lại bằng logic mới.
+            </div>
+        }
+
+        <div class="selector-panel" id="productPickerPanel" hidden>
+            <div class="selector-head">
+                <div>
+                    <h3>Chọn sản phẩm được áp dụng voucher</h3>
+                    <p>Dữ liệu bên dưới đang ưu tiên đơn đã hoàn thành để phản ánh lượng bán thực tế. Bạn có thể chọn một vài món cần đẩy doanh số hoặc để trống để áp dụng cho toàn menu.</p>
+                </div>
+                <button type="button" class="btn-ghost" id="closeProductPicker">Thu gọn</button>
+            </div>
+
+            <div class="selector-tools">
+                <div class="selector-search-wrap">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="productTargetSearch" class="form-control-brand selector-search" placeholder="Tìm theo tên món hoặc danh mục..." />
+                </div>
+                <div class="selector-actions">
+                    <button type="button" class="btn-ghost" id="selectVisibleProducts">Chọn đang hiển thị</button>
+                    <button type="button" class="btn-ghost" id="clearAllProducts">Bỏ chọn tất cả</button>
+                </div>
+            </div>
+
+            <div class="selector-stats">
+                <div class="selector-stat">
+                    <strong id="selectedProductCount">@selectedTargets.Count</strong>
+                    <span>Sản phẩm đang chọn</span>
+                </div>
+                <div class="selector-stat">
+                    <strong>@productTargets.Count</strong>
+                    <span>Tổng sản phẩm khả dụng</span>
+                </div>
+            </div>
+
+            <div class="target-grid" id="voucherTargetGrid">
+                @foreach (var item in productTargets)
+                {
+                    <label class="target-card @(item.IsSelected ? "is-selected" : "")"
+                           data-filter="@($"{item.ProductName} {item.Category}".ToLowerInvariant())"
+                           data-name="@item.ProductName"
+                           data-category="@item.Category">
+                        <div class="target-card-top">
+                            <input class="target-checkbox product-target-checkbox"
+                                   type="checkbox"
+                                   name="eligibleProductIds"
+                                   value="@item.ProductId"
+                                   @(item.IsSelected ? "checked" : null) />
+                            <div class="target-meta">
+                                <h4>@item.ProductName</h4>
+                                <div class="target-subline">
+                                    <span>@item.Category</span>
+                                    <span>•</span>
+                                    <span>@item.Price.ToString("N0") VNĐ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="target-subline">
+                            @if (item.TotalUnitsSold == 0 && item.CompletedOrderCount == 0)
+                            {
+                                <span class="target-pill pill-unsold">Chưa bán được</span>
+                            }
+                            else if (item.IsTopSeller)
+                            {
+                                <span class="target-pill pill-hot">Đang bán chạy</span>
+                            }
+                            else if (item.IsLowSeller)
+                            {
+                                <span class="target-pill pill-slow">Đang bán chậm</span>
+                            }
+                        </div>
+
+                        <div class="target-stats">
+                            <div class="target-stat-box">
+                                <strong>@item.TotalUnitsSold.ToString("N0")</strong>
+                                <span>Số lượng bán</span>
+                            </div>
+                            <div class="target-stat-box">
+                                <strong>@item.CompletedOrderCount.ToString("N0")</strong>
+                                <span>Đơn hoàn thành</span>
+                            </div>
+                        </div>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="actions-row">
+            <button type="submit" class="btn-save">Lưu voucher</button>
+            <a asp-action="Index" class="btn-cancel">Hủy bỏ</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const voucherTypeSelect = document.getElementById('voucherTypeSelect');
+            const percentField = document.getElementById('percentField');
+            const amountField = document.getElementById('amountField');
+            const amountLabel = amountField ? amountField.querySelector('label') : null;
+            const panel = document.getElementById('productPickerPanel');
+            const openButton = document.getElementById('toggleProductPicker');
+            const closeButton = document.getElementById('closeProductPicker');
+            const searchInput = document.getElementById('productTargetSearch');
+            const summaryText = document.getElementById('productSelectionSummaryText');
+            const preview = document.getElementById('selectedProductsPreview');
+            const selectedCount = document.getElementById('selectedProductCount');
+            const cards = Array.from(document.querySelectorAll('.target-card'));
+            const checkboxes = Array.from(document.querySelectorAll('.product-target-checkbox'));
+            const selectVisibleButton = document.getElementById('selectVisibleProducts');
+            const clearAllButton = document.getElementById('clearAllProducts');
+
+            function toggleFields() {
+                const type = voucherTypeSelect ? voucherTypeSelect.value : 'Percentage';
+                if (type === 'Percentage') {
+                    percentField.style.display = '';
+                    amountField.style.display = 'none';
+                    if (amountLabel) amountLabel.textContent = 'Số tiền giảm (VNĐ)';
+                } else if (type === 'FixedAmount') {
+                    percentField.style.display = 'none';
+                    amountField.style.display = '';
+                    if (amountLabel) amountLabel.textContent = 'Số tiền giảm (VNĐ)';
+                } else {
+                    percentField.style.display = 'none';
+                    amountField.style.display = '';
+                    if (amountLabel) amountLabel.textContent = 'Mức hỗ trợ giao hàng tối đa (VNĐ)';
+                }
+            }
+
+            function visibleCards() {
+                return cards.filter(card => card.style.display !== 'none');
+            }
+
+            function updateSelectionUI() {
+                const selected = checkboxes.filter(x => x.checked);
+                selectedCount.textContent = selected.length.toString();
+
+                cards.forEach(card => {
+                    const checkbox = card.querySelector('.product-target-checkbox');
+                    card.classList.toggle('is-selected', checkbox && checkbox.checked);
+                });
+
+                if (selected.length === 0) {
+                    summaryText.textContent = 'Áp dụng cho toàn bộ sản phẩm';
+                    preview.innerHTML = '<span class="target-chip target-chip-muted">Chưa giới hạn sản phẩm, voucher áp dụng cho mọi món phù hợp điều kiện chung.</span>';
+                    return;
+                }
+
+                summaryText.textContent = 'Đã giới hạn cho ' + selected.length + ' sản phẩm';
+
+                const chips = selected.slice(0, 6).map(input => {
+                    const card = input.closest('.target-card');
+                    const name = card ? card.getAttribute('data-name') : input.value;
+                    return '<span class="target-chip">' + name + '</span>';
+                });
+
+                if (selected.length > 6) {
+                    chips.push('<span class="target-chip target-chip-muted">+' + (selected.length - 6) + ' sản phẩm khác</span>');
+                }
+
+                preview.innerHTML = chips.join('');
+            }
+
+            function applySearch() {
+                const keyword = (searchInput.value || '').trim().toLowerCase();
+                cards.forEach(card => {
+                    const filterText = card.getAttribute('data-filter') || '';
+                    card.style.display = !keyword || filterText.includes(keyword) ? '' : 'none';
+                });
+            }
+
+            if (voucherTypeSelect) {
+                voucherTypeSelect.addEventListener('change', toggleFields);
+            }
+
+            if (openButton && panel) {
+                openButton.addEventListener('click', function () {
+                    panel.hidden = !panel.hidden;
+                    if (!panel.hidden && searchInput) {
+                        searchInput.focus();
+                    }
+                });
+            }
+
+            if (closeButton && panel) {
+                closeButton.addEventListener('click', function () {
+                    panel.hidden = true;
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', applySearch);
+            }
+
+            checkboxes.forEach(input => {
+                input.addEventListener('change', updateSelectionUI);
+            });
+
+            if (selectVisibleButton) {
+                selectVisibleButton.addEventListener('click', function () {
+                    visibleCards().forEach(card => {
+                        const checkbox = card.querySelector('.product-target-checkbox');
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    updateSelectionUI();
+                });
+            }
+
+            if (clearAllButton) {
+                clearAllButton.addEventListener('click', function () {
+                    checkboxes.forEach(checkbox => checkbox.checked = false);
+                    updateSelectionUI();
+                });
+            }
+
+            toggleFields();
+            applySearch();
+            updateSelectionUI();
+        });
+    </script>
+}

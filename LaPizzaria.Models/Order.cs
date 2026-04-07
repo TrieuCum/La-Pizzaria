@@ -1,0 +1,41 @@
+using System;
+using System.Collections.Generic;
+
+namespace LaPizzaria.Models
+{
+    public class Order
+    {
+        public int Id { get; set; }
+        public string? UserId { get; set; }
+        public string? ShipperId { get; set; }
+        public string? DeliveryStatus { get; set; }
+        public DateTime? AssignedAt { get; set; }
+        public DateTime? DeliveredAt { get; set; }
+        public double? ShipperLatitude { get; set; }
+        public double? ShipperLongitude { get; set; }
+        public DateTime? ShipperLocationUpdatedAt { get; set; }
+        /// <summary>IP client (máy/thiết bị) lần gửi vị trí gần nhất — bổ sung GPS, không thay thế tọa độ.</summary>
+        public string? ShipperLocationIp { get; set; }
+        public DateTime OrderDate { get; set; } = DateTime.UtcNow;
+        public decimal TotalPrice { get; set; }
+        /// <summary>Phí giao hàng đã áp khi đặt (khớp trang thanh toán).</summary>
+        public decimal ShipFee { get; set; }
+        /// <summary>VAT (5%) đã áp khi đặt.</summary>
+        public decimal VatAmount { get; set; }
+        public string OrderStatus { get; set; } = "Pending";
+        public string? DeliveryAddress { get; set; }
+        public string? PaymentMethod { get; set; }
+        public string? Notes { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation properties
+        public ApplicationUser? User { get; set; }
+        public ApplicationUser? Shipper { get; set; }
+        public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+        public ICollection<OrderTable> OrderTables { get; set; } = new List<OrderTable>();
+		public ICollection<OrderVoucher> OrderVouchers { get; set; } = new List<OrderVoucher>();
+    }
+}
