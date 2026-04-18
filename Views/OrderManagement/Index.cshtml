@@ -47,7 +47,7 @@
     .order-mgmt .admin-table tbody tr:hover { background: #fafafa; }
     .order-mgmt .ord-id { color: #f97316; font-weight: 700; }
     .order-mgmt .status-cell { min-width: 130px; }
-    .order-mgmt .status-badge {
+    .order-mgmt .status-badge, #updateStatusModal .status-badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -59,13 +59,13 @@
         white-space: nowrap;
         letter-spacing: 0.01em;
     }
-    .order-mgmt .status-pending { background: #dbeafe; color: #1e40af; }
-    .order-mgmt .status-confirmed { background: #bfdbfe; color: #1e3a8a; }
-    .order-mgmt .status-preparing { background: #ffedd5; color: #c2410c; }
-    .order-mgmt .status-ready { background: #dcfce7; color: #166534; }
-    .order-mgmt .status-delivering { background: #ede9fe; color: #6d28d9; }
-    .order-mgmt .status-completed { background: #dcfce7; color: #166534; }
-    .order-mgmt .status-cancelled { background: #fee2e2; color: #991b1b; }
+    .order-mgmt .status-pending, #updateStatusModal .status-pending { background: #dbeafe; color: #1e40af; }
+    .order-mgmt .status-confirmed, #updateStatusModal .status-confirmed { background: #bfdbfe; color: #1e3a8a; }
+    .order-mgmt .status-preparing, #updateStatusModal .status-preparing { background: #ffedd5; color: #c2410c; }
+    .order-mgmt .status-ready, #updateStatusModal .status-ready { background: #dcfce7; color: #166534; }
+    .order-mgmt .status-delivering, #updateStatusModal .status-delivering { background: #ede9fe; color: #6d28d9; }
+    .order-mgmt .status-completed, #updateStatusModal .status-completed { background: #dcfce7; color: #166534; }
+    .order-mgmt .status-cancelled, #updateStatusModal .status-cancelled { background: #fee2e2; color: #991b1b; }
     .order-mgmt .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
     .order-mgmt .btn-act { padding: 0.4rem 0.85rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; border: 1px solid #e2e8f0; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #475569; transition: all 0.2s; }
     .order-mgmt .btn-act:hover { background: #f1f5f9; color: #0f172a; }
@@ -76,10 +76,22 @@
     .order-mgmt .page-btn { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; color: #475569; font-size: 0.9rem; font-weight: 500; background: transparent; border: 1px solid transparent; text-decoration: none; transition: background 0.2s, color 0.2s; }
     .order-mgmt .page-btn:hover { background: #f1f5f9; color: #0f172a; }
     .order-mgmt .page-btn.active { background: #f97316; color: #fff; }
-    .order-mgmt .modal-status-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
-    .order-mgmt .modal-status-option:hover { border-color: #cbd5e1; background: #f8fafc; }
-    .order-mgmt .modal-status-option.selected { border-color: #f97316; background: #fff7ed; }
-    .order-mgmt .modal-status-option input { margin-top: 3px; }
+    .order-mgmt #updateStatusModal .modal-dialog { max-width: 620px; }
+    .order-mgmt .status-flow, #updateStatusModal .status-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; font-size: 12px; color: #64748b; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:6px 8px; }
+    .order-mgmt .status-flow .node, #updateStatusModal .status-flow .node { padding: 4px 10px; border-radius: 999px; background: #f1f5f9; font-weight: 700; }
+    .order-mgmt .status-flow .node[data-status="Pending"], #updateStatusModal .status-flow .node[data-status="Pending"] { background: #dbeafe; color: #1e40af; }
+    .order-mgmt .status-flow .node[data-status="Confirmed"], #updateStatusModal .status-flow .node[data-status="Confirmed"] { background: #bfdbfe; color: #1e3a8a; }
+    .order-mgmt .status-flow .node[data-status="Preparing"], #updateStatusModal .status-flow .node[data-status="Preparing"] { background: #ffedd5; color: #c2410c; }
+    .order-mgmt .status-flow .node[data-status="Ready"], #updateStatusModal .status-flow .node[data-status="Ready"] { background: #dcfce7; color: #166534; }
+    .order-mgmt .status-flow .node[data-status="Delivering"], #updateStatusModal .status-flow .node[data-status="Delivering"] { background: #ede9fe; color: #6d28d9; }
+    .order-mgmt .modal-status-line, #updateStatusModal .modal-status-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; font-size: 0.875rem; color: #475569; }
+    .order-mgmt .modal-status-line .status-badge, #updateStatusModal .modal-status-line .status-badge { margin-left: 0; font-size: 0.8rem; }
+    .order-mgmt .next-status-title, #updateStatusModal .next-status-title { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+    .order-mgmt .next-status-card .status-badge, #updateStatusModal .next-status-card .status-badge { font-size: 0.9rem; padding: 0.5rem 0.95rem; }
+    .order-mgmt .status-badge-muted, #updateStatusModal .status-badge-muted { background: #f1f5f9 !important; color: #64748b !important; }
+    .order-mgmt .next-status-card, #updateStatusModal .next-status-card { border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+    /* Vòng tua: bước hiện tại — viền cam nổi bật, giữ nền theo từng trạng thái */
+    .order-mgmt .status-flow .node.active, #updateStatusModal .status-flow .node.active { box-shadow: 0 0 0 2px #f97316, 0 0 0 4px rgba(249,115,22,0.25); }
 </style>
 
 <div class="order-mgmt">
@@ -201,8 +213,8 @@
             </div>
         }
     </div>
-</div>
 
+@* Modals nằm trong .order-mgmt để dùng chung class màu trạng thái (.status-pending, …) *@
 @* Modal Từ chối đơn *@
 <div class="modal fade" id="rejectModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -245,21 +257,29 @@
                 <input type="hidden" name="id" id="updateOrderId" />
                 <input type="hidden" name="status" id="updateOrderStatus" />
                 <div class="modal-body">
-                    <p class="text-secondary small mb-3">Đơn hàng <strong id="updateOrderCode"></strong> - <span id="updateCustomerName"></span></p>
-                    <div class="mb-2 fw-semibold">Chọn trạng thái mới:</div>
-                    <label class="modal-status-option"><input type="radio" name="statusRadio" value="Pending" /> <div><strong>Pending (Chờ xử lý)</strong><br /><span class="small text-secondary">Đơn hàng mới được tạo</span></div></label>
-                    <label class="modal-status-option"><input type="radio" name="statusRadio" value="Confirmed" /> <div><strong>Confirmed (Đã xác nhận)</strong><br /><span class="small text-secondary">Đã kiểm tra thông tin khách hàng</span></div></label>
-                    <label class="modal-status-option"><input type="radio" name="statusRadio" value="Preparing" /> <div><strong>Preparing (Đang chế biến)</strong><br /><span class="small text-secondary">Đầu bếp đang làm bánh</span></div></label>
-                    <label class="modal-status-option"><input type="radio" name="statusRadio" value="Ready" /> <div><strong>Ready (Sẵn sàng)</strong><br /><span class="small text-secondary">Bánh đã xong, chờ shipper</span></div></label>
-                    <label class="modal-status-option"><input type="radio" name="statusRadio" value="Delivering" /> <div><strong>Delivering (Đang giao)</strong><br /><span class="small text-secondary">Đang trên đường đến khách hàng</span></div></label>
+                    <p class="text-secondary small mb-2"><strong id="updateOrderCode"></strong> · <span id="updateCustomerName"></span></p>
+                    <div class="modal-status-line">Hiện tại <span id="currentStatusText" class="status-badge status-badge-muted">—</span></div>
+                    <div class="status-flow">
+                        <span class="node" data-status="Pending">Chờ</span><i class="bi bi-arrow-right"></i>
+                        <span class="node" data-status="Confirmed">Xác nhận</span><i class="bi bi-arrow-right"></i>
+                        <span class="node" data-status="Preparing">Chế biến</span><i class="bi bi-arrow-right"></i>
+                        <span class="node" data-status="Ready">Sẵn sàng</span><i class="bi bi-arrow-right"></i>
+                        <span class="node" data-status="Delivering">Đang giao</span>
+                    </div>
+                    <div class="next-status-card" id="nextStatusCard">
+                        <div class="next-status-title">Bước kế tiếp</div>
+                        <div id="nextStatusText" class="status-badge status-badge-muted">—</div>
+                    </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-warning text-dark fw-bold">Cập nhật</button>
+                    <button id="btnSubmitStatus" type="submit" class="btn btn-warning text-dark fw-bold">Cập nhật</button>
                 </div>
             </form>
         </div>
     </div>
+</div>
+
 </div>
 
 @section Scripts {
@@ -278,6 +298,64 @@
     }
     var updateModal = document.getElementById('updateStatusModal');
     if (updateModal) {
+        var allowedNext = {
+            "Pending": ["Confirmed"],
+            "Confirmed": ["Preparing"],
+            "Preparing": ["Ready"],
+            "Ready": ["Delivering"],
+            "Delivering": [],
+            "Completed": [],
+            "Cancelled": []
+        };
+        var statusVn = {
+            "Pending": "Chờ xử lý",
+            "Confirmed": "Đã xác nhận",
+            "Preparing": "Đang chuẩn bị",
+            "Ready": "Sẵn sàng",
+            "Delivering": "Đang giao",
+            "Completed": "Hoàn thành",
+            "Cancelled": "Đã hủy"
+        };
+        var statusCss = {
+            "Pending": "status-pending",
+            "Confirmed": "status-confirmed",
+            "Preparing": "status-preparing",
+            "Ready": "status-ready",
+            "Delivering": "status-delivering",
+            "Completed": "status-completed",
+            "Cancelled": "status-cancelled"
+        };
+        var allStatusCss = ["status-pending", "status-confirmed", "status-preparing", "status-ready", "status-delivering", "status-completed", "status-cancelled"];
+        function setStatusBadgeColors(el, statusKey) {
+            if (!el) return;
+            allStatusCss.forEach(function (c) { el.classList.remove(c); });
+            var cls = statusCss[statusKey];
+            if (cls) {
+                el.classList.remove("status-badge-muted");
+                el.classList.add(cls);
+            } else {
+                el.classList.add("status-badge-muted");
+            }
+        }
+        function applyNextStatusRule(current) {
+            var canChoose = allowedNext[current] || [];
+            var hidden = document.getElementById('updateOrderStatus');
+            hidden.value = canChoose.length ? canChoose[0] : current;
+            var nextText = document.getElementById('nextStatusText');
+            if (nextText) {
+                if (canChoose.length) {
+                    var nk = canChoose[0];
+                    nextText.textContent = statusVn[nk] || nk;
+                    setStatusBadgeColors(nextText, nk);
+                } else {
+                    nextText.textContent = "—";
+                    setStatusBadgeColors(nextText, "");
+                }
+            }
+            var submitBtn = document.getElementById('btnSubmitStatus');
+            if (submitBtn) submitBtn.disabled = canChoose.length === 0;
+        }
+
         updateModal.addEventListener('show.bs.modal', function (e) {
             var btn = e.relatedTarget;
             if (btn) {
@@ -286,22 +364,16 @@
                 document.getElementById('updateCustomerName').textContent = btn.getAttribute('data-customer-name') || '';
                 var current = btn.getAttribute('data-current-status') || '';
                 document.getElementById('updateOrderStatus').value = current;
-                var radios = updateModal.querySelectorAll('input[name="statusRadio"]');
-                radios.forEach(function (r) {
-                    r.checked = r.value === current;
-                    r.closest('.modal-status-option').classList.toggle('selected', r.value === current);
+                var statusTextEl = document.getElementById('currentStatusText');
+                if (statusTextEl) {
+                    statusTextEl.textContent = statusVn[current] || current || '—';
+                    setStatusBadgeColors(statusTextEl, current);
+                }
+                updateModal.querySelectorAll('.status-flow .node').forEach(function (n) {
+                    n.classList.toggle('active', n.getAttribute('data-status') === current);
                 });
+                applyNextStatusRule(current);
             }
-        });
-        updateModal.querySelectorAll('input[name="statusRadio"]').forEach(function (r) {
-            r.addEventListener('change', function () {
-                document.getElementById('updateOrderStatus').value = this.value;
-                updateModal.querySelectorAll('.modal-status-option').forEach(function (opt) { opt.classList.remove('selected'); });
-                this.closest('.modal-status-option').classList.add('selected');
-            });
-        });
-        updateModal.querySelectorAll('.modal-status-option').forEach(function (opt) {
-            opt.addEventListener('click', function () { this.querySelector('input').click(); });
         });
     }
 })();

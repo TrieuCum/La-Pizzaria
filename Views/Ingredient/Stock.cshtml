@@ -1,0 +1,209 @@
+@model List<LaPizzaria.Models.Ingredient>
+@{
+    ViewData["Title"] = "Tồn kho nguyên liệu";
+    var q = ViewBag.Q as string ?? "";
+    var status = ViewBag.Status as string ?? "";
+    var culture = new System.Globalization.CultureInfo("vi-VN");
+}
+
+<div style="padding:32px;max-width:1400px;margin:0 auto;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 style="font-size:26px;font-weight:700;color:var(--brand-dark);margin:0;">Tồn kho nguyên liệu</h1>
+            <p style="color:var(--brand-gray);font-size:13px;margin:4px 0 0;">Theo dõi và điều chỉnh số lượng tồn kho</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list-ul me-1"></i> Danh sách nguyên liệu
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="bg-white rounded-3 p-3 d-flex align-items-center gap-3" style="border:1px solid #f0f0f0;">
+                <div style="background:#f0fdf4;border-radius:10px;padding:12px;"><i class="bi bi-boxes text-success fs-4"></i></div>
+                <div>
+                    <div style="font-size:22px;font-weight:900;color:var(--brand-dark);">@ViewBag.TotalStock</div>
+                    <div style="font-size:12px;color:var(--brand-gray);">Tổng loại nguyên liệu</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="bg-white rounded-3 p-3 d-flex align-items-center gap-3" style="border:1px solid #f0f0f0;">
+                <div style="background:#fef9c3;border-radius:10px;padding:12px;"><i class="bi bi-exclamation-triangle text-warning fs-4"></i></div>
+                <div>
+                    <div style="font-size:22px;font-weight:900;color:#d97706;">@ViewBag.LowStock</div>
+                    <div style="font-size:12px;color:var(--brand-gray);">Sắp hết hàng</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="bg-white rounded-3 p-3 d-flex align-items-center gap-3" style="border:1px solid #f0f0f0;">
+                <div style="background:#fef2f2;border-radius:10px;padding:12px;"><i class="bi bi-x-circle text-danger fs-4"></i></div>
+                <div>
+                    <div style="font-size:22px;font-weight:900;color:#dc2626;">@ViewBag.OutOfStock</div>
+                    <div style="font-size:12px;color:var(--brand-gray);">Hết hàng</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="bg-white rounded-3 p-3 d-flex align-items-center gap-3" style="border:1px solid #f0f0f0;">
+                <div style="background:#fff7ed;border-radius:10px;padding:12px;"><i class="bi bi-currency-dollar text-warning fs-4"></i></div>
+                <div>
+                    <div style="font-size:18px;font-weight:900;color:var(--brand-orange);">@((ViewBag.TotalValue as decimal? ?? 0).ToString("N0", culture))đ</div>
+                    <div style="font-size:12px;color:var(--brand-gray);">Tổng giá trị tồn kho</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="d-flex gap-3 mb-4 flex-wrap align-items-center">
+        <div class="input-group" style="max-width:280px;">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" value="@q" class="form-control" placeholder="Tìm nguyên liệu..." />
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Stock" class="btn btn-sm @(status == "" ? "btn-dark" : "btn-outline-secondary")">Tất cả</a>
+            <a asp-action="Stock" asp-route-status="ok" class="btn btn-sm @(status == "ok" ? "btn-success" : "btn-outline-success")">Đủ hàng (@ViewBag.OkStock)</a>
+            <a asp-action="Stock" asp-route-status="low" class="btn btn-sm @(status == "low" ? "btn-warning" : "btn-outline-warning")">Sắp hết (@ViewBag.LowStock)</a>
+            <a asp-action="Stock" asp-route-status="out" class="btn btn-sm @(status == "out" ? "btn-danger" : "btn-outline-danger")">Hết hàng (@ViewBag.OutOfStock)</a>
+        </div>
+    </form>
+
+    <!-- Table -->
+    <div class="bg-white rounded-3" style="border:1px solid #f0f0f0;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;">
+            <thead style="background:#f8f7f5;">
+                <tr>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:left;">Nguyên liệu</th>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:left;">Danh mục</th>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:right;">Tồn kho</th>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:right;">Mức tái đặt</th>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:right;">Đơn giá</th>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:right;">Tổng giá trị</th>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:left;">Trạng thái</th>
+                    <th style="padding:14px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ing in Model)
+                {
+                    var isOut = ing.StockQuantity <= 0;
+                    var isLow = !isOut && ing.ReorderLevel > 0 && ing.StockQuantity <= ing.ReorderLevel;
+                    var stockColor = isOut ? "#dc2626" : isLow ? "#d97706" : "#16a34a";
+                    var stockBg = isOut ? "#fee2e2" : isLow ? "#fef9c3" : "#dcfce7";
+                    var stockLabel = isOut ? "Hết hàng" : isLow ? "Sắp hết" : "Đủ hàng";
+
+                    <tr style="border-top:1px solid #f0f0f0;">
+                        <td style="padding:14px 20px;">
+                            <div style="font-weight:600;color:var(--brand-dark);font-size:14px;">@ing.Name</div>
+                            <div style="font-size:12px;color:var(--brand-gray);">Đơn vị: @ing.Unit</div>
+                        </td>
+                        <td style="padding:14px 20px;font-size:13px;color:var(--brand-gray);">@(ing.Category?.Name ?? "—")</td>
+                        <td style="padding:14px 20px;text-align:right;font-weight:700;font-size:15px;color:@stockColor;">
+                            @ing.StockQuantity.ToString("N0", culture) @ing.Unit
+                        </td>
+                        <td style="padding:14px 20px;text-align:right;font-size:13px;color:var(--brand-gray);">
+                            @ing.ReorderLevel.ToString("N0", culture) @ing.Unit
+                        </td>
+                        <td style="padding:14px 20px;text-align:right;font-size:13px;color:var(--brand-gray);">
+                            @ing.UnitPrice.ToString("N0", culture)đ/@ing.Unit
+                        </td>
+                        <td style="padding:14px 20px;text-align:right;font-weight:600;color:var(--brand-dark);font-size:13px;">
+                            @((ing.StockQuantity * ing.UnitPrice).ToString("N0", culture))đ
+                        </td>
+                        <td style="padding:14px 20px;">
+                            <span style="padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;background:@stockBg;color:@stockColor;">
+                                @stockLabel
+                            </span>
+                        </td>
+                        <td style="padding:14px 20px;">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    style="font-size:12px;"
+                                    onclick="openAdjust(@ing.Id, '@ing.Name.Replace("'","\\'")', '@ing.Unit', @ing.StockQuantity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))">
+                                <i class="bi bi-pencil-square"></i> Điều chỉnh
+                            </button>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" style="padding:48px;text-align:center;color:var(--brand-gray);">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            Không tìm thấy nguyên liệu nào.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Adjust Modal -->
+<div class="modal fade" id="adjustModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="AdjustStock" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="adjustId" />
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Điều chỉnh tồn kho</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" id="adjustName"></label>
+                        <div class="text-muted small mb-2">Tồn kho hiện tại: <strong id="adjustCurrent"></strong></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Điều chỉnh số lượng</label>
+                        <div class="input-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="setSign(-1)">- Xuất</button>
+                            <input type="number" name="adjustment" id="adjustQty" class="form-control text-center" step="0.01" min="0.01" placeholder="Nhập số lượng" required />
+                            <button type="button" class="btn btn-outline-secondary" onclick="setSign(1)">+ Nhập</button>
+                        </div>
+                        <input type="hidden" id="adjustSign" value="1" />
+                        <div class="form-text" id="adjustSignLabel">Đang nhập hàng (+)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Lý do</label>
+                        <input type="text" name="reason" class="form-control" placeholder="Ví dụ: Nhập từ nhà cung cấp ABC" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Xác nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let adjustSign = 1;
+
+    function setSign(s) {
+        adjustSign = s;
+        document.getElementById('adjustSignLabel').textContent = s > 0 ? 'Đang nhập hàng (+)' : 'Đang xuất hàng (-)';
+        document.getElementById('adjustSignLabel').className = s > 0 ? 'form-text text-success' : 'form-text text-danger';
+    }
+
+    function openAdjust(id, name, unit, current) {
+        document.getElementById('adjustId').value = id;
+        document.getElementById('adjustName').textContent = name + ' (' + unit + ')';
+        document.getElementById('adjustCurrent').textContent = current + ' ' + unit;
+        document.getElementById('adjustQty').value = '';
+        adjustSign = 1;
+        document.getElementById('adjustSignLabel').textContent = 'Đang nhập hàng (+)';
+        document.getElementById('adjustSignLabel').className = 'form-text text-success';
+        new bootstrap.Modal(document.getElementById('adjustModal')).show();
+    }
+
+    // On submit: multiply qty by sign
+    document.querySelector('#adjustModal form').addEventListener('submit', function (e) {
+        const qty = parseFloat(document.getElementById('adjustQty').value) || 0;
+        document.getElementById('adjustQty').value = (qty * adjustSign).toFixed(2);
+    });
+</script>

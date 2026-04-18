@@ -87,7 +87,7 @@
                                 <a class="lp-btn primary" asp-action="Details" asp-route-id="@o.Id">Xem chi tiết</a>
                                 @if (o.OrderStatus == "Delivering" || o.OrderStatus == "Preparing" || o.OrderStatus == "Ready" || o.OrderStatus == "Confirmed" || o.OrderStatus == "Pending")
                                 {
-                                    <a class="lp-btn secondary" href="#">Theo dõi</a>
+                                    <a class="lp-btn secondary" asp-action="Details" asp-route-id="@o.Id">Theo dõi</a>
                                 }
                                 else if (o.OrderStatus == "Completed")
                                 {

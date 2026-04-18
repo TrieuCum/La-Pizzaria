@@ -33,6 +33,9 @@ namespace LaPizzaria.Data
         public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
 
         public DbSet<Customer> Customers { get; set; }
+        public DbSet<IngredientPriceHistory> IngredientPriceHistories { get; set; }
+        public DbSet<IngredientImport> IngredientImports { get; set; }
+        public DbSet<IngredientExport> IngredientExports { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -190,6 +193,12 @@ namespace LaPizzaria.Data
                 .WithMany(p => p.VoucherProducts)
                 .HasForeignKey(vp => vp.ProductId);
 
+            modelBuilder.Entity<Voucher>()
+                .HasOne(v => v.FreeProduct)
+                .WithMany()
+                .HasForeignKey(v => v.FreeProductId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // UserSavedVoucher: user đã lưu voucher vào tài khoản
             modelBuilder.Entity<UserSavedVoucher>()
                 .HasKey(usv => new { usv.UserId, usv.VoucherId });
@@ -223,6 +232,23 @@ namespace LaPizzaria.Data
                 .HasIndex(t => new { t.UserId, t.ReferenceCode })
                 .IsUnique()
                 .HasFilter("[ReferenceCode] IS NOT NULL");
+
+            // IngredientPriceHistory
+            modelBuilder.Entity<IngredientPriceHistory>()
+                .HasOne(h => h.Ingredient).WithMany().HasForeignKey(h => h.IngredientId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<IngredientPriceHistory>().Property(h => h.UnitPrice).HasPrecision(18, 4);
+            modelBuilder.Entity<IngredientPriceHistory>().HasIndex(h => new { h.IngredientId, h.RecordedDate });
+
+            // IngredientImport
+            modelBuilder.Entity<IngredientImport>()
+                .HasOne(im => im.Ingredient).WithMany().HasForeignKey(im => im.IngredientId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<IngredientImport>().Property(im => im.Quantity).HasPrecision(18, 2);
+            modelBuilder.Entity<IngredientImport>().Property(im => im.UnitPrice).HasPrecision(18, 4);
+
+            // IngredientExport
+            modelBuilder.Entity<IngredientExport>()
+                .HasOne(ex => ex.Ingredient).WithMany().HasForeignKey(ex => ex.IngredientId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<IngredientExport>().Property(ex => ex.Quantity).HasPrecision(18, 2);
 
             // OrderDetail relationships
             modelBuilder.Entity<OrderDetail>()

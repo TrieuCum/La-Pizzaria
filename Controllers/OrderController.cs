@@ -12,6 +12,7 @@ using LaPizzaria.ViewModels;
 using LaPizzaria.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Caching.Memory;
+using System.Security.Claims;
 
 namespace LaPizzaria.Controllers
 {
@@ -589,6 +590,67 @@ namespace LaPizzaria.Controllers
             }
 
             return Ok(new { payUrl = apiResult.PayUrl });
+        }
+
+        [HttpGet("/api/shipper/location")]
+        [Authorize]
+        public async Task<IActionResult> GetShipperLocation([FromQuery] int orderId)
+        {
+            if (orderId <= 0) return BadRequest(new { message = "orderId không hợp lệ." });
+
+            var order = await _db.Orders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return NotFound(new { message = "Không tìm thấy đơn hàng." });
+
+            var userId = _userManager.GetUserId(User);
+            var isAdminOrStaff = User.IsInRole("Admin") || User.IsInRole("Staff");
+            var isOwnerCustomer = !string.IsNullOrWhiteSpace(userId) && order.UserId == userId;
+            var isShipperOfOrder = !string.IsNullOrWhiteSpace(userId) && order.ShipperId == userId;
+            if (!isAdminOrStaff && !isOwnerCustomer && !isShipperOfOrder)
+                return Forbid();
+
+            // Nếu shipper đang giao, mô phỏng vị trí theo thời gian thực từ điểm gốc -> điểm giao.
+            var isDelivering = string.Equals(order.DeliveryStatus, "delivering", StringComparison.OrdinalIgnoreCase);
+            var startedAtUtc = order.ShipperLocationUpdatedAt ?? order.AssignedAt ?? order.UpdatedAt;
+            if (isDelivering)
+            {
+                var simulated = ShipperLocationSimulationHelper.ComputeSimulatedLocation(
+                    order.Id,
+                    startedAtUtc,
+                    order.Latitude,
+                    order.Longitude);
+                if (simulated.HasValue)
+                {
+                    return Ok(new
+                    {
+                        latitude = simulated.Value.Latitude,
+                        longitude = simulated.Value.Longitude,
+                        simulationProgress = simulated.Value.Progress,
+                        originLatitude = ShipperLocationSimulationHelper.OriginLatitude,
+                        originLongitude = ShipperLocationSimulationHelper.OriginLongitude,
+                        destinationLatitude = order.Latitude,
+                        destinationLongitude = order.Longitude,
+                        updatedAtUtc = DateTime.UtcNow,
+                        hasShipper = !string.IsNullOrWhiteSpace(order.ShipperId),
+                        isDelivering = true
+                    });
+                }
+            }
+
+            return Ok(new
+            {
+                latitude = order.ShipperLatitude,
+                longitude = order.ShipperLongitude,
+                simulationProgress = (double?)null,
+                originLatitude = ShipperLocationSimulationHelper.OriginLatitude,
+                originLongitude = ShipperLocationSimulationHelper.OriginLongitude,
+                destinationLatitude = order.Latitude,
+                destinationLongitude = order.Longitude,
+                updatedAtUtc = order.ShipperLocationUpdatedAt,
+                hasShipper = !string.IsNullOrWhiteSpace(order.ShipperId),
+                isDelivering = isDelivering
+            });
         }
 
         private static bool IsVoucherForUser(Voucher voucher, string? userId)

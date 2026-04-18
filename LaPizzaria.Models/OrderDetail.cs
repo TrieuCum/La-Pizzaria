@@ -17,6 +17,8 @@ namespace LaPizzaria.Models
         public Product? Product { get; set; }
         public Product? Product2 { get; set; }
         public string? Size { get; set; }
+        /// <summary>Dòng sản phẩm miễn phí do đổi voucher tích điểm.</summary>
+        public bool IsFreeByVoucher { get; set; }
         public ICollection<OrderDetailTopping> OrderDetailToppings { get; set; } = new List<OrderDetailTopping>();
     }
 }

@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using LaPizzaria.Data;
 using LaPizzaria.Models;
 using LaPizzaria.ViewModels;
+using LaPizzaria.Services;
+using LaPizzaria.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace LaPizzaria.Controllers
@@ -14,12 +17,17 @@ namespace LaPizzaria.Controllers
         private static readonly string[] StatusKeys = { "Pending", "Confirmed", "Preparing", "Ready", "Delivering", "Completed", "Cancelled" };
 
         private readonly ApplicationDbContext _db;
+        private readonly ShipperDispatchService _dispatch;
+        private readonly IHubContext<OrderingHub> _hub;
 
-        public OrderManagementController(ApplicationDbContext db)
+        public OrderManagementController(ApplicationDbContext db, ShipperDispatchService dispatch, IHubContext<OrderingHub> hub)
         {
             _db = db;
+            _dispatch = dispatch;
+            _hub = hub;
         }
 
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> Index(string? search, string? statusFilter, int page = 1)
         {
             if (page < 1) page = 1;
@@ -140,7 +148,39 @@ namespace LaPizzaria.Controllers
             order.OrderStatus = status;
             order.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
-            TempData["success"] = "Đã cập nhật trạng thái đơn hàng.";
+
+            // Auto-assign shipper only for delivery orders (must have DeliveryAddress)
+            if (status == "Ready" && string.IsNullOrWhiteSpace(order.ShipperId)
+                && !string.IsNullOrWhiteSpace(order.DeliveryAddress))
+            {
+                var assignedShipperId = await _dispatch.AutoAssignAsync(order.Id);
+                if (assignedShipperId != null)
+                {
+                    // Fetch shipper display name for notification
+                    var shipper = await _db.Users.FindAsync(assignedShipperId);
+                    var shipperName = $"{shipper?.FirstName} {shipper?.LastName}".Trim();
+                    if (string.IsNullOrWhiteSpace(shipperName)) shipperName = shipper?.UserName ?? assignedShipperId;
+
+                    // Re-fetch order to get latest data for SignalR payload
+                    var freshOrder = await _db.Orders.FindAsync(order.Id);
+                    await _hub.Clients.Group($"shipper_{assignedShipperId}").SendAsync("newOrderAssigned", new
+                    {
+                        orderId = order.Id,
+                        totalPrice = freshOrder?.TotalPrice ?? order.TotalPrice,
+                        deliveryAddress = order.DeliveryAddress,
+                        orderDate = order.OrderDate.ToString("HH:mm dd/MM/yyyy")
+                    });
+                    TempData["success"] = $"✅ Đơn #{order.Id} đã gán cho shipper {shipperName} (FIFO tự động).";
+                }
+                else
+                {
+                    TempData["success"] = "Đã cập nhật trạng thái. Không có shipper rảnh — shipper sẽ tự nhận đơn.";
+                }
+            }
+            else
+            {
+                TempData["success"] = "Đã cập nhật trạng thái đơn hàng.";
+            }
             return RedirectToAction(nameof(Index));
         }
 

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using LaPizzaria.Helpers;
 
 namespace LaPizzaria.Controllers
 {
@@ -32,21 +33,24 @@ namespace LaPizzaria.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var baseQuery = _db.Orders
+            // Active orders: show ANY order assigned to this shipper (incl. non-delivery)
+            var activeOrders = await _db.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(d => d.Product)
-                .Where(o => !string.IsNullOrWhiteSpace(o.DeliveryAddress));
-
-            var activeOrders = await baseQuery
                 .Where(o => o.ShipperId == shipperId && ActiveDeliveryStatuses.Contains(o.DeliveryStatus ?? ""))
-                .OrderByDescending(o => o.OrderDate)
+                .OrderByDescending(o => o.AssignedAt ?? o.OrderDate)
                 .Take(1)
                 .ToListAsync();
 
-            var newOrders = await baseQuery
+            // New orders: only delivery orders without a shipper yet
+            var newOrders = await _db.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(d => d.Product)
                 .Where(o =>
                     o.ShipperId == null &&
+                    !string.IsNullOrWhiteSpace(o.DeliveryAddress) &&
                     KitchenReadyStatuses.Contains(o.OrderStatus))
                 .OrderBy(o => o.OrderDate)
                 .Take(8)
@@ -380,7 +384,7 @@ namespace LaPizzaria.Controllers
                     .ThenInclude(d => d.Product)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (order == null || string.IsNullOrWhiteSpace(order.DeliveryAddress))
+            if (order == null)
                 return NotFound();
 
             var canViewOrder = order.ShipperId == null || order.ShipperId == shipperId;
@@ -497,12 +501,15 @@ WHERE Id = {id}
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!latitude.HasValue || !longitude.HasValue
-                || latitude.Value < -90 || latitude.Value > 90
-                || longitude.Value < -180 || longitude.Value > 180)
+            var startLat = latitude;
+            var startLng = longitude;
+            if (!startLat.HasValue || !startLng.HasValue
+                || startLat.Value is < -90 or > 90
+                || startLng.Value is < -180 or > 180)
             {
-                TempData["error"] = "Bạn phải bật định vị và cho phép trình duyệt truy cập vị trí trước khi bắt đầu giao hàng.";
-                return RedirectToAction(nameof(Detail), new { id });
+                // Mặc định điểm xuất phát theo yêu cầu bài toán (193 Đỗ Văn Thi).
+                startLat = ShipperLocationSimulationHelper.OriginLatitude;
+                startLng = ShipperLocationSimulationHelper.OriginLongitude;
             }
 
             var now = DateTime.UtcNow;
@@ -510,8 +517,8 @@ WHERE Id = {id}
             var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
 UPDATE Orders
 SET DeliveryStatus = {"delivering"},
-    ShipperLatitude = {latitude},
-    ShipperLongitude = {longitude},
+    ShipperLatitude = {startLat},
+    ShipperLongitude = {startLng},
     ShipperLocationUpdatedAt = {now},
     ShipperLocationIp = {clientIp},
     UpdatedAt = {now}
@@ -731,6 +738,40 @@ WHERE Id = {id}
         }
 
         [HttpPost]
+        [Route("api/shipper/update-location")]
+        public async Task<IActionResult> UpdateLocation([FromBody] UpdateLocationPayload payload)
+        {
+            var shipperId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(shipperId))
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+            if (payload == null || payload.OrderId <= 0)
+                return BadRequest(new { success = false, message = "Thiếu orderId." });
+            if (payload.Latitude is < -90 or > 90 || payload.Longitude is < -180 or > 180)
+                return BadRequest(new { success = false, message = "Tọa độ không hợp lệ." });
+
+            var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == payload.OrderId && o.ShipperId == shipperId);
+            if (order == null)
+                return Conflict(new { success = false, message = "Bạn không thể cập nhật vị trí cho đơn này." });
+            if (!string.Equals(order.DeliveryStatus, "delivering", StringComparison.OrdinalIgnoreCase))
+                return Conflict(new { success = false, message = "Chỉ cập nhật vị trí khi đơn đang giao." });
+
+            order.ShipperLatitude = payload.Latitude;
+            order.ShipperLongitude = payload.Longitude;
+            order.ShipperLocationUpdatedAt = DateTime.UtcNow;
+            order.ShipperLocationIp = GetClientIp(HttpContext);
+            order.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                latitude = order.ShipperLatitude,
+                longitude = order.ShipperLongitude,
+                updatedAt = order.ShipperLocationUpdatedAt
+            });
+        }
+
+        [HttpPost]
         [Route("api/shipper/orders/{id:int}/location")]
         public async Task<IActionResult> UpdateLocationApi(int id, [FromBody] UpdateShipperLocationRequest request)
         {
@@ -897,6 +938,13 @@ WHERE Id = {id}
 
         public sealed class UpdateShipperLocationRequest
         {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        public sealed class UpdateLocationPayload
+        {
+            public int OrderId { get; set; }
             public double Latitude { get; set; }
             public double Longitude { get; set; }
         }

@@ -11,123 +11,432 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hóa đơn @Model.OrderCode</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 13px; line-height: 1.4; color: #000; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff; }
-        .no-print { margin-bottom: 16px; }
-        @@media print {
-            body { padding: 0; }
-            .no-print { display: none !important; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #f4f4f4;
+            padding: 24px;
         }
-        .invoice { white-space: pre-wrap; }
-        .line { border-bottom: 1px solid #ccc; margin: 8px 0; }
-        .sep { margin: 4px 0; }
-        table.inv-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
-        table.inv-table th, table.inv-table td { border: 1px solid #333; padding: 6px 8px; text-align: left; }
-        table.inv-table th { font-weight: bold; }
-        table.inv-table .num { text-align: right; }
-        .text-right { text-align: right; }
-        .bold { font-weight: bold; }
-        .mt-1 { margin-top: 8px; }
-        .mb-0 { margin-bottom: 0; }
+
+        .invoice-wrapper {
+            max-width: 720px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .inv-header {
+            background: #f97316;
+            color: #fff;
+            padding: 28px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+        }
+        .inv-brand { }
+        .inv-brand-name {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+        .inv-brand-tagline {
+            font-size: 11px;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+        .inv-meta { text-align: right; }
+        .inv-meta-title {
+            font-size: 20px;
+            font-weight: 700;
+            opacity: 0.9;
+        }
+        .inv-meta-code {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        .inv-meta-date {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        /* Body */
+        .inv-body { padding: 28px 32px; }
+
+        /* Party section */
+        .inv-parties {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .inv-party { }
+        .inv-party-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #f97316;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            border-bottom: 2px solid #f97316;
+            padding-bottom: 4px;
+        }
+        .inv-party-name {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .inv-party-detail {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 2px;
+        }
+
+        /* Table */
+        .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .inv-table thead tr {
+            background: #f97316;
+            color: #fff;
+        }
+        .inv-table th {
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .inv-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 12.5px;
+        }
+        .inv-table tbody tr:last-child td { border-bottom: none; }
+        .inv-table tbody tr:nth-child(even) td { background: #fafafa; }
+        .num { text-align: right; }
+        .center { text-align: center; }
+
+        /* Totals */
+        .inv-totals {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        .inv-totals-box {
+            width: 280px;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .inv-totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px 14px;
+            font-size: 12.5px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .inv-totals-row:last-child { border-bottom: none; }
+        .inv-totals-row.discount { color: #16a34a; }
+        .inv-totals-row.grand {
+            background: #f97316;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 10px 14px;
+        }
+        .inv-totals-label { color: #555; }
+        .inv-totals-row.grand .inv-totals-label { color: #fff; }
+
+        /* Amount in words */
+        .inv-words {
+            background: #fef9f5;
+            border: 1px dashed #f97316;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            margin-bottom: 20px;
+            color: #555;
+        }
+        .inv-words strong { color: #1a1a1a; }
+
+        /* Payment & status */
+        .inv-payment-row {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        .inv-payment-box, .inv-status-box {
+            flex: 1;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .inv-section-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #f97316;
+            margin-bottom: 8px;
+        }
+        .inv-payment-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            font-size: 12.5px;
+        }
+        .inv-payment-option input { accent-color: #f97316; }
+
+        /* Signatures */
+        .inv-signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 8px;
+        }
+        .inv-sig-box {
+            text-align: center;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .inv-sig-title { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+        .inv-sig-note { font-size: 10px; color: #999; margin-bottom: 36px; }
+        .inv-sig-line {
+            border-top: 1px dashed #ccc;
+            margin: 0 20px;
+            padding-top: 4px;
+            font-size: 10px;
+            color: #bbb;
+        }
+
+        /* Footer */
+        .inv-footer {
+            background: #fafafa;
+            border-top: 1px solid #f0f0f0;
+            padding: 12px 32px;
+            font-size: 10px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        /* Print button */
+        .no-print {
+            max-width: 720px;
+            margin: 0 auto 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn-print {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #f97316;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-close-inv {
+            color: #555;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        @@media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none !important; }
+            .invoice-wrapper { border-radius: 0; }
+            .inv-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .inv-table thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .inv-totals-row.grand { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
     </style>
 </head>
 <body>
     <div class="no-print">
-        <button type="button" onclick="window.print()" style="padding: 8px 16px; cursor: pointer; background: #f97316; color: #fff; border: none; border-radius: 6px;">🖨️ In hóa đơn</button>
-        <a href="javascript:window.close()" style="margin-left: 10px;">Đóng</a>
+        <button type="button" class="btn-print" onclick="window.print()">
+            &#128424; In hóa đơn
+        </button>
+        <a href="javascript:window.close()" class="btn-close-inv">&#10005; Đóng</a>
     </div>
 
-    <div class="invoice">
-Ký hiệu hóa đơn: @Model.InvoiceSymbol
-Số hóa đơn: @Model.InvoiceNumber
-Ngày lập: @Model.IssueDate
+    <div class="invoice-wrapper">
+        <!-- Header -->
+        <div class="inv-header">
+            <div class="inv-brand">
+                <div class="inv-brand-name">&#127829; LaPizzaria</div>
+                <div class="inv-brand-tagline">@Model.SellerAddress</div>
+                <div class="inv-brand-tagline">&#128222; @Model.SellerPhone &nbsp;|&nbsp; @Model.SellerEmail</div>
+                <div class="inv-brand-tagline">MST: @Model.SellerTaxCode</div>
+            </div>
+            <div class="inv-meta">
+                <div class="inv-meta-title">HÓA ĐƠN</div>
+                <div class="inv-meta-code">@Model.OrderCode</div>
+                <div class="inv-meta-date">Ngày lập: @Model.IssueDate</div>
+                <div class="inv-meta-date">Ký hiệu: @Model.InvoiceSymbol &nbsp;|&nbsp; Số: @Model.InvoiceNumber</div>
+            </div>
+        </div>
 
-------------------------------------------------------------
-THÔNG TIN NGƯỜI BÁN
-Tên đơn vị: @Model.SellerName
-Mã số thuế: @Model.SellerTaxCode
-Địa chỉ: @Model.SellerAddress
-Điện thoại: @Model.SellerPhone
-Email: @Model.SellerEmail
+        <div class="inv-body">
+            <!-- Parties -->
+            <div class="inv-parties">
+                <div class="inv-party">
+                    <div class="inv-party-label">Người bán</div>
+                    <div class="inv-party-name">@Model.SellerName</div>
+                    <div class="inv-party-detail">&#128205; @Model.SellerAddress</div>
+                    <div class="inv-party-detail">&#128222; @Model.SellerPhone</div>
+                    <div class="inv-party-detail">&#128231; @Model.SellerEmail</div>
+                </div>
+                <div class="inv-party">
+                    <div class="inv-party-label">Người mua</div>
+                    <div class="inv-party-name">@Model.BuyerName</div>
+                    <div class="inv-party-detail">&#128222; @Model.BuyerPhone</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.BuyerAddress))
+                    {
+                        <div class="inv-party-detail">&#128205; @Model.BuyerAddress</div>
+                    }
+                </div>
+            </div>
 
-------------------------------------------------------------
-THÔNG TIN NGƯỜI MUA
-Tên khách hàng: @Model.BuyerName
-Điện thoại: @Model.BuyerPhone
-Địa chỉ: @Model.BuyerAddress
-Mã số thuế (nếu có): ___________________
+            <!-- Items table -->
+            <table class="inv-table">
+                <thead>
+                    <tr>
+                        <th class="center" style="width:40px;">STT</th>
+                        <th>Tên hàng hóa / Dịch vụ</th>
+                        <th class="center" style="width:50px;">SL</th>
+                        <th class="num" style="width:110px;">Đơn giá</th>
+                        <th class="num" style="width:120px;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in Model.Lines)
+                    {
+                        <tr>
+                            <td class="center">@line.Stt</td>
+                            <td>@line.ProductName</td>
+                            <td class="center">@line.Quantity</td>
+                            <td class="num">@line.UnitPrice.ToString("N0", culture)đ</td>
+                            <td class="num">@line.Total.ToString("N0", culture)đ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
 
-------------------------------------------------------------
-CHI TIẾT HÀNG HÓA / DỊCH VỤ
-    </div>
+            <!-- Totals -->
+            <div class="inv-totals">
+                <div class="inv-totals-box">
+                    <div class="inv-totals-row">
+                        <span class="inv-totals-label">Tạm tính</span>
+                        <span>@Model.Subtotal.ToString("N0", culture)đ</span>
+                    </div>
+                    @if (Model.VoucherDiscount > 0)
+                    {
+                        <div class="inv-totals-row discount">
+                            <span>Giảm giá / Voucher</span>
+                            <span>-@Model.VoucherDiscount.ToString("N0", culture)đ</span>
+                        </div>
+                    }
+                    @if (Model.DeliveryFee > 0)
+                    {
+                        <div class="inv-totals-row">
+                            <span class="inv-totals-label">Phí giao hàng</span>
+                            <span>@Model.DeliveryFee.ToString("N0", culture)đ</span>
+                        </div>
+                    }
+                    <div class="inv-totals-row">
+                        <span class="inv-totals-label">Tiền trước thuế</span>
+                        <span>@Model.TotalBeforeTax.ToString("N0", culture)đ</span>
+                    </div>
+                    <div class="inv-totals-row">
+                        <span class="inv-totals-label">Thuế GTGT (@Model.TaxPercent%)</span>
+                        <span>@Model.TaxAmount.ToString("N0", culture)đ</span>
+                    </div>
+                    <div class="inv-totals-row grand">
+                        <span class="inv-totals-label">TỔNG THANH TOÁN</span>
+                        <span>@Model.GrandTotal.ToString("N0", culture)đ</span>
+                    </div>
+                </div>
+            </div>
 
-    <table class="inv-table">
-        <thead>
-            <tr>
-                <th style="width:40px;">STT</th>
-                <th>Tên hàng hóa</th>
-                <th style="width:50px;" class="num">SL</th>
-                <th style="width:100px;" class="num">Đơn giá</th>
-                <th style="width:110px;" class="num">Thành tiền</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var line in Model.Lines)
-            {
-                <tr>
-                    <td class="num">@line.Stt</td>
-                    <td>@line.ProductName</td>
-                    <td class="num">@line.Quantity</td>
-                    <td class="num">@line.UnitPrice.ToString("N0", culture)đ</td>
-                    <td class="num">@line.Total.ToString("N0", culture)đ</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            <!-- Amount in words -->
+            <div class="inv-words">
+                Bằng chữ: <strong>@Model.AmountInWords</strong>
+            </div>
 
-    <div class="invoice">
-------------------------------------------------------------
-    </div>
-    <table class="inv-table" style="border: none;">
-        <tr style="border: none;"><td style="border: none;">Tạm tính:</td><td class="num text-right" style="border: none; width: 120px;">@Model.Subtotal.ToString("N0", culture)đ</td></tr>
-        <tr style="border: none;"><td style="border: none;">Phí giao hàng:</td><td class="num text-right" style="border: none;">@Model.DeliveryFee.ToString("N0", culture)đ</td></tr>
-        <tr style="border: none;"><td style="border: none;">Giảm giá / Voucher:</td><td class="num text-right" style="border: none;">@Model.VoucherDiscount.ToString("N0", culture)đ</td></tr>
-        <tr style="border: none;"><td style="border: none;">Tổng tiền trước thuế:</td><td class="num text-right bold" style="border: none;">@Model.TotalBeforeTax.ToString("N0", culture)đ</td></tr>
-        <tr style="border: none;"><td style="border: none;">Thuế GTGT (@Model.TaxPercent%):</td><td class="num text-right" style="border: none;">@Model.TaxAmount.ToString("N0", culture)đ</td></tr>
-        <tr style="border: none;"><td style="border: none;" class="bold">TỔNG THANH TOÁN:</td><td class="num text-right bold" style="border: none;">@Model.GrandTotal.ToString("N0", culture)đ</td></tr>
-    </table>
-    <div class="invoice">
-(Bằng chữ: @Model.AmountInWords)
+            <!-- Payment & Status -->
+            <div class="inv-payment-row">
+                <div class="inv-payment-box">
+                    <div class="inv-section-title">Phương thức thanh toán</div>
+                    @{
+                        var pm = Model.PaymentMethodDisplay ?? "";
+                        var isCod = string.IsNullOrEmpty(Model.Order.PaymentMethod) || pm.Contains("Tiền mặt") || pm.Contains("COD") || pm.Contains("Chưa chọn");
+                        var isTransfer = pm.Contains("Chuyển khoản");
+                        var isWallet = pm.Contains("Ví") || pm.Contains("MoMo");
+                    }
+                    <div class="inv-payment-option">
+                        <input type="checkbox" @(isCod ? "checked" : "") disabled /> Tiền mặt (COD)
+                    </div>
+                    <div class="inv-payment-option">
+                        <input type="checkbox" @(isTransfer ? "checked" : "") disabled /> Chuyển khoản ngân hàng
+                    </div>
+                    <div class="inv-payment-option">
+                        <input type="checkbox" @(isWallet ? "checked" : "") disabled /> Ví điện tử / MoMo
+                    </div>
+                </div>
+                <div class="inv-status-box">
+                    <div class="inv-section-title">Thông tin đơn hàng</div>
+                    <div style="font-size:12px; margin-bottom:5px;">
+                        <strong>Mã đơn:</strong> @Model.OrderCode
+                    </div>
+                    <div style="font-size:12px; margin-bottom:5px;">
+                        <strong>Ngày đặt:</strong> @Model.OrderDateDisplay
+                    </div>
+                    <div style="font-size:12px; margin-bottom:5px;">
+                        <strong>Trạng thái:</strong> @Model.OrderStatusDisplay
+                    </div>
+                    <div style="font-size:12px;">
+                        <strong>Thanh toán:</strong> @Model.PaymentStatus
+                    </div>
+                </div>
+            </div>
 
-------------------------------------------------------------
-PHƯƠNG THỨC THANH TOÁN
-@{
-    var pm = Model.PaymentMethodDisplay ?? "";
-    var isCod = string.IsNullOrEmpty(Model.Order.PaymentMethod) || pm.Contains("Tiền mặt") || pm.Contains("COD") || pm.Contains("Chưa chọn");
-    var isTransfer = pm.Contains("Chuyển khoản");
-    var isWallet = pm.Contains("Ví");
-}
-@(isCod ? "☑" : "☐") Tiền mặt (COD)
-@(isTransfer ? "☑" : "☐") Chuyển khoản
-@(isWallet ? "☑" : "☐") Ví điện tử
+            <!-- Signatures -->
+            <div class="inv-signatures">
+                <div class="inv-sig-box">
+                    <div class="inv-sig-title">Người mua hàng</div>
+                    <div class="inv-sig-note">(Ký và ghi rõ họ tên)</div>
+                    <div class="inv-sig-line">Họ và tên</div>
+                </div>
+                <div class="inv-sig-box">
+                    <div class="inv-sig-title">Người bán hàng</div>
+                    <div class="inv-sig-note">(Ký, đóng dấu và ghi rõ họ tên)</div>
+                    <div class="inv-sig-line">Họ và tên</div>
+                </div>
+            </div>
+        </div>
 
-Trạng thái thanh toán: @Model.PaymentStatus
-
-------------------------------------------------------------
-THÔNG TIN ĐƠN HÀNG
-Mã đơn hàng: @Model.OrderCode
-Thời gian đặt: @Model.OrderDateDisplay
-Trạng thái: @Model.OrderStatusDisplay
-
-------------------------------------------------------------
-Người mua hàng                Người bán hàng
-(Ký và ghi rõ họ tên)         (Ký, đóng dấu)
-
-        ____________              ____________
-
-------------------------------------------------------------
-Ghi chú:
-Hóa đơn này được xuất từ hệ thống LaPizzaria.
+        <div class="inv-footer">
+            Hóa đơn này được xuất tự động từ hệ thống LaPizzaria &nbsp;|&nbsp;
+            Ngày lập: @Model.IssueDate &nbsp;|&nbsp;
+            Ký hiệu: @Model.InvoiceSymbol — Số: @Model.InvoiceNumber
+        </div>
     </div>
 </body>
 </html>

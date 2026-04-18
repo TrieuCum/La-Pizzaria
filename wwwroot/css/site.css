@@ -1233,3 +1233,23 @@ body.has-sidebar.sidebar-collapsed .content-wrapper {
 }
 
 .btn-action:hover { color: #0F172A; }
+
+/* Toast notifications */
+#toastContainer .toast {
+    border-radius: 14px !important;
+    overflow: hidden;
+    min-width: 260px;
+    max-width: 360px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: filter .15s, transform .1s;
+    box-shadow: 0 4px 18px rgba(0,0,0,.18);
+}
+#toastContainer .toast:hover {
+    filter: brightness(1.12);
+    transform: translateY(-1px);
+}
+#toastContainer .toast .toast-body {
+    font-size: 13.5px;
+    padding: 10px 14px;
+}

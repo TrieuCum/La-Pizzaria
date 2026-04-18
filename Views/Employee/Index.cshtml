@@ -73,12 +73,21 @@
                         </td>
                         <td>
                             <div class="action-buttons">
-                                <button class="action-btn btn-edit" title="Chỉnh sửa">
+                                <button class="action-btn btn-edit"
+                                        title="Chỉnh sửa"
+                                        onclick="openEditModal('@item.User.Id')">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="action-btn btn-delete" title="Xóa">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <form asp-controller="Employee" asp-action="Deactivate" method="post" style="display:inline"
+                                      onsubmit="return confirm('@(item.User.IsActive ? "Vô hiệu hóa tài khoản nhân viên này?" : "Kích hoạt lại tài khoản nhân viên này?")')">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.User.Id" />
+                                    <button type="submit"
+                                            class="action-btn @(item.User.IsActive ? "btn-deactivate" : "btn-activate")"
+                                            title="@(item.User.IsActive ? "Vô hiệu hóa" : "Kích hoạt lại")">
+                                        <i class="bi @(item.User.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -153,6 +162,96 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Chỉnh sửa nhân viên -->
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="Employee" asp-action="Edit" method="post" id="editEmployeeForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editUserId" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editEmployeeModalLabel">Chỉnh sửa nhân viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Họ và tên</label>
+                            <input name="fullName" id="editFullName" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email <small class="text-muted">(không thể đổi)</small></label>
+                            <input id="editEmailDisplay" class="form-control" disabled />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Số điện thoại</label>
+                            <input name="phoneNumber" id="editPhoneNumber" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ngày sinh</label>
+                            <input name="birthday" id="editBirthday" type="date" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Giới tính</label>
+                            <select name="gender" id="editGender" class="form-select">
+                                <option value="">Không xác định</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Vai trò</label>
+                            <select name="role" id="editRole" class="form-select" required>
+                                <option value="Staff">Nhân viên</option>
+                                <option value="Shipper">Shipper</option>
+                                <option value="Admin">Quản trị viên</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Trạng thái</label>
+                            <select name="isActive" id="editIsActive" class="form-select">
+                                <option value="true">Đang làm việc</option>
+                                <option value="false">Vô hiệu hóa</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Địa chỉ</label>
+                            <textarea name="address" id="editAddress" rows="2" class="form-control"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function openEditModal(userId) {
+        try {
+            const res = await fetch(`/Employee/GetEditData?id=${userId}`);
+            if (!res.ok) { alert('Không tải được thông tin nhân viên.'); return; }
+            const d = await res.json();
+            document.getElementById('editUserId').value = d.id;
+            document.getElementById('editFullName').value = d.fullName || '';
+            document.getElementById('editEmailDisplay').value = d.email || '';
+            document.getElementById('editPhoneNumber').value = d.phoneNumber || '';
+            document.getElementById('editBirthday').value = d.birthday || '';
+            document.getElementById('editGender').value = d.gender || '';
+            document.getElementById('editRole').value = d.role || 'Staff';
+            document.getElementById('editIsActive').value = d.isActive ? 'true' : 'false';
+            document.getElementById('editAddress').value = d.address || '';
+            new bootstrap.Modal(document.getElementById('editEmployeeModal')).show();
+        } catch (e) {
+            alert('Lỗi kết nối khi tải thông tin nhân viên.');
+        }
+    }
+</script>
 
 <style>
 .employee-management-page {
@@ -329,6 +428,16 @@
 .action-btn:hover {
     background: var(--brand-orange);
     color: white;
+}
+
+.btn-deactivate:hover {
+    background: #dc2626 !important;
+    color: white !important;
+}
+
+.btn-activate:hover {
+    background: #10b981 !important;
+    color: white !important;
 }
 
 @@media (max-width: 768px) {

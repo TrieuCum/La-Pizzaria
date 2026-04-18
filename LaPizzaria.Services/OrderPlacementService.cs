@@ -72,6 +72,7 @@ public sealed class OrderPlacementService : IOrderPlacementService
                 voucherDiscount += v.DiscountAmount;
             else if (v.VoucherType == "FreeShipping")
                 voucherDiscount += v.DiscountAmount;
+            // FreeProduct: DiscountAmount = 0, the free item is added as a separate OrderDetail line
         }
 
         var deliveryType = string.IsNullOrWhiteSpace(req.DeliveryType) ? "ship" : req.DeliveryType;
@@ -168,6 +169,25 @@ public sealed class OrderPlacementService : IOrderPlacementService
                 {
                     _db.OrderVouchers.Add(new OrderVoucher { OrderId = order.Id, VoucherId = v.Id });
                     v.UsedCount += 1;
+
+                    // FreeProduct: auto-add free item line to the order
+                    if (v.VoucherType == "FreeProduct" && v.FreeProductId.HasValue)
+                    {
+                        var freeProduct = await _db.Products.FindAsync(v.FreeProductId.Value);
+                        if (freeProduct != null)
+                        {
+                            _db.OrderDetails.Add(new OrderDetail
+                            {
+                                OrderId = order.Id,
+                                ProductId = freeProduct.Id,
+                                Quantity = 1,
+                                UnitPrice = 0,
+                                Subtotal = 0,
+                                Size = "M",
+                                IsFreeByVoucher = true
+                            });
+                        }
+                    }
                 }
             }
             await _db.SaveChangesAsync();

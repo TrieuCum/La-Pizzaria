@@ -31,6 +31,7 @@
     var progressPercent = isCancelled
         ? 100
         : step == 1 ? 35 : step == 2 ? 70 : 100;
+    var progressBarWidth = isCancelled ? 70m : Math.Clamp(progressPercent * 0.7m, 0m, 70m);
     var userName = "—";
     var userPhone = "—";
     var deliveryAddress = Model.DeliveryAddress;
@@ -46,6 +47,11 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/order-details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #shipperMap { height: 400px; width: 100%; border-radius: 14px; }
+        .shipper-map-note { font-size: 12px; color: #64748b; margin-top: 8px; }
+    </style>
 }
 
 <div class="order-detail-page">
@@ -94,7 +100,7 @@
                     else
                     {
                         <div class="order-detail-timeline">
-                            <div class="progress-bar" style="width: @(progressPercent)%"></div>
+                            <div class="progress-bar" style="width: @(progressBarWidth)%"></div>
                             <div class="step">
                                 <div class="step-icon @(step >= 1 ? "active" : "pending")"><i class="bi bi-egg-fried"></i></div>
                                 <div class="step-title">Đang chuẩn bị</div>
@@ -141,17 +147,30 @@
                                                 itemName = $"Mix: {d.Product?.Name} / {d.Product2.Name}";
                                             }
                                         }
-                                        <div class="order-detail-item-name d-flex align-items-center gap-2">
+                                        <div class="order-detail-item-name d-flex align-items-center gap-2 flex-wrap">
                                             @itemName
                                             @if (!string.IsNullOrEmpty(d.Size))
                                             {
                                                 <span class="badge bg-light text-dark border extra-small fw-bold">Size @d.Size</span>
                                             }
+                                            @if (d.IsFreeByVoucher)
+                                            {
+                                                <span class="badge extra-small fw-bold" style="background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;">
+                                                    <i class="bi bi-star-fill" style="font-size:9px;"></i> Miễn phí - đổi điểm
+                                                </span>
+                                            }
                                         </div>
                                         <div class="order-detail-item-notes">@(d.Product?.Description != null && d.Product.Description.Length > 60 ? d.Product.Description.Substring(0, 60) + "…" : d.Product?.Description)</div>
                                     </div>
                                     <div class="order-detail-item-right">
-                                        <div class="order-detail-item-price">@d.UnitPrice.ToString("N0")₫</div>
+                                        @if (d.IsFreeByVoucher)
+                                        {
+                                            <div class="order-detail-item-price" style="color:#16a34a;">FREE</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="order-detail-item-price">@d.UnitPrice.ToString("N0")₫</div>
+                                        }
                                         <div class="order-detail-item-qty">Số lượng: @d.Quantity</div>
                                     </div>
                                 </div>
@@ -245,7 +264,149 @@
                         <p class="support-desc mb-0">Liên hệ tổng đài 1900 1234 (miễn phí)</p>
                     </div>
                 </div>
+
+                <div class="order-detail-card mt-3">
+                    <h3>Theo dõi shipper</h3>
+                    <div id="shipperMap"></div>
+                    <div id="shipperMapStatus" class="shipper-map-note">Đang tải vị trí shipper...</div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function () {
+            const orderId = @Model.Id;
+            const defaultCenter = [10.7769, 106.7009];
+            const map = L.map('shipperMap').setView(defaultCenter, 12);
+            const statusEl = document.getElementById('shipperMapStatus');
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            const shipperIcon = L.icon({
+                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
+            });
+
+            let shipperMarker = null;
+            let customerMarker = null;
+            let routeLine = null;
+            let pollTimer = null;
+            let routeLatLngs = null;
+            let routeCumDistances = null;
+
+            function buildRouteDistances(latlngs) {
+                const d = [0];
+                for (let i = 1; i < latlngs.length; i++) {
+                    const a = map.distance(latlngs[i - 1], latlngs[i]);
+                    d.push(d[i - 1] + a);
+                }
+                return d;
+            }
+
+            function pointAtProgress(latlngs, cum, progress) {
+                if (!latlngs || !cum || !latlngs.length) return null;
+                if (progress <= 0) return latlngs[0];
+                if (progress >= 1) return latlngs[latlngs.length - 1];
+                const total = cum[cum.length - 1];
+                const target = total * progress;
+                let idx = 1;
+                while (idx < cum.length && cum[idx] < target) idx++;
+                if (idx >= cum.length) return latlngs[latlngs.length - 1];
+                const prev = latlngs[idx - 1], next = latlngs[idx];
+                const seg = cum[idx] - cum[idx - 1] || 1;
+                const t = (target - cum[idx - 1]) / seg;
+                return [prev[0] + (next[0] - prev[0]) * t, prev[1] + (next[1] - prev[1]) * t];
+            }
+
+            async function drawRoute(fromLat, fromLng, toLat, toLng) {
+                try {
+                    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    const coords = data?.routes?.[0]?.geometry?.coordinates;
+                    if (!coords || !coords.length) return;
+                    const latlngs = coords.map(c => [c[1], c[0]]);
+                    if (routeLine) map.removeLayer(routeLine);
+                    routeLine = L.polyline(latlngs, { color: '#f97316', weight: 5, opacity: 0.85 }).addTo(map);
+                } catch {
+                    // ignore route fetch errors
+                }
+            }
+
+            async function fetchLocation() {
+                try {
+                    const res = await fetch(`/api/shipper/location?orderId=${orderId}`, { credentials: 'same-origin' });
+                    if (!res.ok) {
+                        statusEl.textContent = 'Không thể tải vị trí shipper.';
+                        return;
+                    }
+                    const data = await res.json();
+                    if (!data.hasShipper) {
+                        statusEl.textContent = 'Đơn hàng chưa có shipper nhận.';
+                        return;
+                    }
+                    if (data.latitude == null || data.longitude == null) {
+                        statusEl.textContent = 'Shipper chưa bắt đầu chia sẻ vị trí.';
+                        return;
+                    }
+
+                    const shipPos = [data.latitude, data.longitude];
+                    let displayPos = shipPos;
+                    if (!shipperMarker) {
+                        shipperMarker = L.marker(displayPos, { icon: shipperIcon }).addTo(map).bindPopup('Shipper đang giao hàng');
+                    } else {
+                        shipperMarker.setLatLng(displayPos);
+                    }
+
+                    if (data.destinationLatitude != null && data.destinationLongitude != null) {
+                        const destPos = [data.destinationLatitude, data.destinationLongitude];
+                        if (!customerMarker) {
+                            customerMarker = L.marker(destPos).addTo(map).bindPopup('Địa chỉ khách hàng');
+                        } else {
+                            customerMarker.setLatLng(destPos);
+                        }
+                        if (!routeLatLngs) {
+                            await drawRoute(data.originLatitude ?? data.latitude, data.originLongitude ?? data.longitude, data.destinationLatitude, data.destinationLongitude);
+                            if (routeLine) {
+                                routeLatLngs = routeLine.getLatLngs().map(x => [x.lat, x.lng]);
+                                routeCumDistances = buildRouteDistances(routeLatLngs);
+                            }
+                        }
+                        if (routeLatLngs && data.simulationProgress != null) {
+                            const p = pointAtProgress(routeLatLngs, routeCumDistances, data.simulationProgress);
+                            if (p) {
+                                displayPos = p;
+                                shipperMarker.setLatLng(displayPos);
+                            }
+                        }
+                        map.fitBounds(L.latLngBounds([displayPos, destPos]), { padding: [40, 40] });
+                    } else {
+                        map.setView(displayPos, 15);
+                    }
+
+                    statusEl.textContent = data.isDelivering ? 'Đang giao hàng - vị trí cập nhật mỗi 5 giây.' : 'Đơn chưa ở trạng thái giao.';
+                    if (!data.isDelivering && pollTimer) {
+                        clearInterval(pollTimer);
+                        pollTimer = null;
+                    }
+                } catch {
+                    statusEl.textContent = 'Lỗi kết nối khi tải vị trí shipper.';
+                }
+            }
+
+            fetchLocation();
+            pollTimer = setInterval(fetchLocation, 5000);
+            window.addEventListener('beforeunload', function () {
+                if (pollTimer) clearInterval(pollTimer);
+            });
+        })();
+    </script>
+}

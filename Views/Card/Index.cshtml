@@ -139,7 +139,18 @@
                         </div>
                         <div class="text-brand-gray extra-small text-end mb-4">Thời gian giao dự kiến: 25-35 phút</div>
 
-                        <div id="globalAppliedVouchersPlaceholder" class="mb-3 d-flex flex-wrap gap-2"></div>
+                        <div id="globalAppliedVouchersPlaceholder" class="mb-2 d-flex flex-wrap gap-2"></div>
+
+                        <div class="mb-3">
+                            <button type="button"
+                                    onclick="openLoyaltyVoucherPicker()"
+                                    class="btn btn-sm w-100 d-flex align-items-center gap-2 justify-content-center"
+                                    style="border:1.5px dashed #16a34a;color:#16a34a;background:#f0fdf4;border-radius:8px;font-size:12px;font-weight:600;padding:7px;">
+                                <i class="bi bi-star-fill" style="font-size:11px;"></i>
+                                Áp dụng voucher tích điểm
+                            </button>
+                            <div id="loyaltyAppliedPlaceholder" class="mt-2 d-flex flex-wrap gap-2"></div>
+                        </div>
 
                         <div class="mb-3">
                             <label class="form-label extra-small fw-bold text-brand-gray mb-2">Phương thức thanh toán</label>
@@ -758,12 +769,18 @@
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Auto-removal logic: if voucher applied but discount is 0 and subtotal > 0
+                    // Auto-removal: only trigger when monetary discount is unexpectedly 0
+                    // Skip FreeProduct/FreeShipping — they legitimately return voucherDiscount=0
                     if (voucherIds.length > 0 && data.voucherDiscount === 0 && data.subtotal > 0) {
-                        localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
-                        window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
-                        updateSummary();
-                        return;
+                        const hasFreeTypeVoucher = data.vouchers && data.vouchers.some(v => v.type === 'FreeProduct' || v.type === 'FreeShipping');
+                        if (!hasFreeTypeVoucher) {
+                            // Clear both storage keys directly — avoid recursive updateSummary loop
+                            localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
+                            localStorage.setItem(cart._loyaltyVoucherStorageKey, JSON.stringify([]));
+                            window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
+                            updateSummary();
+                            return;
+                        }
                     }
 
                     const subtotal = data.subtotal || 0;
@@ -778,13 +795,13 @@
                     document.getElementById('vat').textContent = vatVal.toLocaleString() + 'đ';
                     document.getElementById('totalPrice').textContent = total.toLocaleString() + 'đ';
                     
-                    // Render Voucher UI manually since we bypass Cart.renderCartUI here natively
+                    // Render regular voucher tags
                     const placeholder = document.getElementById('globalAppliedVouchersPlaceholder');
                     if (placeholder) {
                         placeholder.innerHTML = '';
-                        const currentVIds = cart.getVoucherIds();
-                        if (currentVIds.length > 0 && cart._allVouchers) {
-                           currentVIds.forEach((id, idx) => {
+                        const regIds = cart._getRegularVoucherIds();
+                        if (regIds.length > 0 && cart._allVouchers) {
+                           regIds.forEach((id, idx) => {
                                const v = cart._allVouchers.find(x => x.id === id);
                                if (!v) return;
                                const b = document.createElement('div');
@@ -794,13 +811,29 @@
                            });
                         }
                     }
+                    // Render loyalty voucher tags
+                    const loyPlaceholder = document.getElementById('loyaltyAppliedPlaceholder');
+                    if (loyPlaceholder) {
+                        loyPlaceholder.innerHTML = '';
+                        const loyIds = cart._getLoyaltyVoucherIds();
+                        if (loyIds.length > 0 && cart._allVouchers) {
+                            loyIds.forEach((id, idx) => {
+                                const v = cart._allVouchers.find(x => x.id === id);
+                                if (!v) return;
+                                const b = document.createElement('div');
+                                b.className = 'badge bg-success bg-opacity-10 text-success p-2 rounded d-flex align-items-center gap-2 border border-success';
+                                b.innerHTML = `<i class="bi bi-star-fill" style="font-size:10px;"></i><span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeLoyaltyVoucher(${idx}); updateSummary();"></i>`;
+                                loyPlaceholder.appendChild(b);
+                            });
+                        }
+                    }
 
                 } else if (response.status === 400) {
                     if (voucherIds.length > 0) {
-                        // Clear without triggering cart's updateSummary
+                        // Clear both regular and loyalty to prevent loop
                         localStorage.setItem(cart._voucherStorageKey, JSON.stringify([]));
+                        localStorage.setItem(cart._loyaltyVoucherStorageKey, JSON.stringify([]));
                         window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
-                        // Call updateSummary again without vouchers to reflect the correct price
                         updateSummary();
                     }
                 }
@@ -919,6 +952,11 @@
             } catch (e) {
                 window.showToast('Lỗi kết nối máy chủ', 'error');
             }
+        }
+
+        function openLoyaltyVoucherPicker() {
+            cart.updateLoyaltyVoucherModalUI();
+            new bootstrap.Modal(document.getElementById('loyaltyVoucherModal')).show();
         }
 
         async function openTablePicker() {

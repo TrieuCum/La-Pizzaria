@@ -19,12 +19,18 @@ namespace LaPizzaria.Controllers
 		private readonly ApplicationDbContext _db;
 		private readonly IVoucherService _svc;
 		private readonly UserManager<ApplicationUser> _userManager;
+		private readonly EmailNotificationService _emailSvc;
 
-		public VoucherController(ApplicationDbContext db, IVoucherService svc, UserManager<ApplicationUser> userManager)
+		public VoucherController(
+			ApplicationDbContext db,
+			IVoucherService svc,
+			UserManager<ApplicationUser> userManager,
+			EmailNotificationService emailSvc)
 		{
 			_db = db;
 			_svc = svc;
 			_userManager = userManager;
+			_emailSvc = emailSvc;
 		}
 
 		public async Task<IActionResult> Index(string? search, string? status, int page = 1, int pageSize = 10)
@@ -131,6 +137,7 @@ namespace LaPizzaria.Controllers
 			}
 
 			var voucherMissing = false;
+			var isNew = model.Id == 0;
 			var strategy = _db.Database.CreateExecutionStrategy();
 			await strategy.ExecuteAsync(async () =>
 			{
@@ -138,7 +145,6 @@ namespace LaPizzaria.Controllers
 				if (model.Id == 0)
 				{
 					model.UsedCount = 0;
-					model.UpsaleRequiresSlowSeller = false;
 					await _svc.CreateAsync(model);
 					await ReplaceVoucherProductsAsync(model.Id, selectedProductIds);
 				}
@@ -165,7 +171,9 @@ namespace LaPizzaria.Controllers
 					existing.WindowTimeStartMinute = model.WindowTimeStartMinute;
 					existing.WindowTimeEndMinute = model.WindowTimeEndMinute;
 					existing.ValidDaysOfWeek = model.ValidDaysOfWeek;
-					existing.UpsaleRequiresSlowSeller = false;
+					existing.UpsaleRequiresSlowSeller = model.UpsaleRequiresSlowSeller;
+					existing.AppliesTo = string.IsNullOrWhiteSpace(model.AppliesTo) ? null : model.AppliesTo;
+					existing.FreeProductId = model.VoucherType == "FreeProduct" ? model.FreeProductId : null;
 					existing.UpdatedAtUtc = DateTime.UtcNow;
 
 					await _svc.UpdateAsync(existing);
@@ -175,7 +183,25 @@ namespace LaPizzaria.Controllers
 				await tx.CommitAsync();
 			});
 			if (voucherMissing) return NotFound();
-			TempData["success"] = "L\u01b0u voucher th\u00e0nh c\u00f4ng";
+
+			if (isNew && Request.Form["sendNotification"] == "true")
+			{
+				var saved = await _svc.GetByIdAsync(model.Id);
+				if (saved != null)
+				{
+					var baseUrl = $"{Request.Scheme}://{Request.Host}";
+					var (sent, err) = await _emailSvc.SendNewVoucherNotificationAsync(saved, baseUrl);
+					TempData["success"] = "L\u01b0u voucher th\u00e0nh c\u00f4ng.";
+					if (err != null)
+						TempData["error"] = $"G\u1eedi email th\u1ea5t b\u1ea1i: {err}";
+					else
+						TempData["success"] = $"L\u01b0u voucher th\u00e0nh c\u00f4ng. \u0110\u00e3 g\u1eedi email th\u00f4ng b\u00e1o t\u1edbi {sent} kh\u00e1ch h\u00e0ng.";
+				}
+				else
+					TempData["success"] = "L\u01b0u voucher th\u00e0nh c\u00f4ng.";
+			}
+			else
+				TempData["success"] = "L\u01b0u voucher th\u00e0nh c\u00f4ng";
 			return RedirectToAction(nameof(Index));
 		}
 
@@ -210,7 +236,8 @@ namespace LaPizzaria.Controllers
 				maxUses = v.MaxUses,
 				used = v.UsedCount,
 				expiresAtUtc = v.ExpiresAtUtc,
-				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds
+				remainingSeconds = _svc.TimeRemaining(v, now)?.TotalSeconds,
+				isPersonal = v.TargetUserId != null
 			});
 			return Ok(list);
 		}
@@ -223,6 +250,7 @@ namespace LaPizzaria.Controllers
 			IEnumerable<int>? selectedProductIds = null)
 		{
 			ViewBag.Users = await _db.Users.OrderBy(u => u.Email).ToListAsync();
+			ViewBag.Products = await _db.Products.AsNoTracking().Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
 			ViewBag.WindowTimeStart = windowTimeStart ?? FormatMinute(model.WindowTimeStartMinute);
 			ViewBag.WindowTimeEnd = windowTimeEnd ?? FormatMinute(model.WindowTimeEndMinute);
 			ViewBag.WeekDaysSelected = weekDays != null

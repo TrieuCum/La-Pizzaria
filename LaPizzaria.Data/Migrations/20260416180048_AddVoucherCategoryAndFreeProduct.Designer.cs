@@ -4,6 +4,7 @@ using LaPizzaria.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaPizzaria.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260416180048_AddVoucherCategoryAndFreeProduct")]
+    partial class AddVoucherCategoryAndFreeProduct
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -344,110 +347,6 @@ namespace LaPizzaria.Data.Migrations
                     b.HasIndex("ParentId");
 
                     b.ToTable("IngredientCategories");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientExport", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ExportDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IngredientId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IngredientId");
-
-                    b.ToTable("IngredientExports");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientImport", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ImportDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IngredientId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Supplier")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("decimal(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IngredientId");
-
-                    b.ToTable("IngredientImports");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientPriceHistory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IngredientId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("RecordedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("decimal(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IngredientId", "RecordedDate");
-
-                    b.ToTable("IngredientPriceHistories");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Invoice", b =>
@@ -990,21 +889,6 @@ namespace LaPizzaria.Data.Migrations
                     b.ToTable("Vouchers");
                 });
 
-            modelBuilder.Entity("LaPizzaria.Models.VoucherProduct", b =>
-                {
-                    b.Property<int>("VoucherId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.HasKey("VoucherId", "ProductId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("VoucherProducts");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -1186,39 +1070,6 @@ namespace LaPizzaria.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Parent");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientExport", b =>
-                {
-                    b.HasOne("LaPizzaria.Models.Ingredient", "Ingredient")
-                        .WithMany()
-                        .HasForeignKey("IngredientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Ingredient");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientImport", b =>
-                {
-                    b.HasOne("LaPizzaria.Models.Ingredient", "Ingredient")
-                        .WithMany()
-                        .HasForeignKey("IngredientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Ingredient");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.IngredientPriceHistory", b =>
-                {
-                    b.HasOne("LaPizzaria.Models.Ingredient", "Ingredient")
-                        .WithMany()
-                        .HasForeignKey("IngredientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Ingredient");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Invoice", b =>
@@ -1435,25 +1286,6 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("TargetUser");
                 });
 
-            modelBuilder.Entity("LaPizzaria.Models.VoucherProduct", b =>
-                {
-                    b.HasOne("LaPizzaria.Models.Product", "Product")
-                        .WithMany("VoucherProducts")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LaPizzaria.Models.Voucher", "Voucher")
-                        .WithMany("VoucherProducts")
-                        .HasForeignKey("VoucherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("Voucher");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1555,8 +1387,6 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("ProductIngredients");
 
                     b.Navigation("ProductToppings");
-
-                    b.Navigation("VoucherProducts");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Table", b =>
@@ -1569,11 +1399,6 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("OrderDetailToppings");
 
                     b.Navigation("ProductToppings");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.Voucher", b =>
-                {
-                    b.Navigation("VoucherProducts");
                 });
 #pragma warning restore 612, 618
         }

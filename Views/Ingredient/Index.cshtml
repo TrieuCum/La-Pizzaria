@@ -341,10 +341,21 @@
                 <div class="title-section">
                     <h1>Quản lý Nguyên liệu</h1>
                 </div>
-                <a asp-action="Upsert" class="btn-add-ingredient">
-                    <i class="bi bi-plus-lg"></i>
-                    Thêm nguyên liệu mới
-                </a>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a asp-action="Stock" class="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2 rounded-3">
+                        <i class="bi bi-boxes me-1"></i> Tồn kho
+                    </a>
+                    <a asp-action="Import" class="btn btn-outline-success btn-sm fw-semibold px-3 py-2 rounded-3">
+                        <i class="bi bi-arrow-down-circle me-1"></i> Nhập hàng
+                    </a>
+                    <a asp-action="Export" class="btn btn-outline-warning btn-sm fw-semibold px-3 py-2 rounded-3">
+                        <i class="bi bi-arrow-up-circle me-1"></i> Xuất hàng
+                    </a>
+                    <a asp-action="Upsert" class="btn-add-ingredient">
+                        <i class="bi bi-plus-lg"></i>
+                        Thêm nguyên liệu mới
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -457,7 +468,7 @@
                             <span class="unit-text">@ing.Unit</span>
                         </td>
                         <td>
-                            <span class="stock-number">@ing.UnitPrice.ToString("N2")</span>
+                            <span class="stock-number">@ing.UnitPrice.ToString("N0")</span>
                         </td>
                         <td>
                             <span class="stock-number">@ing.StockQuantity.ToString("N1")</span>

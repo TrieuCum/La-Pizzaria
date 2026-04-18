@@ -22,6 +22,12 @@ namespace LaPizzaria.Data.Migrations
                 table: "AspNetUsers",
                 type: "datetime2",
                 nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Gender",
+                table: "AspNetUsers",
+                type: "nvarchar(20)",
+                nullable: true);
         }
 
         /// <inheritdoc />

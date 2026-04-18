@@ -12,10 +12,12 @@ namespace LaPizzaria.Controllers
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _db;
+        private readonly EmailNotificationService _emailSvc;
 
-        public ProductController(ApplicationDbContext db)
+        public ProductController(ApplicationDbContext db, EmailNotificationService emailSvc)
         {
             _db = db;
+            _emailSvc = emailSvc;
         }
 
         /// <summary>
@@ -374,7 +376,8 @@ namespace LaPizzaria.Controllers
 
             if (ModelState.IsValid)
             {
-                var p = productViewModel.Id == 0 ? new Product() : await _db.Products.FindAsync(productViewModel.Id);
+                var isNew = productViewModel.Id == 0;
+                var p = isNew ? new Product() : await _db.Products.FindAsync(productViewModel.Id);
                 if (p == null) return NotFound();
 
                 p.Name = productViewModel.Name;
@@ -387,7 +390,7 @@ namespace LaPizzaria.Controllers
                 p.IsCustomizable = productViewModel.IsCustomizable;
                 p.IsSlowSeller = productViewModel.IsSlowSeller;
 
-                if (productViewModel.Id == 0)
+                if (isNew)
                 {
                     _db.Products.Add(p);
                 }
@@ -419,7 +422,21 @@ namespace LaPizzaria.Controllers
                     await _db.SaveChangesAsync();
                 }
 
-                TempData["success"] = productViewModel.Id == 0 ? "Tạo sản phẩm thành công" : "Cập nhật sản phẩm thành công";
+                // Send email notification if requested for new products
+                if (isNew && Request.Form["sendNotification"] == "true")
+                {
+                    var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                    var (sent, err) = await _emailSvc.SendNewProductNotificationAsync(p, baseUrl);
+                    TempData["success"] = "Tạo sản phẩm thành công.";
+                    if (err != null)
+                        TempData["error"] = $"Gửi email thất bại: {err}";
+                    else
+                        TempData["success"] = $"Tạo sản phẩm thành công. Đã gửi email thông báo tới {sent} khách hàng.";
+                }
+                else
+                {
+                    TempData["success"] = isNew ? "Tạo sản phẩm thành công." : "Cập nhật sản phẩm thành công.";
+                }
                 return RedirectToAction("Index");
             }
 

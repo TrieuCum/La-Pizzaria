@@ -10,14 +10,19 @@ window.showToast = function(message, type){
     if (!container) return alert(message);
     const toastEl = document.createElement('div');
     const theme = (type==='error'?'danger': type==='success'?'success': type==='warning'?'warning':'secondary');
-    const icon = type==='success' ? '✅' : type==='error' ? '⚠️' : type==='warning' ? '⚠️' : 'ℹ️';
+    const icon = type==='success' ? '✅' : type==='error' ? '❌' : type==='warning' ? '⚠️' : 'ℹ️';
     toastEl.className = 'toast align-items-center text-bg-' + theme + ' border-0';
     toastEl.setAttribute('role','alert');
     toastEl.setAttribute('aria-live','assertive');
     toastEl.setAttribute('aria-atomic','true');
-    toastEl.innerHTML = '<div class="d-flex"><div class="toast-body"><span class="me-2">'+ icon +'</span><span class="fw-semibold">'+ message +'</span></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+    // Rounded corners, pointer cursor, hover brighten, click to dismiss
+    toastEl.style.cssText = 'border-radius:14px!important;overflow:hidden;cursor:pointer;transition:filter .15s;box-shadow:0 4px 18px rgba(0,0,0,.18);';
+    toastEl.innerHTML = '<div class="d-flex"><div class="toast-body px-3 py-2"><span class="me-2">'+ icon +'</span><span class="fw-semibold">'+ message +'</span></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+    toastEl.addEventListener('mouseenter', () => toastEl.style.filter = 'brightness(1.12)');
+    toastEl.addEventListener('mouseleave', () => toastEl.style.filter = '');
+    toastEl.addEventListener('click', () => { bootstrap.Toast.getInstance(toastEl)?.hide(); });
     container.appendChild(toastEl);
-    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
     toast.show();
     toastEl.addEventListener('hidden.bs.toast', ()=> toastEl.remove());
   }catch(e){
@@ -91,6 +96,7 @@ window.sanitizeImageUrl = function(url) {
 const Cart = {
   _storageKey: 'lapizzaria_cart',
   _voucherStorageKey: 'lapizzaria_vouchers',
+  _loyaltyVoucherStorageKey: 'lapizzaria_loyalty_vouchers',
   _allVouchers: [],
 
   get() {
@@ -115,14 +121,33 @@ const Cart = {
   },
 
   getVoucherIds() {
+    // Returns combined regular + loyalty voucher IDs for API submission
+    const regular = this._getRegularVoucherIds();
+    const loyalty = this._getLoyaltyVoucherIds();
+    return [...new Set([...regular, ...loyalty])];
+  },
+
+  _getRegularVoucherIds() {
     try {
         const data = localStorage.getItem(this._voucherStorageKey);
         return data ? JSON.parse(data) : [];
     } catch (e) { return []; }
   },
 
+  _getLoyaltyVoucherIds() {
+    try {
+        const data = localStorage.getItem(this._loyaltyVoucherStorageKey);
+        return data ? JSON.parse(data) : [];
+    } catch (e) { return []; }
+  },
+
   saveVoucherIds(ids) {
     localStorage.setItem(this._voucherStorageKey, JSON.stringify(ids));
+    this.updateSummary();
+  },
+
+  saveLoyaltyVoucherIds(ids) {
+    localStorage.setItem(this._loyaltyVoucherStorageKey, JSON.stringify(ids));
     this.updateSummary();
   },
 
@@ -303,13 +328,22 @@ const Cart = {
     if (voucherBoxes.length > 0) {
         voucherBoxes.forEach(box => {
             box.innerHTML = '';
-            const vIds = this.getVoucherIds();
-            vIds.forEach((id, idx) => {
+            const regIds = this._getRegularVoucherIds();
+            regIds.forEach((id, idx) => {
                 const v = this._allVouchers.find(x => x.id === id);
                 if (!v) return;
                 const b = document.createElement('div');
                 b.className = 'badge bg-brand-orange-light text-brand-orange p-2 rounded d-flex align-items-center gap-2 border border-brand-orange';
                 b.innerHTML = `<span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeVoucher(${idx})"></i>`;
+                box.appendChild(b);
+            });
+            const loyIds = this._getLoyaltyVoucherIds();
+            loyIds.forEach((id, idx) => {
+                const v = this._allVouchers.find(x => x.id === id);
+                if (!v) return;
+                const b = document.createElement('div');
+                b.className = 'badge bg-success bg-opacity-10 text-success p-2 rounded d-flex align-items-center gap-2 border border-success';
+                b.innerHTML = `<i class="bi bi-star-fill" style="font-size:10px;"></i><span class="extra-small fw-bold">${v.code}</span><i class="bi bi-x cursor-pointer" onclick="cart.removeLoyaltyVoucher(${idx})"></i>`;
                 box.appendChild(b);
             });
         });
@@ -334,13 +368,17 @@ const Cart = {
         if (res.ok) {
             const data = await res.json();
             
-            // Auto-removal logic: if voucher applied but discount is 0 and subtotal > 0
+            // Auto-removal: only trigger when monetary discount is unexpectedly 0
+            // Skip FreeProduct/FreeShipping vouchers — they legitimately return voucherDiscount=0
             if (voucherIds.length > 0 && data.voucherDiscount === 0 && data.subtotal > 0) {
-                const currentIds = this.getVoucherIds();
-                if (currentIds.length > 0) {
-                    this.saveVoucherIds([]); // Clear all vouchers if no longer valid
+                const hasFreeTypeVoucher = data.vouchers && data.vouchers.some(v => v.type === 'FreeProduct' || v.type === 'FreeShipping');
+                if (!hasFreeTypeVoucher) {
+                    // Write both storage keys directly to avoid triggering another updateSummary loop
+                    localStorage.setItem(this._voucherStorageKey, JSON.stringify([]));
+                    localStorage.setItem(this._loyaltyVoucherStorageKey, JSON.stringify([]));
                     window.showToast('Voucher không còn đủ điều kiện do thay đổi đơn hàng!', 'warning');
-                    return; // saveVoucherIds already calls updateSummary again
+                    this.renderCartUI();
+                    return;
                 }
             }
 
@@ -349,11 +387,12 @@ const Cart = {
             // Auto-removal on validation error (e.g. min order value no longer met)
             const currentIds = this.getVoucherIds();
             if (currentIds.length > 0) {
-                this.saveVoucherIds([]); // Clear all
+                // Write both storage keys directly to avoid triggering another updateSummary loop
+                localStorage.setItem(this._voucherStorageKey, JSON.stringify([]));
+                localStorage.setItem(this._loyaltyVoucherStorageKey, JSON.stringify([]));
                 window.showToast('Voucher không còn đủ điều kiện do đơn hàng thay đổi!', 'warning');
-            } else {
-                this.renderCartUI();
             }
+            this.renderCartUI();
         } else {
             this.renderCartUI();
         }
@@ -375,7 +414,61 @@ const Cart = {
                 new bootstrap.Modal(document.getElementById('globalVoucherModal')).show();
             };
         }
+
+        const loyBtn = document.getElementById('openLoyaltyVoucherModal');
+        if (loyBtn) {
+            loyBtn.onclick = () => {
+                this.updateLoyaltyVoucherModalUI();
+                new bootstrap.Modal(document.getElementById('loyaltyVoucherModal')).show();
+            };
+        }
     } catch (e) { console.error('Load vouchers failed', e); }
+  },
+
+  updateLoyaltyVoucherModalUI() {
+    const subtotal = this.totalPrice();
+    const available = document.getElementById('loyaltyListAvailable');
+    const ineligible = document.getElementById('loyaltyListIneligible');
+    if (!available || !ineligible) return;
+
+    available.innerHTML = ''; ineligible.innerHTML = '';
+    const loyaltyVouchers = this._allVouchers.filter(v => v.isPersonal);
+
+    if (loyaltyVouchers.length === 0) {
+        available.innerHTML = '<p class="text-center text-muted small py-3">Bạn chưa có voucher tích điểm nào.</p>';
+        return;
+    }
+
+    loyaltyVouchers.forEach(v => {
+        const isEligible = subtotal >= (v.minOrderValue || 0);
+        let discountLabel = '';
+        let icon = 'bi-star';
+        if (v.type === 'Percentage') { discountLabel = `${Math.round(v.percent)}%`; icon = 'bi-percent'; }
+        else if (v.type === 'FixedAmount') { discountLabel = `${Math.round(v.amount/1000)}k`; icon = 'bi-cash-stack'; }
+        else if (v.type === 'FreeShipping') { discountLabel = 'FREE SHIP'; icon = 'bi-truck'; }
+
+        const itemWrap = document.createElement('div');
+        itemWrap.innerHTML = `
+            <div class="voucher-ticket ${isEligible ? '' : 'ineligible'}">
+                <div class="ticket-left" style="background:#16a34a;">
+                    <i class="bi ${icon}"></i>
+                    <div class="ticket-percent">${discountLabel}</div>
+                    <div class="ticket-type">Tích điểm</div>
+                </div>
+                <div class="ticket-right">
+                    <div>
+                        <div class="ticket-code">${v.code}</div>
+                        <div style="font-size:11px;color:#555;">${v.name || ''}</div>
+                        <div style="font-size:10px;color:#aaa;">HSD: ${v.expiresAtUtc ? new Date(v.expiresAtUtc).toLocaleDateString('vi-VN') : 'Không hạn'}</div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        ${isEligible ? `<button class="ticket-btn-apply" style="background:#16a34a;" onclick="cart.applyLoyaltyVoucherById(${v.id})">Áp dụng</button>` : `<div class="extra-small text-muted fst-italic">Chưa đủ đ/k</div>`}
+                    </div>
+                </div>
+            </div>`;
+        if (isEligible) available.appendChild(itemWrap);
+        else ineligible.appendChild(itemWrap);
+    });
   },
 
   updateVoucherModalUI() {
@@ -465,13 +558,22 @@ const Cart = {
   },
 
   applyVoucherById(id) {
-    const ids = this.getVoucherIds();
+    const ids = this._getRegularVoucherIds();
     if (ids.includes(id)) return;
-    if (ids.length >= 1) return window.showToast('Chỉ áp dụng được tối đa 1 mã!', 'warning');
-    
+    if (ids.length >= 1) return window.showToast('Mỗi đơn chỉ áp dụng được 1 voucher thường!', 'warning');
     ids.push(id);
     this.saveVoucherIds(ids);
     const m = bootstrap.Modal.getInstance(document.getElementById('globalVoucherModal'));
+    if (m) m.hide();
+  },
+
+  applyLoyaltyVoucherById(id) {
+    const ids = this._getLoyaltyVoucherIds();
+    if (ids.includes(id)) return;
+    if (ids.length >= 1) return window.showToast('Mỗi đơn chỉ áp dụng được 1 voucher tích điểm!', 'warning');
+    ids.push(id);
+    this.saveLoyaltyVoucherIds(ids);
+    const m = bootstrap.Modal.getInstance(document.getElementById('loyaltyVoucherModal'));
     if (m) m.hide();
   },
 
@@ -486,9 +588,15 @@ const Cart = {
   },
 
   removeVoucher(idx) {
-    const ids = this.getVoucherIds();
+    const ids = this._getRegularVoucherIds();
     ids.splice(idx, 1);
     this.saveVoucherIds(ids);
+  },
+
+  removeLoyaltyVoucher(idx) {
+    const ids = this._getLoyaltyVoucherIds();
+    ids.splice(idx, 1);
+    this.saveLoyaltyVoucherIds(ids);
   }
 };
 

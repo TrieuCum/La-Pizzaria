@@ -1,0 +1,147 @@
+@model List<LaPizzaria.Models.IngredientPriceHistory>
+@using LaPizzaria.Models
+@{
+    ViewData["Title"] = "Biến động giá nguyên liệu";
+    var ingredients = ViewBag.Ingredients as List<Ingredient> ?? new List<Ingredient>();
+    var selectedId = ViewBag.SelectedIngredientId as int?;
+    var months = (int)ViewBag.Months;
+    var selectedIng = ingredients.FirstOrDefault(i => i.Id == selectedId);
+    var monthlyAvg = ViewBag.MonthlyAvg as IEnumerable<dynamic>;
+    var culture = new System.Globalization.CultureInfo("vi-VN");
+}
+
+<div style="padding:32px;max-width:1100px;margin:0 auto;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 style="font-size:26px;font-weight:700;color:var(--brand-dark);margin:0;">Biến động giá nguyên liệu</h1>
+            <p style="color:var(--brand-gray);font-size:13px;margin:4px 0 0;">Theo dõi lịch sử giá và trung bình theo tháng</p>
+        </div>
+        <a asp-action="Stock" class="btn btn-outline-secondary btn-sm"><i class="bi bi-boxes me-1"></i>Tồn kho</a>
+    </div>
+
+    <!-- Filter -->
+    <form method="get" class="d-flex gap-3 mb-4 flex-wrap align-items-center">
+        <select name="ingredientId" class="form-select" style="max-width:300px;" onchange="this.form.submit()">
+            <option value="">-- Chọn nguyên liệu --</option>
+            @foreach (var ing in ingredients)
+            {
+                if (ing.Id == selectedId)
+                {
+                    <option value="@ing.Id" selected="selected">@ing.Name (@ing.Unit)</option>
+                }
+                else
+                {
+                    <option value="@ing.Id">@ing.Name (@ing.Unit)</option>
+                }
+            }
+        </select>
+        <select name="months" class="form-select" style="max-width:160px;" onchange="this.form.submit()">
+            <option value="1" selected="@(months==1 ? "selected" : null)">1 tháng</option>
+            <option value="3" selected="@(months==3 ? "selected" : null)">3 tháng</option>
+            <option value="6" selected="@(months==6 ? "selected" : null)">6 tháng</option>
+            <option value="12" selected="@(months==12 ? "selected" : null)">12 tháng</option>
+        </select>
+    </form>
+
+    @if (selectedIng != null)
+    {
+        <div class="row g-4">
+            <!-- Chart bar area -->
+            <div class="col-lg-8">
+                <div class="bg-white rounded-3 p-4" style="border:1px solid #f0f0f0;">
+                    <h6 class="fw-bold mb-3">Trung bình giá theo tháng — @selectedIng.Name</h6>
+                    @if (monthlyAvg != null)
+                    {
+                        <div style="display:flex;align-items:flex-end;gap:8px;height:200px;padding-bottom:24px;position:relative;">
+                            @{
+                                var avgList = ((IEnumerable<dynamic>)monthlyAvg!).ToList();
+                                var maxVal = avgList.Count > 0 ? avgList.Max(x => (double)x.AvgPrice) : 1.0;
+                                if (maxVal == 0) maxVal = 1;
+                            }
+                            @foreach (var m in avgList)
+                            {
+                                var heightPct = (double)m.AvgPrice / maxVal * 100;
+                                <div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;">
+                                    <div style="font-size:10px;color:var(--brand-gray);font-weight:600;">@(((decimal)m.AvgPrice).ToString("N0", culture))đ</div>
+                                    <div style="width:100%;background:var(--brand-orange);border-radius:4px 4px 0 0;height:@(heightPct)%;min-height:4px;" title="@m.Month/@m.Year: @(((decimal)m.AvgPrice).ToString("N0",culture))đ"></div>
+                                    <div style="font-size:10px;color:var(--brand-gray);">T@(m.Month)/@(m.Year.ToString().Substring(2))</div>
+                                </div>
+                            }
+                            @if (!avgList.Any())
+                            {
+                                <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--brand-gray);font-size:13px;">Chưa có dữ liệu.</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Record new price -->
+            <div class="col-lg-4">
+                <div class="bg-white rounded-3 p-4" style="border:1px solid #f0f0f0;">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square me-2 text-primary"></i>Ghi nhận giá mới</h6>
+                    <form asp-action="RecordPrice" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ingredientId" value="@selectedId" />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Ngày ghi nhận</label>
+                            <input type="date" name="recordedDate" class="form-control form-control-sm"
+                                   value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Đơn giá mới (đ/@selectedIng.Unit)</label>
+                            <input type="number" name="unitPrice" class="form-control form-control-sm"
+                                   step="1" min="1" value="@selectedIng.UnitPrice" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Ghi chú</label>
+                            <input type="text" name="note" class="form-control form-control-sm" placeholder="VD: Giá chợ đầu mối" />
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-sm fw-bold">Lưu giá</button>
+                    </form>
+                    <hr />
+                    <div style="font-size:12px;color:var(--brand-gray);">
+                        <strong>Giá hiện tại:</strong> @selectedIng.UnitPrice.ToString("N0", culture)đ/@selectedIng.Unit
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History table -->
+        <div class="bg-white rounded-3 mt-4" style="border:1px solid #f0f0f0;overflow:hidden;">
+            <div class="p-3 border-bottom">
+                <h6 class="fw-bold mb-0">Chi tiết lịch sử giá — @(months) tháng gần nhất</h6>
+            </div>
+            <table style="width:100%;border-collapse:collapse;">
+                <thead style="background:#f8f7f5;">
+                    <tr>
+                        <th style="padding:12px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;">Ngày</th>
+                        <th style="padding:12px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:right;">Đơn giá</th>
+                        <th style="padding:12px 20px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;">Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model.OrderByDescending(x => x.RecordedDate))
+                    {
+                        <tr style="border-top:1px solid #f0f0f0;">
+                            <td style="padding:12px 20px;font-size:13px;color:var(--brand-gray);">@h.RecordedDate.ToString("dd/MM/yyyy")</td>
+                            <td style="padding:12px 20px;text-align:right;font-weight:700;color:var(--brand-orange);">@h.UnitPrice.ToString("N0", culture)đ</td>
+                            <td style="padding:12px 20px;font-size:13px;color:var(--brand-gray);">@(h.Note ?? "—")</td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="3" style="padding:40px;text-align:center;color:var(--brand-gray);">Chưa có lịch sử giá trong khoảng thời gian này.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted bg-white rounded-3" style="border:1px solid #f0f0f0;">
+            <i class="bi bi-graph-up fs-1 d-block mb-3"></i>
+            <p class="fw-semibold">Chọn nguyên liệu để xem biến động giá</p>
+        </div>
+    }
+</div>

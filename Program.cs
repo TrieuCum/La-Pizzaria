@@ -48,6 +48,8 @@ builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IOrderPlacementService, OrderPlacementService>();
+builder.Services.AddScoped<LaPizzaria.Services.ShipperDispatchService>();
+builder.Services.AddScoped<LaPizzaria.Services.EmailNotificationService>();
 // builder.Services.AddHostedService<VoucherCleanupService>();
 
 // --- Tích hợp MoMo (sandbox / production) ---

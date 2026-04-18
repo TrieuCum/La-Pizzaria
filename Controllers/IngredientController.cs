@@ -142,5 +142,206 @@ namespace LaPizzaria.Controllers
             await _db.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
+
+        public async Task<IActionResult> Stock(string? q, string? status)
+        {
+            var query = _db.Ingredients.AsNoTracking().Include(i => i.Category).AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+                query = query.Where(i => i.Name.Contains(q.Trim()));
+
+            var allIngredients = await query.OrderBy(i => i.Name).ToListAsync();
+
+            if (status == "low")
+                allIngredients = allIngredients.Where(i => i.StockQuantity > 0 && i.StockQuantity <= i.ReorderLevel).ToList();
+            else if (status == "out")
+                allIngredients = allIngredients.Where(i => i.StockQuantity <= 0).ToList();
+            else if (status == "ok")
+                allIngredients = allIngredients.Where(i => i.StockQuantity > i.ReorderLevel).ToList();
+
+            var totalStock = allIngredients.Count;
+            var outOfStock = allIngredients.Count(i => i.StockQuantity <= 0);
+            var lowStock = allIngredients.Count(i => i.StockQuantity > 0 && i.StockQuantity <= i.ReorderLevel);
+            var okStock = allIngredients.Count(i => i.StockQuantity > i.ReorderLevel);
+            var totalValue = allIngredients.Sum(i => i.StockQuantity * i.UnitPrice);
+
+            ViewBag.Q = q ?? "";
+            ViewBag.Status = status ?? "";
+            ViewBag.TotalStock = totalStock;
+            ViewBag.OutOfStock = outOfStock;
+            ViewBag.LowStock = lowStock;
+            ViewBag.OkStock = okStock;
+            ViewBag.TotalValue = totalValue;
+            return View(allIngredients);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdjustStock(int id, decimal adjustment, string reason)
+        {
+            var ingredient = await _db.Ingredients.FindAsync(id);
+            if (ingredient == null) return NotFound();
+            ingredient.StockQuantity = Math.Max(0, ingredient.StockQuantity + adjustment);
+            await _db.SaveChangesAsync();
+            TempData["success"] = $"Đã {(adjustment >= 0 ? "nhập" : "xuất")} {Math.Abs(adjustment)} {ingredient.Unit} {ingredient.Name}. Lý do: {reason}";
+            return RedirectToAction(nameof(Stock));
+        }
+
+        // ─── Nhập hàng ───────────────────────────────────────────────────────
+        public async Task<IActionResult> Import(string? q, int page = 1)
+        {
+            const int pageSize = 20;
+            var query = _db.IngredientImports
+                .Include(i => i.Ingredient)
+                .AsQueryable();
+            if (!string.IsNullOrWhiteSpace(q))
+                query = query.Where(i => i.Ingredient!.Name.Contains(q) || (i.Supplier != null && i.Supplier.Contains(q)));
+
+            var total = await query.CountAsync();
+            var records = await query.OrderByDescending(i => i.ImportDate).ThenByDescending(i => i.Id)
+                .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            var ingredients = await _db.Ingredients.Where(i => i.IsActive).OrderBy(i => i.Name).ToListAsync();
+            ViewBag.Q = q ?? "";
+            ViewBag.Page = page;
+            ViewBag.TotalPages = (int)Math.Ceiling(total / (double)pageSize);
+            ViewBag.TotalRecords = total;
+            ViewBag.Ingredients = ingredients;
+            return View(records);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Import(int ingredientId, decimal quantity, decimal unitPrice, DateTime importDate, string? supplier, string? note)
+        {
+            if (quantity <= 0) { TempData["error"] = "Số lượng phải > 0."; return RedirectToAction(nameof(Import)); }
+            var ingredient = await _db.Ingredients.FindAsync(ingredientId);
+            if (ingredient == null) { TempData["error"] = "Không tìm thấy nguyên liệu."; return RedirectToAction(nameof(Import)); }
+
+            _db.IngredientImports.Add(new IngredientImport
+            {
+                IngredientId = ingredientId,
+                ImportDate = importDate,
+                Quantity = quantity,
+                UnitPrice = unitPrice,
+                Supplier = supplier,
+                Note = note
+            });
+
+            // Update stock
+            ingredient.StockQuantity += quantity;
+
+            // Update current unit price and record price history if changed
+            if (unitPrice > 0 && unitPrice != ingredient.UnitPrice)
+            {
+                ingredient.UnitPrice = unitPrice;
+                _db.IngredientPriceHistories.Add(new IngredientPriceHistory
+                {
+                    IngredientId = ingredientId,
+                    RecordedDate = importDate.Date,
+                    UnitPrice = unitPrice,
+                    Note = $"Cập nhật từ phiếu nhập — NCC: {supplier}"
+                });
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["success"] = $"Đã nhập {quantity} {ingredient.Unit} {ingredient.Name} từ {supplier ?? "N/A"}.";
+            return RedirectToAction(nameof(Import));
+        }
+
+        // ─── Xuất hàng ───────────────────────────────────────────────────────
+        public async Task<IActionResult> Export(string? q, int page = 1)
+        {
+            const int pageSize = 20;
+            var query = _db.IngredientExports
+                .Include(i => i.Ingredient)
+                .AsQueryable();
+            if (!string.IsNullOrWhiteSpace(q))
+                query = query.Where(i => i.Ingredient!.Name.Contains(q));
+
+            var total = await query.CountAsync();
+            var records = await query.OrderByDescending(i => i.ExportDate).ThenByDescending(i => i.Id)
+                .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            var ingredients = await _db.Ingredients.Where(i => i.IsActive).OrderBy(i => i.Name).ToListAsync();
+            ViewBag.Q = q ?? "";
+            ViewBag.Page = page;
+            ViewBag.TotalPages = (int)Math.Ceiling(total / (double)pageSize);
+            ViewBag.TotalRecords = total;
+            ViewBag.Ingredients = ingredients;
+            return View(records);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Export(int ingredientId, decimal quantity, DateTime exportDate, string reason, string? note)
+        {
+            if (quantity <= 0) { TempData["error"] = "Số lượng phải > 0."; return RedirectToAction(nameof(Export)); }
+            var ingredient = await _db.Ingredients.FindAsync(ingredientId);
+            if (ingredient == null) { TempData["error"] = "Không tìm thấy nguyên liệu."; return RedirectToAction(nameof(Export)); }
+            if (ingredient.StockQuantity < quantity) { TempData["error"] = $"Tồn kho không đủ (Còn: {ingredient.StockQuantity} {ingredient.Unit})."; return RedirectToAction(nameof(Export)); }
+
+            _db.IngredientExports.Add(new IngredientExport
+            {
+                IngredientId = ingredientId,
+                ExportDate = exportDate,
+                Quantity = quantity,
+                Reason = reason,
+                Note = note
+            });
+
+            ingredient.StockQuantity -= quantity;
+            await _db.SaveChangesAsync();
+            TempData["success"] = $"Đã xuất {quantity} {ingredient.Unit} {ingredient.Name}. Lý do: {reason}.";
+            return RedirectToAction(nameof(Export));
+        }
+
+        // ─── Lịch sử giá ─────────────────────────────────────────────────────
+        public async Task<IActionResult> PriceHistory(int? ingredientId, int months = 3)
+        {
+            var ingredients = await _db.Ingredients.Where(i => i.IsActive).OrderBy(i => i.Name).ToListAsync();
+            ViewBag.Ingredients = ingredients;
+            ViewBag.SelectedIngredientId = ingredientId;
+            ViewBag.Months = months;
+
+            if (ingredientId == null)
+                return View(new List<IngredientPriceHistory>());
+
+            var from = DateTime.UtcNow.Date.AddMonths(-months);
+            var history = await _db.IngredientPriceHistories
+                .Where(h => h.IngredientId == ingredientId && h.RecordedDate >= from)
+                .OrderBy(h => h.RecordedDate)
+                .ToListAsync();
+
+            // Monthly average
+            var monthlyAvg = history
+                .GroupBy(h => new { h.RecordedDate.Year, h.RecordedDate.Month })
+                .Select(g => new { Year = g.Key.Year, Month = g.Key.Month, AvgPrice = g.Average(x => (double)x.UnitPrice) })
+                .OrderBy(g => g.Year).ThenBy(g => g.Month)
+                .ToList();
+            ViewBag.MonthlyAvg = monthlyAvg;
+
+            return View(history);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RecordPrice(int ingredientId, decimal unitPrice, DateTime recordedDate, string? note)
+        {
+            if (unitPrice <= 0) { TempData["error"] = "Giá phải > 0."; return RedirectToAction(nameof(PriceHistory), new { ingredientId }); }
+            _db.IngredientPriceHistories.Add(new IngredientPriceHistory
+            {
+                IngredientId = ingredientId,
+                RecordedDate = recordedDate.Date,
+                UnitPrice = unitPrice,
+                Note = note
+            });
+            // Update ingredient unit price
+            var ing = await _db.Ingredients.FindAsync(ingredientId);
+            if (ing != null) ing.UnitPrice = unitPrice;
+            await _db.SaveChangesAsync();
+            TempData["success"] = "Đã ghi nhận giá mới.";
+            return RedirectToAction(nameof(PriceHistory), new { ingredientId });
+        }
     }
 }

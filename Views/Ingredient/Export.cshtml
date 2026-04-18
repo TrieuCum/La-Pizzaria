@@ -1,0 +1,121 @@
+@model List<LaPizzaria.Models.IngredientExport>
+@using LaPizzaria.Models
+@{
+    ViewData["Title"] = "Xuất hàng nguyên liệu";
+    var ingredients = ViewBag.Ingredients as List<Ingredient> ?? new List<Ingredient>();
+    var page = (int)ViewBag.Page;
+    var totalPages = (int)ViewBag.TotalPages;
+    var culture = new System.Globalization.CultureInfo("vi-VN");
+}
+
+<div style="padding:32px;max-width:1300px;margin:0 auto;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 style="font-size:26px;font-weight:700;color:var(--brand-dark);margin:0;">Xuất hàng nguyên liệu</h1>
+            <p style="color:var(--brand-gray);font-size:13px;margin:4px 0 0;">Ghi nhận phiếu xuất / hao hụt và trừ tồn kho</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Import" class="btn btn-outline-success btn-sm"><i class="bi bi-box-arrow-in-down me-1"></i>Nhập hàng</a>
+            <a asp-action="Stock" class="btn btn-outline-secondary btn-sm"><i class="bi bi-boxes me-1"></i>Tồn kho</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Form xuất hàng -->
+        <div class="col-lg-4">
+            <div class="bg-white rounded-3 p-4" style="border:1px solid #f0f0f0;">
+                <h6 class="fw-bold mb-3"><i class="bi bi-box-arrow-right me-2 text-danger"></i>Tạo phiếu xuất mới</h6>
+                <form asp-action="Export" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Nguyên liệu</label>
+                        <select name="ingredientId" class="form-select form-select-sm" required>
+                            <option value="">-- Chọn nguyên liệu --</option>
+                            @foreach (var ing in ingredients)
+                            {
+                                <option value="@ing.Id">@ing.Name (@ing.Unit) — Tồn: @ing.StockQuantity.ToString("N0", culture)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Ngày xuất</label>
+                        <input type="date" name="exportDate" class="form-control form-control-sm"
+                               value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Số lượng xuất</label>
+                        <input type="number" name="quantity" class="form-control form-control-sm" step="0.01" min="0.01" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Lý do xuất</label>
+                        <select name="reason" class="form-select form-select-sm" required>
+                            <option value="Sử dụng">Sử dụng chế biến</option>
+                            <option value="Hao hụt">Hao hụt / Đổ vỡ</option>
+                            <option value="Hết hạn">Hết hạn sử dụng</option>
+                            <option value="Khác">Lý do khác</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Ghi chú</label>
+                        <textarea name="note" class="form-control form-control-sm" rows="2" placeholder="Chi tiết thêm..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100 fw-bold">
+                        <i class="bi bi-box-arrow-right me-1"></i> Xác nhận xuất hàng
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lịch sử xuất -->
+        <div class="col-lg-8">
+            <div class="bg-white rounded-3" style="border:1px solid #f0f0f0;overflow:hidden;">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">Lịch sử xuất hàng (@ViewBag.TotalRecords phiếu)</h6>
+                    <form method="get" class="d-flex gap-2">
+                        <input type="text" name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Tìm..." style="width:200px;" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
+                    </form>
+                </div>
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead style="background:#f8f7f5;">
+                        <tr>
+                            <th style="padding:12px 16px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;">Ngày</th>
+                            <th style="padding:12px 16px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;">Nguyên liệu</th>
+                            <th style="padding:12px 16px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;text-align:right;">Số lượng</th>
+                            <th style="padding:12px 16px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;">Lý do</th>
+                            <th style="padding:12px 16px;font-size:12px;font-weight:700;color:var(--brand-gray);text-transform:uppercase;">Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rec in Model)
+                        {
+                            <tr style="border-top:1px solid #f0f0f0;">
+                                <td style="padding:12px 16px;font-size:13px;color:var(--brand-gray);">@rec.ExportDate.ToString("dd/MM/yyyy")</td>
+                                <td style="padding:12px 16px;font-weight:600;font-size:13px;">@(rec.Ingredient?.Name ?? "—")</td>
+                                <td style="padding:12px 16px;text-align:right;font-size:13px;color:#dc2626;font-weight:700;">-@rec.Quantity.ToString("N0", culture) @rec.Ingredient?.Unit</td>
+                                <td style="padding:12px 16px;">
+                                    <span style="padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#fef2f2;color:#dc2626;">@rec.Reason</span>
+                                </td>
+                                <td style="padding:12px 16px;font-size:12px;color:var(--brand-gray);">@(rec.Note ?? "—")</td>
+                            </tr>
+                        }
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="5" style="padding:40px;text-align:center;color:var(--brand-gray);">Chưa có phiếu xuất nào.</td></tr>
+                        }
+                    </tbody>
+                </table>
+                @if (totalPages > 1)
+                {
+                    <div class="d-flex gap-2 p-3">
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            <a asp-action="Export" asp-route-page="@i" asp-route-q="@ViewBag.Q"
+                               style="padding:5px 12px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;background:@(i==page?"var(--brand-orange)":"#f0f0f0");color:@(i==page?"white":"var(--brand-dark)");">@i</a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

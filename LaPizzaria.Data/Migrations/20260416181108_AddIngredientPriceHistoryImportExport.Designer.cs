@@ -4,6 +4,7 @@ using LaPizzaria.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaPizzaria.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260416181108_AddIngredientPriceHistoryImportExport")]
+    partial class AddIngredientPriceHistoryImportExport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -990,21 +993,6 @@ namespace LaPizzaria.Data.Migrations
                     b.ToTable("Vouchers");
                 });
 
-            modelBuilder.Entity("LaPizzaria.Models.VoucherProduct", b =>
-                {
-                    b.Property<int>("VoucherId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.HasKey("VoucherId", "ProductId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("VoucherProducts");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -1435,25 +1423,6 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("TargetUser");
                 });
 
-            modelBuilder.Entity("LaPizzaria.Models.VoucherProduct", b =>
-                {
-                    b.HasOne("LaPizzaria.Models.Product", "Product")
-                        .WithMany("VoucherProducts")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LaPizzaria.Models.Voucher", "Voucher")
-                        .WithMany("VoucherProducts")
-                        .HasForeignKey("VoucherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("Voucher");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1555,8 +1524,6 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("ProductIngredients");
 
                     b.Navigation("ProductToppings");
-
-                    b.Navigation("VoucherProducts");
                 });
 
             modelBuilder.Entity("LaPizzaria.Models.Table", b =>
@@ -1569,11 +1536,6 @@ namespace LaPizzaria.Data.Migrations
                     b.Navigation("OrderDetailToppings");
 
                     b.Navigation("ProductToppings");
-                });
-
-            modelBuilder.Entity("LaPizzaria.Models.Voucher", b =>
-                {
-                    b.Navigation("VoucherProducts");
                 });
 #pragma warning restore 612, 618
         }

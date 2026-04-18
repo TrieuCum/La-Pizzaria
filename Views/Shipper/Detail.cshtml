@@ -1,8 +1,6 @@
 @model LaPizzaria.ViewModels.ShipperOrderDetailViewModel
 @{
     Layout = null;
-    var mapQuery = Uri.EscapeDataString(Model.DeliveryAddress ?? "");
-    var mapUrl = $"https://www.google.com/maps?q={mapQuery}&output=embed";
     var statusBadge = !string.IsNullOrWhiteSpace(Model.DeliveryStatus)
         ? Model.DeliveryStatus
         : (Model.OrderStatus ?? "—");
@@ -20,11 +18,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Work Sans', sans-serif; }
         .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
         .label-caps { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; }
+        #shipperDeliveryMap { height: 260px; width: 100%; }
     </style>
 </head>
 <body class="min-h-screen bg-[#f0eee9]">
@@ -84,7 +84,7 @@
         <!-- Cột phải: bản đồ + vị trí + thao tác -->
         <section class="flex flex-col gap-5 md:col-span-2">
             <div class="overflow-hidden rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
-                <iframe title="Bản đồ địa chỉ giao" src="@mapUrl" class="h-[260px] w-full" style="border:0;" loading="lazy"></iframe>
+                <div id="shipperDeliveryMap"></div>
             </div>
 
             <div class="rounded-2xl bg-white p-5 shadow-[0_2px_20px_rgba(0,0,0,.06)] ring-1 ring-black/[0.04]">
@@ -110,12 +110,7 @@
                     @(string.IsNullOrWhiteSpace(Model.ShipperLocationIp) ? "" : $"IP thiết bị (mạng): {Model.ShipperLocationIp}")
                 </p>
                 <p class="mt-3 text-[11px] leading-relaxed text-slate-400">Tọa độ lấy từ GPS của trình duyệt; IP dùng để nhận diện kết nối từng máy (không thay thế GPS).</p>
-                <a id="gpsOpenMap"
-                   href="@(Model.ShipperLatitude.HasValue && Model.ShipperLongitude.HasValue ? $"https://www.google.com/maps?q={Model.ShipperLatitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)},{Model.ShipperLongitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}" : "#")"
-                   target="_blank" rel="noopener"
-                   class="mt-4 flex w-full items-center justify-center rounded-xl border-2 border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 @(Model.ShipperLatitude.HasValue && Model.ShipperLongitude.HasValue ? "" : "pointer-events-none opacity-40")">
-                    Mở Google Maps
-                </a>
+                <p class="mt-4 text-xs text-slate-500">Bản đồ OSM cập nhật trực tiếp theo vị trí đơn giao.</p>
                 @if (isAssignedDs || isDeliveringDs)
                 {
                     <button id="btnStartGps" type="button" class="mt-3 w-full rounded-xl bg-[#2563EB] py-3.5 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-600">
@@ -173,22 +168,29 @@
         </section>
     </main>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         (function () {
             const orderId = @Model.OrderId;
+            const destinationLat = @Html.Raw(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null");
+            const destinationLng = @Html.Raw(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null");
             const isAssigned = '@(isAssignedDs ? "1" : "0")' === '1';
             const isDelivering = '@(isDeliveringDs ? "1" : "0")' === '1';
             const canTrack = isAssigned || isDelivering;
             const stateEl = document.getElementById('gpsState');
             const coordsEl = document.getElementById('gpsCoords');
             const updatedEl = document.getElementById('gpsUpdatedAt');
-            const openMapEl = document.getElementById('gpsOpenMap');
             const ipEl = document.getElementById('gpsClientIp');
             const errBox = document.getElementById('gpsError');
             const btn = document.getElementById('btnStartGps');
-            let watchId = null;
-            let lastSentMs = 0;
-            const minIntervalMs = 8000;
+            const originLat = 10.937570107102053;
+            const originLng = 106.8347959491137;
+            const map = L.map('shipperDeliveryMap').setView([10.93757, 106.83479], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+            let shipperMarker = null;
+            let customerMarker = null;
+            let routeLine = null;
+            let pollingTimer = null;
             const fetchOpts = { credentials: 'same-origin' };
 
             function showGpsError(msg) {
@@ -214,35 +216,30 @@
                 if (ipEl) {
                     ipEl.textContent = clientIp ? ('IP thiết bị (mạng): ' + clientIp) : '';
                 }
-                openMapEl.href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
-                openMapEl.classList.remove('pointer-events-none', 'opacity-40');
-            }
-
-            async function sendLocation(latitude, longitude) {
-                const now = Date.now();
-                if (lastSentMs && (now - lastSentMs) < minIntervalMs) return;
-                try {
-                    await pushLocation(latitude, longitude);
-                    lastSentMs = Date.now();
-                    showGpsError('');
-                    setState(isDelivering ? 'Đang gửi định kỳ' : 'Đang chia sẻ vị trí', false);
-                } catch (e) {
-                    showGpsError(e.message || 'Không thể cập nhật vị trí.');
-                    setState('Lỗi cập nhật', true);
+                const shipPos = [Number(lat), Number(lng)];
+                if (!shipperMarker) shipperMarker = L.marker(shipPos).addTo(map).bindPopup('Shipper đang giao hàng');
+                else shipperMarker.setLatLng(shipPos);
+                if (destinationLat != null && destinationLng != null) {
+                    const destPos = [destinationLat, destinationLng];
+                    if (!customerMarker) customerMarker = L.marker(destPos).addTo(map).bindPopup('Địa chỉ khách hàng');
+                    else customerMarker.setLatLng(destPos);
+                    map.fitBounds(L.latLngBounds([shipPos, destPos]), { padding: [30, 30] });
+                } else {
+                    map.setView(shipPos, 15);
                 }
             }
 
             async function pushLocation(latitude, longitude) {
-                const res = await fetch('/api/shipper/orders/' + orderId + '/location', Object.assign({}, fetchOpts, {
+                const res = await fetch('/api/shipper/update-location', Object.assign({}, fetchOpts, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ latitude: latitude, longitude: longitude })
+                    body: JSON.stringify({ orderId: orderId, latitude: latitude, longitude: longitude })
                 }));
                 const data = await res.json().catch(function () { return {}; });
                 if (!res.ok || !data.success) {
                     throw new Error(data.message || 'Không thể cập nhật vị trí.');
                 }
-                renderCoords(data.latitude, data.longitude, data.updatedAtUtc, data.clientIp);
+                renderCoords(data.latitude, data.longitude, data.updatedAt, null);
             }
 
             async function fetchLatest() {
@@ -250,6 +247,18 @@
                 const data = await res.json().catch(function () { return {}; });
                 if (res.ok && data.success && data.latitude != null && data.longitude != null) {
                     renderCoords(data.latitude, data.longitude, data.updatedAtUtc, data.clientIp);
+                    if (destinationLat != null && destinationLng != null) {
+                        try {
+                            const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${data.longitude},${data.latitude};${destinationLng},${destinationLat}?overview=full&geometries=geojson`);
+                            const routeData = await routeRes.json();
+                            const coords = routeData?.routes?.[0]?.geometry?.coordinates;
+                            if (coords && coords.length) {
+                                const latlngs = coords.map(c => [c[1], c[0]]);
+                                if (routeLine) map.removeLayer(routeLine);
+                                routeLine = L.polyline(latlngs, { color: '#f97316', weight: 5 }).addTo(map);
+                            }
+                        } catch { }
+                    }
                 }
             }
 
@@ -259,33 +268,23 @@
             }
 
             if (btn) {
-                btn.addEventListener('click', function () {
-                    if (!navigator.geolocation) {
-                        setState('Không hỗ trợ GPS', true);
-                        showGpsError('Trình duyệt không hỗ trợ định vị.');
-                        return;
-                    }
-                    if (watchId !== null) {
-                        setState('Đang chia sẻ', false);
-                        return;
-                    }
-
-                    setState('Đang lấy vị trí…', false);
+                btn.addEventListener('click', async function () {
+                    setState('Đang bật chia sẻ…', false);
                     showGpsError('');
-                    watchId = navigator.geolocation.watchPosition(
-                        function (pos) {
-                            sendLocation(pos.coords.latitude, pos.coords.longitude);
-                        },
-                        function () {
-                            setState('Lỗi GPS', true);
-                            showGpsError('Không lấy được vị trí. Hãy bật GPS và cấp quyền cho trình duyệt.');
-                        },
-                        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
-                    );
+                    try {
+                        await pushLocation(originLat, originLng);
+                        setState('Đang chia sẻ vị trí', false);
+                        if (pollingTimer) clearInterval(pollingTimer);
+                        pollingTimer = setInterval(fetchLatest, 5000);
+                    } catch (e) {
+                        setState('Lỗi cập nhật', true);
+                        showGpsError(e.message || 'Không thể bật chia sẻ vị trí.');
+                    }
                 });
             }
 
             fetchLatest();
+            pollingTimer = setInterval(fetchLatest, 5000);
         })();
     </script>
     <script>
@@ -294,26 +293,9 @@
             var btn = document.getElementById('btnStartDelivery');
             if (!form || !btn) return;
             btn.addEventListener('click', function () {
-                if (!navigator.geolocation) {
-                    alert('Trình duyệt không hỗ trợ định vị.');
-                    return;
-                }
-                btn.disabled = true;
-                var label = btn.textContent;
-                btn.textContent = 'Đang lấy vị trí...';
-                navigator.geolocation.getCurrentPosition(
-                    function (pos) {
-                        form.querySelector('[name="latitude"]').value = String(pos.coords.latitude);
-                        form.querySelector('[name="longitude"]').value = String(pos.coords.longitude);
-                        form.submit();
-                    },
-                    function () {
-                        btn.disabled = false;
-                        btn.textContent = label;
-                        alert('Không thể lấy vị trí. Hãy bật GPS và cho phép truy cập vị trí cho trang web này.');
-                    },
-                    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-                );
+                form.querySelector('[name="latitude"]').value = '10.937570107102053';
+                form.querySelector('[name="longitude"]').value = '106.8347959491137';
+                form.submit();
             });
         })();
     </script>

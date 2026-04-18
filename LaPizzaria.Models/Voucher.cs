@@ -9,8 +9,15 @@ namespace LaPizzaria.Models
 		public string Code { get; set; } = string.Empty;
 		public string Name { get; set; } = string.Empty;
 
-		// Voucher Type: Percentage, FixedAmount, FreeShipping
-		public string VoucherType { get; set; } = "Percentage"; 
+		// Voucher Type: Percentage, FixedAmount, FreeShipping, FreeProduct
+		public string VoucherType { get; set; } = "Percentage";
+
+		/// <summary>Phạm vi áp dụng: "All" | "Food" | "Combo" | "Shipping". Null = "All".</summary>
+		public string? AppliesTo { get; set; }
+
+		/// <summary>Sản phẩm tặng kèm (chỉ dùng khi VoucherType = "FreeProduct").</summary>
+		public int? FreeProductId { get; set; }
+		public virtual Product? FreeProduct { get; set; }
 
 		public decimal DiscountPercent { get; set; } // 0-100
 		public decimal DiscountAmount { get; set; } // For FixedAmount or Max Discount

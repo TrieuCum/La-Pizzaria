@@ -4,52 +4,89 @@
 	var cats = ViewBag.Categories as List<LaPizzaria.Models.IngredientCategory> ?? new List<LaPizzaria.Models.IngredientCategory>();
 }
 
-<h2>@(Model.Id == 0 ? "Thêm nguyên liệu" : "Cập nhật nguyên liệu")</h2>
+<style>
+	.ing-upsert-wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 36px; }
+	.ing-upsert-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+	.ing-upsert-head { padding: 20px 22px; border-bottom: 1px solid #f1f5f9; }
+	.ing-upsert-head h2 { margin: 0; font-weight: 800; font-size: 1.5rem; color: #0f172a; }
+	.ing-upsert-head p { margin: 6px 0 0; color: #64748b; font-size: .9rem; }
+	.ing-upsert-body { padding: 22px; }
+	.ing-help { font-size: 12px; color: #64748b; margin-top: 6px; display: block; }
+</style>
 
-<form asp-action="Upsert" method="post">
-	<input type="hidden" asp-for="Id" />
-	<div class="mb-3">
-		<label class="form-label">Nhóm nguyên liệu</label>
-		<select asp-for="CategoryId" class="form-control">
-			<option value="">— Chưa phân nhóm —</option>
-			@foreach (var c in cats.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
-			{
-				var indent = c.ParentId == null ? "" : "— ";
-				<option value="@c.Id">@indent@c.Name</option>
-			}
-		</select>
+<div class="ing-upsert-wrap">
+	<div class="ing-upsert-card">
+		<div class="ing-upsert-head">
+			<h2>@(Model.Id == 0 ? "Thêm nguyên liệu" : "Cập nhật nguyên liệu")</h2>
+			<p>Điền thông tin cơ bản, giá vốn và tồn kho để hệ thống tính giá món chính xác hơn.</p>
+		</div>
+		<div class="ing-upsert-body">
+			<form asp-action="Upsert" method="post">
+				<input type="hidden" asp-for="Id" />
+				<div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+				<div class="mb-3">
+					<label class="form-label fw-semibold">Nhóm nguyên liệu</label>
+					<select asp-for="CategoryId" class="form-select">
+						<option value="">— Chưa phân nhóm —</option>
+						@foreach (var c in cats.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+						{
+							var indent = c.ParentId == null ? "" : "— ";
+							<option value="@c.Id">@indent@c.Name</option>
+						}
+					</select>
+				</div>
+
+				<div class="row g-3">
+					<div class="col-md-6">
+						<label asp-for="Name" class="form-label fw-semibold"></label>
+						<input asp-for="Name" class="form-control" placeholder="Ví dụ: Phô mai Mozzarella" />
+						<span asp-validation-for="Name" class="text-danger small"></span>
+					</div>
+					<div class="col-md-6">
+						<label asp-for="Unit" class="form-label fw-semibold"></label>
+						<input asp-for="Unit" class="form-control" placeholder="g, ml, kg..." />
+						<span asp-validation-for="Unit" class="text-danger small"></span>
+					</div>
+				</div>
+
+				<div class="row g-3 mt-1">
+					<div class="col-md-6">
+						<label asp-for="UnitPrice" class="form-label fw-semibold">Giá vốn (₫) trên 1 đơn vị</label>
+						<input asp-for="UnitPrice" class="form-control" type="number" step="0.0001" min="0" />
+						<span class="ing-help">Ví dụ đơn vị là "g" thì nhập giá cho 1 gam; "kg" thì nhập giá cho 1 kg.</span>
+						<span asp-validation-for="UnitPrice" class="text-danger small"></span>
+					</div>
+					<div class="col-md-3">
+						<label asp-for="StockQuantity" class="form-label fw-semibold"></label>
+						<input asp-for="StockQuantity" class="form-control" />
+						<span asp-validation-for="StockQuantity" class="text-danger small"></span>
+					</div>
+					<div class="col-md-3">
+						<label asp-for="ReorderLevel" class="form-label fw-semibold"></label>
+						<input asp-for="ReorderLevel" class="form-control" />
+						<span asp-validation-for="ReorderLevel" class="text-danger small"></span>
+					</div>
+				</div>
+
+				<div class="d-flex flex-wrap gap-4 mt-3">
+					<div class="form-check">
+						<input class="form-check-input" type="checkbox" asp-for="IsSecondary" />
+						<label class="form-check-label" asp-for="IsSecondary">Nguyên liệu phụ (trong nhóm)</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="checkbox" asp-for="IsActive" />
+						<label class="form-check-label" asp-for="IsActive"></label>
+					</div>
+				</div>
+
+				<div class="mt-4 d-flex gap-2">
+					<button type="submit" class="btn btn-warning fw-bold text-dark px-4">Lưu</button>
+					<a asp-action="Index" class="btn btn-outline-secondary px-4">Hủy</a>
+				</div>
+			</form>
+		</div>
 	</div>
-	<div class="mb-3">
-		<label asp-for="Name" class="form-label"></label>
-		<input asp-for="Name" class="form-control" />
-	</div>
-	<div class="mb-3">
-		<label asp-for="Unit" class="form-label"></label>
-		<input asp-for="Unit" class="form-control" placeholder="g, ml, kg..." />
-	</div>
-	<div class="mb-3">
-		<label asp-for="UnitPrice" class="form-label">Giá vốn (₫) trên 1 đơn vị</label>
-		<input asp-for="UnitPrice" class="form-control" type="number" step="0.0001" min="0" />
-		<small class="text-muted">Ví dụ đơn vị là &quot;g&quot; thì nhập giá cho 1 gam; &quot;kg&quot; thì giá cho 1 kg.</small>
-	</div>
-	<div class="mb-3">
-		<label asp-for="StockQuantity" class="form-label"></label>
-		<input asp-for="StockQuantity" class="form-control" />
-	</div>
-	<div class="mb-3">
-		<label asp-for="ReorderLevel" class="form-label"></label>
-		<input asp-for="ReorderLevel" class="form-control" />
-	</div>
-	<div class="form-check mb-3">
-		<input class="form-check-input" type="checkbox" asp-for="IsSecondary" />
-		<label class="form-check-label" asp-for="IsSecondary">Nguyên liệu phụ (trong nhóm)</label>
-	</div>
-	<div class="form-check mb-3">
-		<input class="form-check-input" type="checkbox" asp-for="IsActive" />
-		<label class="form-check-label" asp-for="IsActive"></label>
-	</div>
-	<button type="submit" class="btn btn-success">Lưu</button>
-	<a asp-action="Index" class="btn btn-secondary">Hủy</a>
-</form>
+</div>
 
 

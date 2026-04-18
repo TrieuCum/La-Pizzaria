@@ -1,9 +1,11 @@
 @model LaPizzaria.Models.Voucher
 @using LaPizzaria.Models
 @using LaPizzaria.ViewModels
+@inject Microsoft.Extensions.Configuration.IConfiguration _cfg
 
 @{
     ViewData["Title"] = (Model.Id == 0 ? "Tạo Voucher Mới" : "Chỉnh Sửa Voucher");
+    var emailReady = !string.IsNullOrWhiteSpace(_cfg["Email:Password"]);
     var users = ViewBag.Users as List<ApplicationUser> ?? new List<ApplicationUser>();
     var weekSel = ViewBag.WeekDaysSelected as HashSet<int> ?? new HashSet<int>();
     var ts = ViewBag.WindowTimeStart as string;
@@ -11,6 +13,7 @@
     var productTargets = ViewBag.ProductTargets as List<VoucherProductTargetItemViewModel> ?? new List<VoucherProductTargetItemViewModel>();
     var selectedTargets = productTargets.Where(x => x.IsSelected).ToList();
     var usedLegacySelection = ViewBag.LegacySlowSellerSelection is true;
+    var products = ViewBag.Products as List<Product> ?? new List<Product>();
 }
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -548,6 +551,17 @@
                     <option value="Percentage">Giảm theo phần trăm (%)</option>
                     <option value="FixedAmount">Giảm theo số tiền cố định (VNĐ)</option>
                     <option value="FreeShipping">Miễn phí giao hàng</option>
+                    <option value="FreeProduct">Tặng sản phẩm miễn phí</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="AppliesTo" class="form-label">Áp dụng cho</label>
+                <select asp-for="AppliesTo" class="form-control-brand form-select-brand">
+                    <option value="">Toàn bộ đơn hàng</option>
+                    <option value="Food">Chỉ món ăn</option>
+                    <option value="Combo">Chỉ combo</option>
+                    <option value="Shipping">Phí vận chuyển</option>
                 </select>
             </div>
 
@@ -560,6 +574,18 @@
                 <label asp-for="DiscountAmount" class="form-label">Số tiền giảm (VNĐ)</label>
                 <input type="number" step="1000" min="0" asp-for="DiscountAmount" class="form-control-brand" placeholder="Nhập số tiền" />
                 <div class="helper-text">Với FreeShip, đây là mức hỗ trợ vận chuyển tối đa.</div>
+            </div>
+
+            <div class="col-md-6 dynamic-field" id="freeProductField" style="display: none;">
+                <label asp-for="FreeProductId" class="form-label">Sản phẩm tặng kèm</label>
+                <select asp-for="FreeProductId" class="form-control-brand form-select-brand">
+                    <option value="">-- Chọn sản phẩm --</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.Id">@p.Name (@p.Price.ToString("N0")đ)</option>
+                    }
+                </select>
+                <span class="helper-text">Sản phẩm này sẽ được thêm miễn phí vào đơn khi khách dùng voucher.</span>
             </div>
         </div>
 
@@ -752,7 +778,22 @@
             </div>
         </div>
 
-        <div class="actions-row">
+        <div class="actions-row d-flex align-items-center gap-3 flex-wrap">
+            @if (Model.Id == 0)
+            {
+                if (!emailReady)
+                {
+                    <span class="badge bg-warning text-dark small fw-semibold" title="Cần cấu hình Email:Password trong appsettings.json để gửi email">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Email chưa cấu hình
+                    </span>
+                }
+                <div class="form-check" title="@(emailReady ? "Gửi email thông báo voucher mới tới tất cả khách hàng" : "Không thể gửi — Email:Password chưa được cấu hình")">
+                    <input class="form-check-input" type="checkbox" name="sendNotification" id="sendNotification" value="true" @(!emailReady ? "disabled" : "") />
+                    <label class="form-check-label small fw-bold @(!emailReady ? "text-muted" : "")" for="sendNotification">
+                        <i class="bi bi-envelope-fill me-1" style="color:#f97316;"></i>Gửi email thông báo tới khách hàng
+                    </label>
+                </div>
+            }
             <button type="submit" class="btn-save">Lưu voucher</button>
             <a asp-action="Index" class="btn-cancel">Hủy bỏ</a>
         </div>
@@ -777,21 +818,29 @@
             const checkboxes = Array.from(document.querySelectorAll('.product-target-checkbox'));
             const selectVisibleButton = document.getElementById('selectVisibleProducts');
             const clearAllButton = document.getElementById('clearAllProducts');
+            const freeProductField = document.getElementById('freeProductField');
 
             function toggleFields() {
                 const type = voucherTypeSelect ? voucherTypeSelect.value : 'Percentage';
                 if (type === 'Percentage') {
-                    percentField.style.display = '';
-                    amountField.style.display = 'none';
+                    if (percentField) percentField.style.display = '';
+                    if (amountField) amountField.style.display = 'none';
+                    if (freeProductField) freeProductField.style.display = 'none';
                     if (amountLabel) amountLabel.textContent = 'Số tiền giảm (VNĐ)';
                 } else if (type === 'FixedAmount') {
-                    percentField.style.display = 'none';
-                    amountField.style.display = '';
+                    if (percentField) percentField.style.display = 'none';
+                    if (amountField) amountField.style.display = '';
+                    if (freeProductField) freeProductField.style.display = 'none';
                     if (amountLabel) amountLabel.textContent = 'Số tiền giảm (VNĐ)';
-                } else {
-                    percentField.style.display = 'none';
-                    amountField.style.display = '';
+                } else if (type === 'FreeShipping') {
+                    if (percentField) percentField.style.display = 'none';
+                    if (amountField) amountField.style.display = '';
+                    if (freeProductField) freeProductField.style.display = 'none';
                     if (amountLabel) amountLabel.textContent = 'Mức hỗ trợ giao hàng tối đa (VNĐ)';
+                } else if (type === 'FreeProduct') {
+                    if (percentField) percentField.style.display = 'none';
+                    if (amountField) amountField.style.display = 'none';
+                    if (freeProductField) freeProductField.style.display = '';
                 }
             }
 

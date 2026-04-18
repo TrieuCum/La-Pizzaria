@@ -13,10 +13,10 @@ namespace LaPizzaria.Controllers
     {
         private static readonly List<LoyaltyRewardViewModel> RewardCatalog =
         [
-            new() { Code = "DISC10_500", Title = "Giảm 10% tổng hóa đơn", Description = "Áp dụng cho đơn từ 200.000đ, tối đa 50.000đ.", CostPoints = 500 },
-            new() { Code = "COCA15_200", Title = "Tặng 1 Coca-Cola 1.5L", Description = "Nhận 1 chai Coca cho bất kỳ đơn hàng.", CostPoints = 200 },
-            new() { Code = "FREESHIP5_300", Title = "Freeship dưới 5km", Description = "Miễn phí giao hàng cho khoảng cách < 5km.", CostPoints = 300 },
-            new() { Code = "PIZZA_M_2000", Title = "Tặng Pizza size M", Description = "Miễn phí 1 pizza size M dòng Classic.", CostPoints = 2000 }
+            new() { Code = "DISC10_500", Title = "Giảm 10% tổng hóa đơn", Description = "Áp dụng cho đơn từ 200.000đ, tối đa 50.000đ.", CostPoints = 50 },
+            new() { Code = "COCA15_200", Title = "Tặng 1 Coca-Cola 1.5L", Description = "Nhận 1 chai Coca cho bất kỳ đơn hàng.", CostPoints = 20 },
+            new() { Code = "FREESHIP5_300", Title = "Freeship dưới 5km", Description = "Miễn phí giao hàng cho khoảng cách < 5km.", CostPoints = 30 },
+            new() { Code = "PIZZA_M_2000", Title = "Tặng Pizza size M", Description = "Miễn phí 1 pizza size M dòng Classic.", CostPoints = 150 }
         ];
 
         private readonly ApplicationDbContext _db;
@@ -227,16 +227,16 @@ namespace LaPizzaria.Controllers
 
         private static int CalculateOrderPoints(decimal totalPrice)
         {
-            // 1 điểm / 1.000đ
-            return (int)Math.Floor(totalPrice / 1000m);
+            // 1 điểm / 10.000đ
+            return (int)Math.Floor(totalPrice / 10000m);
         }
 
         private static (string Tier, string NextTier, int NextTarget) GetTierInfo(int points)
         {
-            if (points >= 3000) return ("Kim Cương", "Kim Cương", 3000);
-            if (points >= 1500) return ("Vàng", "Kim Cương", 3000);
-            if (points >= 500) return ("Bạc", "Vàng", 1500);
-            return ("Đồng", "Bạc", 500);
+            if (points >= 300) return ("Kim Cương", "Kim Cương", 300);
+            if (points >= 150) return ("Vàng", "Kim Cương", 300);
+            if (points >= 50) return ("Bạc", "Vàng", 150);
+            return ("Đồng", "Bạc", 50);
         }
 
         private static Voucher BuildVoucherFromReward(LoyaltyRewardViewModel reward, string userId)
